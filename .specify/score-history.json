@@ -20,5 +20,17 @@
       "low": 0,
       "total_findings": 0
     }
+  ],
+  "002-avro-deserializer": [
+    {
+      "timestamp": "2026-03-06T22:30:00Z",
+      "score": 94,
+      "coverage_pct": 100,
+      "critical": 0,
+      "high": 0,
+      "medium": 3,
+      "low": 1,
+      "total_findings": 4
+    }
   ]
 }
