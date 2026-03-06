@@ -11,15 +11,18 @@ import respx
 from pytest_bdd import given, parsers, scenario, then, when
 
 from apicurio_serdes import ApicurioRegistryClient
-from apicurio_serdes._errors import RegistryConnectionError, SchemaNotFoundError, SerializationError
+from apicurio_serdes._errors import (
+    RegistryConnectionError,
+    SchemaNotFoundError,
+    SerializationError,
+)
 from apicurio_serdes.avro import AvroSerializer
 from apicurio_serdes.serialization import MessageField, SerializationContext
 from tests.conftest import (
-    CONTENT_ID,
     GLOBAL_ID,
+    GROUP_ID,
     INVALID_USER_EVENT_MISSING_FIELD,
     REGISTRY_URL,
-    GROUP_ID,
     VALID_USER_EVENT,
     VALID_USER_EVENT_ALT,
     VALID_USER_EVENT_EXTRA_FIELDS,
@@ -39,12 +42,18 @@ def test_ts001_serialize_valid_dict() -> None:
     """TS-001."""
 
 
-@scenario(FEATURE, "Two valid dicts serialized from the same schema share the same 4-byte identifier prefix")
+@scenario(
+    FEATURE,
+    "Two valid dicts serialized from the same schema share the same 4-byte identifier prefix",
+)
 def test_ts002_same_schema_same_prefix() -> None:
     """TS-002."""
 
 
-@scenario(FEATURE, "Dict missing a required field raises an error before any bytes are produced")
+@scenario(
+    FEATURE,
+    "Dict missing a required field raises an error before any bytes are produced",
+)
 def test_ts003_missing_field_raises_error() -> None:
     """TS-003."""
 
@@ -54,17 +63,24 @@ def test_ts004_artifact_not_found() -> None:
     """TS-004."""
 
 
-@scenario(FEATURE, "Registry unreachable raises a RegistryConnectionError wrapping the cause")
+@scenario(
+    FEATURE, "Registry unreachable raises a RegistryConnectionError wrapping the cause"
+)
 def test_ts005_registry_unreachable() -> None:
     """TS-005."""
 
 
-@scenario(FEATURE, "Extra fields in input dict are silently dropped when strict mode is disabled")
+@scenario(
+    FEATURE,
+    "Extra fields in input dict are silently dropped when strict mode is disabled",
+)
 def test_ts006_extra_fields_dropped() -> None:
     """TS-006."""
 
 
-@scenario(FEATURE, "Extra fields in input dict raise ValueError when strict mode is enabled")
+@scenario(
+    FEATURE, "Extra fields in input dict raise ValueError when strict mode is enabled"
+)
 def test_ts007_strict_mode_rejects_extra() -> None:
     """TS-007."""
 
@@ -93,7 +109,7 @@ def given_serializer_for_artifact(
 
 
 @given(
-    parsers.cfparse('the registry returns HTTP 404 for that artifact'),
+    parsers.cfparse("the registry returns HTTP 404 for that artifact"),
 )
 def given_registry_returns_404() -> None:
     # Already set up in the previous step via _not_found_route
@@ -101,7 +117,9 @@ def given_registry_returns_404() -> None:
 
 
 @given(
-    parsers.cfparse("an ApicurioRegistryClient configured with an unreachable registry URL"),
+    parsers.cfparse(
+        "an ApicurioRegistryClient configured with an unreachable registry URL"
+    ),
     target_fixture="unreachable_client",
 )
 def given_unreachable_client(mock_registry: respx.MockRouter) -> ApicurioRegistryClient:
@@ -113,7 +131,9 @@ def given_unreachable_client(mock_registry: respx.MockRouter) -> ApicurioRegistr
 
 
 @given(
-    parsers.cfparse('an AvroSerializer using that client with artifact_id "{artifact_id}"'),
+    parsers.cfparse(
+        'an AvroSerializer using that client with artifact_id "{artifact_id}"'
+    ),
     target_fixture="serializer",
 )
 def given_serializer_with_unreachable(
@@ -123,7 +143,9 @@ def given_serializer_with_unreachable(
 
 
 @given(
-    parsers.cfparse('an AvroSerializer configured with strict={strict_val} and artifact_id "{artifact_id}"'),
+    parsers.cfparse(
+        'an AvroSerializer configured with strict={strict_val} and artifact_id "{artifact_id}"'
+    ),
     target_fixture="serializer",
 )
 def given_serializer_with_strict(
@@ -145,7 +167,9 @@ def given_serializer_with_strict(
     "the serializer is called with a valid dict conforming to the schema",
     target_fixture="result_bytes",
 )
-def when_serialize_valid_dict(serializer: AvroSerializer, ctx: SerializationContext) -> bytes:
+def when_serialize_valid_dict(
+    serializer: AvroSerializer, ctx: SerializationContext
+) -> bytes:
     return serializer(VALID_USER_EVENT, ctx)
 
 
@@ -274,17 +298,26 @@ def then_value_error_strict(extra_fields_result: bytes | ValueError) -> None:
 # ── to_dict hook scenarios (TS-013, TS-014, TS-015) ──
 
 
-@scenario(TO_DICT_FEATURE, "Provided to_dict callable is applied to the input before Avro encoding")
+@scenario(
+    TO_DICT_FEATURE,
+    "Provided to_dict callable is applied to the input before Avro encoding",
+)
 def test_ts013_to_dict_applied() -> None:
     """TS-013."""
 
 
-@scenario(TO_DICT_FEATURE, "Absent to_dict callable means the plain dict is passed directly to the encoder")
+@scenario(
+    TO_DICT_FEATURE,
+    "Absent to_dict callable means the plain dict is passed directly to the encoder",
+)
 def test_ts014_no_to_dict() -> None:
     """TS-014."""
 
 
-@scenario(TO_DICT_FEATURE, "to_dict callable raising an exception is wrapped as a SerializationError")
+@scenario(
+    TO_DICT_FEATURE,
+    "to_dict callable raising an exception is wrapped as a SerializationError",
+)
 def test_ts015_to_dict_error() -> None:
     """TS-015."""
 
@@ -295,8 +328,8 @@ def test_ts015_to_dict_error() -> None:
 class _UserEventObj:
     """Simple domain object for to_dict testing."""
 
-    def __init__(self, userId: str, country: str) -> None:
-        self.userId = userId
+    def __init__(self, user_id: str, country: str) -> None:
+        self.userId = user_id
         self.country = country
 
 
@@ -341,7 +374,9 @@ def given_serializer_without_to_dict(
     "an AvroSerializer configured with a to_dict callable that raises a RuntimeError",
     target_fixture="serializer",
 )
-def given_serializer_with_failing_to_dict(mock_registry: respx.MockRouter) -> AvroSerializer:
+def given_serializer_with_failing_to_dict(
+    mock_registry: respx.MockRouter,
+) -> AvroSerializer:
     _schema_route(mock_registry, "UserEvent")
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
@@ -363,7 +398,7 @@ def given_serializer_with_failing_to_dict(mock_registry: respx.MockRouter) -> Av
 def when_serialize_domain_object(
     serializer: AvroSerializer, ctx: SerializationContext
 ) -> bytes:
-    obj = _UserEventObj(userId="abc-123", country="FR")
+    obj = _UserEventObj(user_id="abc-123", country="FR")
     return serializer(obj, ctx)
 
 
@@ -385,7 +420,7 @@ def when_serialize_with_failing_to_dict(
     serializer: AvroSerializer, ctx: SerializationContext
 ) -> SerializationError:
     with pytest.raises(SerializationError) as exc_info:
-        serializer(_UserEventObj(userId="x", country="y"), ctx)
+        serializer(_UserEventObj(user_id="x", country="y"), ctx)
     return exc_info.value
 
 
@@ -397,7 +432,9 @@ def then_to_dict_applied() -> None:
     pass
 
 
-@then("the resulting dict is Avro-encoded identically to serializing that dict directly")
+@then(
+    "the resulting dict is Avro-encoded identically to serializing that dict directly"
+)
 def then_same_as_direct(to_dict_result: bytes, mock_registry: respx.MockRouter) -> None:
     # Serialize directly with a dict-only serializer to compare
     _schema_route(mock_registry, "UserEvent-compare")
@@ -428,4 +465,23 @@ def then_error_has_cause(to_dict_error: SerializationError) -> None:
 
 @then("the error message identifies the failed conversion")
 def then_error_msg_conversion(to_dict_error: SerializationError) -> None:
-    assert "to_dict" in str(to_dict_error).lower() or "conversion" in str(to_dict_error).lower()
+    assert (
+        "to_dict" in str(to_dict_error).lower()
+        or "conversion" in str(to_dict_error).lower()
+    )
+
+
+# ── Additional coverage tests ──
+
+
+def test_strict_mode_valid_data_passes(mock_registry: respx.MockRouter) -> None:
+    """strict=True with conforming data produces valid bytes (branch 92->98)."""
+    _schema_route(mock_registry, "UserEvent")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    serializer = AvroSerializer(
+        registry_client=client, artifact_id="UserEvent", strict=True
+    )
+    ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+    result = serializer(VALID_USER_EVENT, ctx)
+    assert result[0:1] == b"\x00"
+    assert len(result) > 5

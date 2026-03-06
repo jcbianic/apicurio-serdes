@@ -12,8 +12,6 @@ from apicurio_serdes import ApicurioRegistryClient
 from apicurio_serdes.avro import AvroSerializer
 from apicurio_serdes.serialization import MessageField, SerializationContext
 from tests.conftest import (
-    CONTENT_ID,
-    GLOBAL_ID,
     GROUP_ID,
     REGISTRY_URL,
     VALID_USER_EVENT,
@@ -26,7 +24,9 @@ FEATURE = "../specs/001-avro-serializer/tests/features/wire_format.feature"
 # ── Scenarios ──
 
 
-@scenario(FEATURE, "Default wire format embeds globalId as the 4-byte schema identifier")
+@scenario(
+    FEATURE, "Default wire format embeds globalId as the 4-byte schema identifier"
+)
 def test_ts016_global_id_wire_format() -> None:
     """TS-016."""
 
@@ -36,7 +36,10 @@ def test_ts017_content_id_wire_format() -> None:
     """TS-017."""
 
 
-@scenario(FEATURE, "AvroSerializer callable interface mirrors the confluent-kafka serializer convention")
+@scenario(
+    FEATURE,
+    "AvroSerializer callable interface mirrors the confluent-kafka serializer convention",
+)
 def test_ts018_callable_interface() -> None:
     """TS-018."""
 
@@ -53,7 +56,9 @@ def test_ts018_callable_interface() -> None:
 def given_client_with_ids(
     mock_registry: respx.MockRouter, global_id: int, content_id: int, artifact_id: str
 ) -> ApicurioRegistryClient:
-    _schema_route(mock_registry, artifact_id, global_id=global_id, content_id=content_id)
+    _schema_route(
+        mock_registry, artifact_id, global_id=global_id, content_id=content_id
+    )
     return ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
 

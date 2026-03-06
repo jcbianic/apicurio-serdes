@@ -16,7 +16,9 @@ def test_serialization_context_carries_topic_and_field() -> None:
 
 
 @given(
-    parsers.cfparse('a SerializationContext constructed with topic "{topic}" and field {field}'),
+    parsers.cfparse(
+        'a SerializationContext constructed with topic "{topic}" and field {field}'
+    ),
     target_fixture="ctx",
 )
 def given_serialization_context(topic: str, field: str) -> SerializationContext:

@@ -28,9 +28,9 @@
 
 **Purpose**: Project initialization — no user stories can begin until Phase 1 is complete
 
-- [ ] T001 Create `pyproject.toml` with hatchling build config, runtime deps (fastavro≥1.9.0, httpx≥0.27.0), dev deps (pytest≥8.0.0, pytest-bdd, pytest-cov≥5.0.0, respx≥0.21.0, mypy≥1.10.0, ruff≥0.5.0), and tool sections (ruff, mypy strict, pytest `--cov=src/apicurio_serdes --cov-branch --cov-fail-under=100 --feature-base-dir=specs/001-avro-serializer/tests/features`)
-- [ ] T002 Create `src/apicurio_serdes/` package layout: `__init__.py`, `serialization.py`, `_client.py`, `_errors.py`, `py.typed`, `avro/__init__.py`, `avro/_serializer.py` (all empty stubs so imports resolve)
-- [ ] T003 Create `tests/` package: `conftest.py` with shared fixtures (respx mock router, sample Avro schema JSON for `UserEvent` record, sample valid and invalid dicts), empty `tests/__init__.py`
+- [x] T001 Create `pyproject.toml` with hatchling build config, runtime deps (fastavro≥1.9.0, httpx≥0.27.0), dev deps (pytest≥8.0.0, pytest-bdd, pytest-cov≥5.0.0, respx≥0.21.0, mypy≥1.10.0, ruff≥0.5.0), and tool sections (ruff, mypy strict, pytest `--cov=src/apicurio_serdes --cov-branch --cov-fail-under=100 --feature-base-dir=specs/001-avro-serializer/tests/features`)
+- [x] T002 Create `src/apicurio_serdes/` package layout: `__init__.py`, `serialization.py`, `_client.py`, `_errors.py`, `py.typed`, `avro/__init__.py`, `avro/_serializer.py` (all empty stubs so imports resolve)
+- [x] T003 Create `tests/` package: `conftest.py` with shared fixtures (respx mock router, sample Avro schema JSON for `UserEvent` record, sample valid and invalid dicts), empty `tests/__init__.py`
 
 **Checkpoint**: Repository skeleton in place — `uv run pytest` can discover and fail tests
 
@@ -42,12 +42,12 @@
 
 **CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 [P] [TDD-RED] Write step definitions for TS-009 in `tests/test_serialization.py` referencing `specs/001-avro-serializer/tests/features/avro_serialization.feature` — verify `pytest tests/test_serialization.py` exits non-zero (depends on T003)
-- [ ] T005 [P] [TDD-RED] Write step definitions for TS-008 in `tests/test_client.py` referencing `specs/001-avro-serializer/tests/features/avro_serialization.feature` — verify `pytest tests/test_client.py` exits non-zero (depends on T003)
-- [ ] T006 Implement `MessageField` enum and `SerializationContext` dataclass with full type annotations and docstrings in `src/apicurio_serdes/serialization.py` to pass TS-009 (depends on T004)
-- [ ] T007 [P] Implement `SchemaNotFoundError`, `SerializationError`, `RegistryConnectionError` with full type annotations and docstrings in `src/apicurio_serdes/_errors.py` (depends on T005)
-- [ ] T008 Implement `ApicurioRegistryClient` with httpx sync session, dict-based schema cache keyed by `(group_id, artifact_id)`, `X-Registry-GlobalId` and `X-Registry-ContentId` header parsing, 404 → `SchemaNotFoundError`, network error → `RegistryConnectionError` in `src/apicurio_serdes/_client.py` to pass TS-008 (depends on T006, T007)
-- [ ] T009 Re-export `ApicurioRegistryClient` from `src/apicurio_serdes/__init__.py` (depends on T008)
+- [x] T004 [P] [TDD-RED] Write step definitions for TS-009 in `tests/test_serialization.py` referencing `specs/001-avro-serializer/tests/features/avro_serialization.feature` — verify `pytest tests/test_serialization.py` exits non-zero (depends on T003)
+- [x] T005 [P] [TDD-RED] Write step definitions for TS-008 in `tests/test_client.py` referencing `specs/001-avro-serializer/tests/features/avro_serialization.feature` — verify `pytest tests/test_client.py` exits non-zero (depends on T003)
+- [x] T006 Implement `MessageField` enum and `SerializationContext` dataclass with full type annotations and docstrings in `src/apicurio_serdes/serialization.py` to pass TS-009 (depends on T004)
+- [x] T007 [P] Implement `SchemaNotFoundError`, `SerializationError`, `RegistryConnectionError` with full type annotations and docstrings in `src/apicurio_serdes/_errors.py` (depends on T005)
+- [x] T008 Implement `ApicurioRegistryClient` with httpx sync session, dict-based schema cache keyed by `(group_id, artifact_id)`, `X-Registry-GlobalId` and `X-Registry-ContentId` header parsing, 404 → `SchemaNotFoundError`, network error → `RegistryConnectionError` in `src/apicurio_serdes/_client.py` to pass TS-008 (depends on T006, T007)
+- [x] T009 Re-export `ApicurioRegistryClient` from `src/apicurio_serdes/__init__.py` (depends on T008)
 
 **Checkpoint**: Foundational complete — `SerializationContext`, `MessageField`, all error types, and `ApicurioRegistryClient` are implemented; `pytest tests/test_serialization.py tests/test_client.py` passes TS-008, TS-009
 
@@ -60,15 +60,15 @@
 
 ### TDD — Write step definitions FIRST (RED phase)
 
-- [ ] T010 [TDD-RED] [US1] Write step definitions for TS-001, TS-002, TS-003, TS-004, TS-005, TS-006, TS-007 in `tests/test_serializer.py` referencing `specs/001-avro-serializer/tests/features/avro_serialization.feature` — verify `pytest tests/test_serializer.py` exits non-zero (depends on T008, T009)
-- [ ] T011 [P] [TDD-RED] Write step definitions for TS-016, TS-017, TS-018 in `tests/test_wire_format.py` referencing `specs/001-avro-serializer/tests/features/wire_format.feature` — verify `pytest tests/test_wire_format.py` exits non-zero (depends on T008, T009)
+- [x] T010 [TDD-RED] [US1] Write step definitions for TS-001, TS-002, TS-003, TS-004, TS-005, TS-006, TS-007 in `tests/test_serializer.py` referencing `specs/001-avro-serializer/tests/features/avro_serialization.feature` — verify `pytest tests/test_serializer.py` exits non-zero (depends on T008, T009)
+- [x] T011 [P] [TDD-RED] Write step definitions for TS-016, TS-017, TS-018 in `tests/test_wire_format.py` referencing `specs/001-avro-serializer/tests/features/wire_format.feature` — verify `pytest tests/test_wire_format.py` exits non-zero (depends on T008, T009)
 
 ### Implementation (GREEN phase)
 
-- [ ] T012 [US1] Implement `AvroSerializer.__init__` and `__call__` in `src/apicurio_serdes/avro/_serializer.py`: apply `to_dict` if provided, delegate schema fetch to `registry_client.get_schema()`, encode with `fastavro.schemaless_writer`, prepend Confluent wire header (`b'\x00' + struct.pack('>I', schema_id)`) — to pass TS-001, TS-002, TS-003, TS-004, TS-005, TS-016, TS-018 (depends on T010, T011)
-- [ ] T013 [US1] Add strict mode validation to `AvroSerializer.__call__` in `src/apicurio_serdes/avro/_serializer.py`: when `strict=True`, reject extra fields not present in schema before encoding — to pass TS-006, TS-007 (depends on T012)
-- [ ] T014 [US1] Implement `use_id="contentId"` path in `AvroSerializer.__call__` in `src/apicurio_serdes/avro/_serializer.py`: use `CachedSchema.content_id` as the 4-byte wire format ID when `use_id="contentId"` — to pass TS-017 (depends on T012)
-- [ ] T015 Re-export `AvroSerializer` from `src/apicurio_serdes/avro/__init__.py` (depends on T012)
+- [x] T012 [US1] Implement `AvroSerializer.__init__` and `__call__` in `src/apicurio_serdes/avro/_serializer.py`: apply `to_dict` if provided, delegate schema fetch to `registry_client.get_schema()`, encode with `fastavro.schemaless_writer`, prepend Confluent wire header (`b'\x00' + struct.pack('>I', schema_id)`) — to pass TS-001, TS-002, TS-003, TS-004, TS-005, TS-016, TS-018 (depends on T010, T011)
+- [x] T013 [US1] Add strict mode validation to `AvroSerializer.__call__` in `src/apicurio_serdes/avro/_serializer.py`: when `strict=True`, reject extra fields not present in schema before encoding — to pass TS-006, TS-007 (depends on T012)
+- [x] T014 [US1] Implement `use_id="contentId"` path in `AvroSerializer.__call__` in `src/apicurio_serdes/avro/_serializer.py`: use `CachedSchema.content_id` as the 4-byte wire format ID when `use_id="contentId"` — to pass TS-017 (depends on T012)
+- [x] T015 Re-export `AvroSerializer` from `src/apicurio_serdes/avro/__init__.py` (depends on T012)
 
 **Checkpoint**: US1 complete — `AvroSerializer` serializes dicts to valid Confluent-framed Avro bytes; TS-001, TS-002, TS-003, TS-004, TS-005, TS-006, TS-007, TS-016, TS-017, TS-018 GREEN; SC-001 satisfied
 
@@ -81,11 +81,11 @@
 
 ### TDD — Write step definitions FIRST (RED phase)
 
-- [ ] T016 [TDD-RED] [US2] Write step definitions for TS-010, TS-011, TS-012 in `tests/test_client.py` referencing `specs/001-avro-serializer/tests/features/schema_caching.feature` — verify `pytest tests/test_client.py` exits non-zero for the new scenarios (depends on T012)
+- [x] T016 [TDD-RED] [US2] Write step definitions for TS-010, TS-011, TS-012 in `tests/test_client.py` referencing `specs/001-avro-serializer/tests/features/schema_caching.feature` — verify `pytest tests/test_client.py` exits non-zero for the new scenarios (depends on T012)
 
 ### Implementation (GREEN phase)
 
-- [ ] T017 [US2] Add `threading.RLock` guard to `ApicurioRegistryClient.get_schema()` in `src/apicurio_serdes/_client.py` to ensure at most one HTTP call per `artifact_id` under concurrent access (NFR-001) — to pass TS-010, TS-011, TS-012 (depends on T016)
+- [x] T017 [US2] Add `threading.RLock` guard to `ApicurioRegistryClient.get_schema()` in `src/apicurio_serdes/_client.py` to ensure at most one HTTP call per `artifact_id` under concurrent access (NFR-001) — to pass TS-010, TS-011, TS-012 (depends on T016)
 
 **Checkpoint**: US2 complete — schema cache is thread-safe; TS-010, TS-011, TS-012 GREEN; SC-003 satisfied (1 HTTP call per 1,000 messages with same `artifact_id`)
 
@@ -98,11 +98,11 @@
 
 ### TDD — Write step definitions FIRST (RED phase)
 
-- [ ] T018 [TDD-RED] [US3] Write step definitions for TS-013, TS-014, TS-015 in `tests/test_serializer.py` referencing `specs/001-avro-serializer/tests/features/to_dict_hook.feature` — verify `pytest tests/test_serializer.py` exits non-zero for the new scenarios (depends on T012)
+- [x] T018 [TDD-RED] [US3] Write step definitions for TS-013, TS-014, TS-015 in `tests/test_serializer.py` referencing `specs/001-avro-serializer/tests/features/to_dict_hook.feature` — verify `pytest tests/test_serializer.py` exits non-zero for the new scenarios (depends on T012)
 
 ### Implementation (GREEN phase)
 
-- [ ] T019 [US3] Implement `to_dict` invocation and `SerializationError` wrapping in `AvroSerializer.__call__` in `src/apicurio_serdes/avro/_serializer.py`: call `self.to_dict(data, ctx)` before encoding; catch any raised exception and re-raise as `SerializationError(__cause__)` per FR-013 — to pass TS-013, TS-014, TS-015 (depends on T018)
+- [x] T019 [US3] Implement `to_dict` invocation and `SerializationError` wrapping in `AvroSerializer.__call__` in `src/apicurio_serdes/avro/_serializer.py`: call `self.to_dict(data, ctx)` before encoding; catch any raised exception and re-raise as `SerializationError(__cause__)` per FR-013 — to pass TS-013, TS-014, TS-015 (depends on T018)
 
 **Checkpoint**: US3 complete — `to_dict` hook transforms domain objects; TS-013, TS-014, TS-015 GREEN
 
@@ -112,9 +112,9 @@
 
 **Purpose**: Quality gates, type safety, and final validation — apply after all desired user story phases are complete
 
-- [ ] T020 [P] Run `mypy --strict src/` and fix all type annotation gaps and incomplete docstrings across all public symbols in `src/apicurio_serdes/`
-- [ ] T021 [P] Run `pytest --cov=src/apicurio_serdes --cov-branch --cov-fail-under=100` and add missing step definitions or tests for any uncovered branch in `src/`
-- [ ] T022 [P] Run `ruff check . && ruff format --check .` and fix all linting and formatting violations across `src/` and `tests/`
+- [x] T020 [P] Run `mypy --strict src/` and fix all type annotation gaps and incomplete docstrings across all public symbols in `src/apicurio_serdes/`
+- [x] T021 [P] Run `pytest --cov=src/apicurio_serdes --cov-branch --cov-fail-under=100` and add missing step definitions or tests for any uncovered branch in `src/`
+- [x] T022 [P] Run `ruff check . && ruff format --check .` and fix all linting and formatting violations across `src/` and `tests/`
 - [ ] T023 Verify `quickstart.md` code examples execute correctly end-to-end against mock registry in test suite; confirm SC-001 (no custom HTTP or Avro library calls at call site)
 
 ---

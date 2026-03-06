@@ -48,7 +48,7 @@ class AvroSerializer:
         self.use_id = use_id
         self.strict = strict
         self._schema: CachedSchema | None = None
-        self._parsed_schema: dict[str, Any] | None = None
+        self._parsed_schema: str | list[Any] | dict[Any, Any] | None = None
 
     def __call__(self, data: Any, ctx: SerializationContext) -> bytes:
         """Serialize data to Confluent-framed Avro bytes.
@@ -102,6 +102,7 @@ class AvroSerializer:
 
         # Encode to Avro binary
         buffer = io.BytesIO()
+        assert self._parsed_schema is not None
         fastavro.schemaless_writer(buffer, self._parsed_schema, data)
 
         # Confluent wire format: 0x00 + 4-byte ID + Avro payload

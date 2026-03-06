@@ -79,7 +79,11 @@ class ApicurioRegistryClient:
             if cache_key in self._schema_cache:
                 return self._schema_cache[cache_key]
 
-            endpoint = f"/groups/{self.group_id}/artifacts/{artifact_id}/versions/latest/content"
+            endpoint = (
+                f"/groups/{self.group_id}"
+                f"/artifacts/{artifact_id}"
+                "/versions/latest/content"
+            )
             try:
                 response = self._http_client.get(endpoint)
             except httpx.ConnectError as exc:
@@ -93,6 +97,10 @@ class ApicurioRegistryClient:
             global_id = int(response.headers["X-Registry-GlobalId"])
             content_id = int(response.headers["X-Registry-ContentId"])
 
-            cached = CachedSchema(schema=schema, global_id=global_id, content_id=content_id)
+            cached = CachedSchema(
+                schema=schema,
+                global_id=global_id,
+                content_id=content_id,
+            )
             self._schema_cache[cache_key] = cached
             return cached

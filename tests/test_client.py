@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import json
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import pytest
 import respx
-from httpx import Response
 from pytest_bdd import given, parsers, scenario, then, when
 
 from apicurio_serdes import ApicurioRegistryClient
@@ -17,7 +15,6 @@ from apicurio_serdes.serialization import MessageField, SerializationContext
 from tests.conftest import (
     GROUP_ID,
     REGISTRY_URL,
-    USER_EVENT_SCHEMA_JSON,
     VALID_USER_EVENT,
     VALID_USER_EVENT_ALT,
     _schema_route,
@@ -35,17 +32,26 @@ def test_group_id_required() -> None:
     """TS-008."""
 
 
-@scenario(CACHE_FEATURE, "Registry is contacted exactly once when the same artifact is serialized multiple times")
+@scenario(
+    CACHE_FEATURE,
+    "Registry is contacted exactly once when the same artifact is serialized multiple times",
+)
 def test_ts010_cache_single_artifact() -> None:
     """TS-010."""
 
 
-@scenario(CACHE_FEATURE, "A new artifact triggers one registry call without re-fetching a previously cached schema")
+@scenario(
+    CACHE_FEATURE,
+    "A new artifact triggers one registry call without re-fetching a previously cached schema",
+)
 def test_ts011_cache_multiple_artifacts() -> None:
     """TS-011."""
 
 
-@scenario(CACHE_FEATURE, "Concurrent calls to the same artifact result in exactly one registry HTTP request")
+@scenario(
+    CACHE_FEATURE,
+    "Concurrent calls to the same artifact result in exactly one registry HTTP request",
+)
 def test_ts012_concurrent_cache() -> None:
     """TS-012."""
 
@@ -90,7 +96,9 @@ def given_client_two_schemas(
     mock_registry: respx.MockRouter, art_a: str, art_b: str
 ) -> ApicurioRegistryClient:
     _schema_route(mock_registry, art_a, global_id=10, content_id=1)
-    _schema_route(mock_registry, art_b, schema=SCHEMA_B_JSON, global_id=20, content_id=2)
+    _schema_route(
+        mock_registry, art_b, schema=SCHEMA_B_JSON, global_id=20, content_id=2
+    )
     return ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
 
@@ -126,11 +134,11 @@ def when_serialize_twice(
 
 
 @then(
-    parsers.cfparse('the registry is contacted exactly once for artifact "{artifact_id}"')
+    parsers.cfparse(
+        'the registry is contacted exactly once for artifact "{artifact_id}"'
+    )
 )
 def then_contacted_once(mock_registry: respx.MockRouter, artifact_id: str) -> None:
-    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/{artifact_id}/versions/latest/content"
-    matching = [r for r in mock_registry.routes if str(r.pattern) and r.called]
     call_count = 0
     for route in mock_registry.routes:
         if hasattr(route, "pattern") and artifact_id in str(route.pattern):
@@ -151,7 +159,9 @@ def then_contacted_once(mock_registry: respx.MockRouter, artifact_id: str) -> No
 def given_serializer_already_cached(
     registry_client: ApicurioRegistryClient, artifact_id: str
 ) -> AvroSerializer:
-    serializer = AvroSerializer(registry_client=registry_client, artifact_id=artifact_id)
+    serializer = AvroSerializer(
+        registry_client=registry_client, artifact_id=artifact_id
+    )
     ctx = SerializationContext(topic="warmup", field=MessageField.VALUE)
     serializer(VALID_USER_EVENT, ctx)
     return serializer
@@ -242,3 +252,49 @@ def then_all_valid(concurrent_results: list[bytes]) -> None:
     for result in concurrent_results:
         assert result[0:1] == b"\x00"
         assert len(result) > 5
+
+
+# ── Additional coverage tests ──
+
+
+def test_empty_url_raises_value_error() -> None:
+    """Empty url must raise ValueError."""
+    with pytest.raises(ValueError, match="url"):
+        ApicurioRegistryClient(url="", group_id="g")
+
+
+def test_double_check_locking_cache_hit(mock_registry: respx.MockRouter) -> None:
+    """Exercise the double-checked locking return path (line 80).
+
+    Simulates a race where another thread populates the cache between
+    the fast-path check (line 74) and the lock-guarded check (line 79).
+    """
+    from apicurio_serdes._client import CachedSchema
+
+    _schema_route(mock_registry, "Race")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+
+    cached = CachedSchema(
+        schema={"type": "record", "name": "X", "fields": []},
+        global_id=99,
+        content_id=88,
+    )
+    cache_key = (GROUP_ID, "Race")
+    check_count: dict[str, int] = {"n": 0}
+
+    class _RaceDict(dict[tuple[str, str], Any]):
+        """Dict that misses the first __contains__ then simulates a race fill."""
+
+        def __contains__(self, key: object) -> bool:
+            if key == cache_key:
+                check_count["n"] += 1
+                if check_count["n"] == 1:
+                    return False  # fast-path miss
+                # Inside the lock: simulate another thread having filled cache
+                self[cache_key] = cached  # type: ignore[index]
+                return True
+            return super().__contains__(key)
+
+    client._schema_cache = _RaceDict()  # type: ignore[assignment]
+    result = client.get_schema("Race")
+    assert result is cached
