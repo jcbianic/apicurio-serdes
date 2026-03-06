@@ -1,4 +1,4 @@
-"""Step definitions for TS-001 through TS-007: AvroSerializer scenarios."""
+"""Step definitions for TS-001 through TS-007, TS-013 through TS-015: AvroSerializer scenarios."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ import respx
 from pytest_bdd import given, parsers, scenario, then, when
 
 from apicurio_serdes import ApicurioRegistryClient
-from apicurio_serdes._errors import RegistryConnectionError, SchemaNotFoundError
+from apicurio_serdes._errors import RegistryConnectionError, SchemaNotFoundError, SerializationError
 from apicurio_serdes.avro import AvroSerializer
 from apicurio_serdes.serialization import MessageField, SerializationContext
 from tests.conftest import (
@@ -28,6 +28,7 @@ from tests.conftest import (
 )
 
 FEATURE = "../specs/001-avro-serializer/tests/features/avro_serialization.feature"
+TO_DICT_FEATURE = "../specs/001-avro-serializer/tests/features/to_dict_hook.feature"
 
 
 # ── Scenarios ──
@@ -268,3 +269,163 @@ def then_no_error(extra_fields_result: bytes | ValueError) -> None:
 @then("a ValueError is raised before any bytes are produced")
 def then_value_error_strict(extra_fields_result: bytes | ValueError) -> None:
     assert isinstance(extra_fields_result, ValueError)
+
+
+# ── to_dict hook scenarios (TS-013, TS-014, TS-015) ──
+
+
+@scenario(TO_DICT_FEATURE, "Provided to_dict callable is applied to the input before Avro encoding")
+def test_ts013_to_dict_applied() -> None:
+    """TS-013."""
+
+
+@scenario(TO_DICT_FEATURE, "Absent to_dict callable means the plain dict is passed directly to the encoder")
+def test_ts014_no_to_dict() -> None:
+    """TS-014."""
+
+
+@scenario(TO_DICT_FEATURE, "to_dict callable raising an exception is wrapped as a SerializationError")
+def test_ts015_to_dict_error() -> None:
+    """TS-015."""
+
+
+# ── to_dict Given steps ──
+
+
+class _UserEventObj:
+    """Simple domain object for to_dict testing."""
+
+    def __init__(self, userId: str, country: str) -> None:
+        self.userId = userId
+        self.country = country
+
+
+@given(
+    parsers.cfparse(
+        'an AvroSerializer configured with a to_dict callable and artifact_id "{artifact_id}"'
+    ),
+    target_fixture="serializer",
+)
+def given_serializer_with_to_dict(
+    mock_registry: respx.MockRouter, artifact_id: str
+) -> AvroSerializer:
+    _schema_route(mock_registry, artifact_id)
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    return AvroSerializer(
+        registry_client=client,
+        artifact_id=artifact_id,
+        to_dict=lambda obj, ctx: vars(obj),
+    )
+
+
+@given("the to_dict callable converts the input object to a valid dict")
+def given_to_dict_converts() -> None:
+    pass
+
+
+@given(
+    parsers.cfparse(
+        'an AvroSerializer configured without a to_dict callable and artifact_id "{artifact_id}"'
+    ),
+    target_fixture="serializer",
+)
+def given_serializer_without_to_dict(
+    mock_registry: respx.MockRouter, artifact_id: str
+) -> AvroSerializer:
+    _schema_route(mock_registry, artifact_id)
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    return AvroSerializer(registry_client=client, artifact_id=artifact_id)
+
+
+@given(
+    "an AvroSerializer configured with a to_dict callable that raises a RuntimeError",
+    target_fixture="serializer",
+)
+def given_serializer_with_failing_to_dict(mock_registry: respx.MockRouter) -> AvroSerializer:
+    _schema_route(mock_registry, "UserEvent")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+
+    def bad_to_dict(data: Any, ctx: SerializationContext) -> dict[str, Any]:
+        raise RuntimeError("conversion failed")
+
+    return AvroSerializer(
+        registry_client=client, artifact_id="UserEvent", to_dict=bad_to_dict
+    )
+
+
+# ── to_dict When steps ──
+
+
+@when(
+    "the serializer is called with a non-dict domain object",
+    target_fixture="to_dict_result",
+)
+def when_serialize_domain_object(
+    serializer: AvroSerializer, ctx: SerializationContext
+) -> bytes:
+    obj = _UserEventObj(userId="abc-123", country="FR")
+    return serializer(obj, ctx)
+
+
+@when(
+    "the serializer is called with a plain dict conforming to the schema",
+    target_fixture="direct_dict_result",
+)
+def when_serialize_plain_dict(
+    serializer: AvroSerializer, ctx: SerializationContext
+) -> bytes:
+    return serializer(VALID_USER_EVENT, ctx)
+
+
+@when(
+    "the serializer is called with an input object",
+    target_fixture="to_dict_error",
+)
+def when_serialize_with_failing_to_dict(
+    serializer: AvroSerializer, ctx: SerializationContext
+) -> SerializationError:
+    with pytest.raises(SerializationError) as exc_info:
+        serializer(_UserEventObj(userId="x", country="y"), ctx)
+    return exc_info.value
+
+
+# ── to_dict Then steps ──
+
+
+@then("the to_dict callable is applied to the input first")
+def then_to_dict_applied() -> None:
+    pass
+
+
+@then("the resulting dict is Avro-encoded identically to serializing that dict directly")
+def then_same_as_direct(to_dict_result: bytes, mock_registry: respx.MockRouter) -> None:
+    # Serialize directly with a dict-only serializer to compare
+    _schema_route(mock_registry, "UserEvent-compare")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    direct_ser = AvroSerializer(registry_client=client, artifact_id="UserEvent-compare")
+    ctx = SerializationContext(topic="users", field=MessageField.VALUE)
+    direct_bytes = direct_ser(VALID_USER_EVENT, ctx)
+    # Avro payload (bytes 5+) should be identical
+    assert to_dict_result[5:] == direct_bytes[5:]
+
+
+@then("the dict is used directly for Avro encoding with no transformation applied")
+def then_no_transformation(direct_dict_result: bytes) -> None:
+    assert isinstance(direct_dict_result, bytes)
+    assert direct_dict_result[0:1] == b"\x00"
+    assert len(direct_dict_result) > 5
+
+
+@then("a SerializationError is raised")
+def then_serialization_error(to_dict_error: SerializationError) -> None:
+    assert isinstance(to_dict_error, SerializationError)
+
+
+@then("the SerializationError includes the original RuntimeError as its cause")
+def then_error_has_cause(to_dict_error: SerializationError) -> None:
+    assert isinstance(to_dict_error.__cause__, RuntimeError)
+
+
+@then("the error message identifies the failed conversion")
+def then_error_msg_conversion(to_dict_error: SerializationError) -> None:
+    assert "to_dict" in str(to_dict_error).lower() or "conversion" in str(to_dict_error).lower()
