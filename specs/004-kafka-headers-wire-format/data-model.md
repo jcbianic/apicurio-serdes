@@ -122,9 +122,9 @@ The single header entry in `headers` for KAFKA_HEADERS mode:
 
 | `ctx.field` | `use_id` | Header name | Header value |
 |---|---|---|---|
-| `MessageField.VALUE` | `"globalId"` | `"apicurio.registry.globalId"` | `struct.pack(">q", global_id)` |
-| `MessageField.VALUE` | `"contentId"` | `"apicurio.registry.contentId"` | `struct.pack(">q", content_id)` |
-| `MessageField.KEY` | `"globalId"` | `"apicurio.registry.key.globalId"` | `struct.pack(">q", global_id)` |
-| `MessageField.KEY` | `"contentId"` | `"apicurio.registry.key.contentId"` | `struct.pack(">q", content_id)` |
+| `MessageField.VALUE` | `"globalId"` | `"apicurio.value.globalId"` | `struct.pack(">q", global_id)` |
+| `MessageField.VALUE` | `"contentId"` | `"apicurio.value.contentId"` | `struct.pack(">q", content_id)` |
+| `MessageField.KEY` | `"globalId"` | `"apicurio.key.globalId"` | `struct.pack(">q", global_id)` |
+| `MessageField.KEY` | `"contentId"` | `"apicurio.key.contentId"` | `struct.pack(">q", content_id)` |
 
-Header value encoding: 8-byte big-endian signed integer (`struct.pack(">q", ...)`) — byte-level compatible with Apicurio Registry's Java `DefaultHeadersHandler` (`ByteBuffer.putLong()`, big-endian default).
+Header value encoding: 8-byte big-endian signed integer (`struct.pack(">q", ...)`) — byte-level compatible with Apicurio Registry v3 Java `DefaultHeadersHandler` (`ByteBuffer.putLong()`, big-endian default). Header names follow Apicurio v3 convention from `KafkaSerdeHeaders.java` (`apicurio.{key|value}.{idType}`).

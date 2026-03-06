@@ -202,10 +202,10 @@ Header name lookup:
 
 | MessageField | use_id | Header name |
 |---|---|---|
-| VALUE | "globalId" | `apicurio.registry.globalId` |
-| VALUE | "contentId" | `apicurio.registry.contentId` |
-| KEY | "globalId" | `apicurio.registry.key.globalId` |
-| KEY | "contentId" | `apicurio.registry.key.contentId` |
+| VALUE | "globalId" | `apicurio.value.globalId` |
+| VALUE | "contentId" | `apicurio.value.contentId` |
+| KEY | "globalId" | `apicurio.key.globalId` |
+| KEY | "contentId" | `apicurio.key.contentId` |
 
 Header value encoding:
 ```python

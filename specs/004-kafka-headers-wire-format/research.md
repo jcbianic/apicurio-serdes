@@ -28,27 +28,29 @@
 
 **Question**: What header names does Apicurio Registry's native Java KAFKA_HEADERS serde use?
 
-**Source**: Apicurio Registry Java source, `io.apicurio.registry.serde.headers.SerdeHeaders` interface and `DefaultHeadersHandler` implementation.
+**Source**: Apicurio Registry v3 Java source, `io.apicurio.registry.serde.kafka.headers.KafkaSerdeHeaders` constants and `DefaultHeadersHandler` implementation (main branch).
 
 **Findings**:
 
-The header name constants defined in `SerdeHeaders`:
+The header name constants defined in `KafkaSerdeHeaders` (Apicurio v3):
 
 ```java
-String HEADER_VALUE_GLOBAL_ID  = "apicurio.registry.globalId";
-String HEADER_VALUE_CONTENT_ID = "apicurio.registry.contentId";
-String HEADER_KEY_GLOBAL_ID    = "apicurio.registry.key.globalId";
-String HEADER_KEY_CONTENT_ID   = "apicurio.registry.key.contentId";
+String HEADER_KEY_GLOBAL_ID    = "apicurio.key.globalId";
+String HEADER_VALUE_GLOBAL_ID  = "apicurio.value.globalId";
+String HEADER_KEY_CONTENT_ID   = "apicurio.key.contentId";
+String HEADER_VALUE_CONTENT_ID = "apicurio.value.contentId";
 ```
+
+**Note**: Apicurio v2 used a different convention (`apicurio.registry.globalId`, `apicurio.registry.key.globalId`). The v3 convention is symmetric: `apicurio.{key|value}.{idType}`.
 
 Mapping to Python `MessageField` × `use_id`:
 
 | MessageField | use_id | Header name |
 |---|---|---|
-| VALUE | "globalId" | `apicurio.registry.globalId` |
-| VALUE | "contentId" | `apicurio.registry.contentId` |
-| KEY | "globalId" | `apicurio.registry.key.globalId` |
-| KEY | "contentId" | `apicurio.registry.key.contentId` |
+| VALUE | "globalId" | `apicurio.value.globalId` |
+| VALUE | "contentId" | `apicurio.value.contentId` |
+| KEY | "globalId" | `apicurio.key.globalId` |
+| KEY | "contentId" | `apicurio.key.contentId` |
 
 **Implementation**: A lookup table (dict or function) in `_serializer.py` mapping `(MessageField, use_id)` to the header name string. This keeps the logic declarative and testable.
 

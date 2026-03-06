@@ -38,7 +38,7 @@ ctx = SerializationContext(topic="user-events", field=MessageField.VALUE)
 result = serializer.serialize({"userId": "abc", "country": "FR"}, ctx)
 
 # result.payload: raw Avro binary — no magic byte, no schema ID prefix (FR-005)
-# result.headers: {"apicurio.registry.globalId": b"\x00\x00\x00\x00\x00\x00\x00\x01"} (FR-006, FR-007)
+# result.headers: {"apicurio.value.globalId": b"\x00\x00\x00\x00\x00\x00\x00\x01"} (FR-006, FR-007)
 
 # Pass to confluent-kafka producer:
 producer.produce(
@@ -64,7 +64,7 @@ serializer = AvroSerializer(
 ctx = SerializationContext(topic="user-events", field=MessageField.KEY)
 result = serializer.serialize({"userId": "abc"}, ctx)
 
-# result.headers key: "apicurio.registry.key.globalId"
+# result.headers key: "apicurio.key.globalId"
 ```
 
 ---
@@ -84,7 +84,7 @@ serializer = AvroSerializer(
 ctx = SerializationContext(topic="user-events", field=MessageField.VALUE)
 result = serializer.serialize({"userId": "abc", "country": "FR"}, ctx)
 
-# result.headers key: "apicurio.registry.contentId"
+# result.headers key: "apicurio.value.contentId"
 # result.headers value: struct.pack(">q", content_id)  — 8 bytes
 ```
 

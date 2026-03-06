@@ -127,7 +127,7 @@ All decisions are documented in [research.md](research.md).
 | ID | Decision | Choice | Research Ref |
 |----|----------|--------|-------------|
 | D1 | FR-010: API surface for headers | Option C: `serialize()` returning `SerializedMessage` | research.md#D1 |
-| D2 | KAFKA_HEADERS header names | Apicurio native: `apicurio.registry.{key.}globalId/contentId` | research.md#D2 |
+| D2 | KAFKA_HEADERS header names | Apicurio v3 native: `apicurio.{key\|value}.{globalId\|contentId}` | research.md#D2 |
 | D3 | Header value byte encoding | 8-byte big-endian signed long (`struct.pack(">q", id)`) | research.md#D3 |
 | D4 | Architecture pattern | Simple conditional in `serialize()` — no strategy pattern | research.md#D4 |
 | D5 | WireFormat placement | `serialization.py` alongside `MessageField` and `SerializationContext` | research.md#D5 |
@@ -177,10 +177,10 @@ See [research.md](research.md#D2-D3) for derivation. Summary:
 
 | MessageField | use_id | Header name | Header value encoding |
 |---|---|---|---|
-| VALUE | "globalId" | `apicurio.registry.globalId` | `struct.pack(">q", global_id)` — 8 bytes |
-| VALUE | "contentId" | `apicurio.registry.contentId` | `struct.pack(">q", content_id)` — 8 bytes |
-| KEY | "globalId" | `apicurio.registry.key.globalId` | `struct.pack(">q", global_id)` — 8 bytes |
-| KEY | "contentId" | `apicurio.registry.key.contentId` | `struct.pack(">q", content_id)` — 8 bytes |
+| VALUE | "globalId" | `apicurio.value.globalId` | `struct.pack(">q", global_id)` — 8 bytes |
+| VALUE | "contentId" | `apicurio.value.contentId` | `struct.pack(">q", content_id)` — 8 bytes |
+| KEY | "globalId" | `apicurio.key.globalId` | `struct.pack(">q", global_id)` — 8 bytes |
+| KEY | "contentId" | `apicurio.key.contentId` | `struct.pack(">q", content_id)` — 8 bytes |
 
 ## Requirements Traceability
 
