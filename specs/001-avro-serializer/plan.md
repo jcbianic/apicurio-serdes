@@ -166,6 +166,30 @@ All decisions are documented in [research.md](research.md) with rationale, alter
 | respx | >=0.21.0 | httpx request mocking |
 | mypy | >=1.10.0 | Static type checking |
 | ruff | >=0.5.0 | Linting and formatting |
+| pytest-bdd | >=7.0.0 | BDD step definitions for .feature files |
+
+## Requirements Traceability
+
+| Requirement | Phase | Plan Section |
+|-------------|-------|--------------|
+| FR-001 | Phase 3: ApicurioRegistryClient | Architecture, Implementation Strategy §Phase 3 |
+| FR-002 | Phase 4: AvroSerializer | Architecture, Implementation Strategy §Phase 4 |
+| FR-003 | Phase 4: AvroSerializer | Architecture, Implementation Strategy §Phase 4 |
+| FR-004 | Phase 2: SerializationContext + MessageField | Architecture, Implementation Strategy §Phase 2 |
+| FR-005 | Phase 4: AvroSerializer | Architecture, Implementation Strategy §Phase 4 |
+| FR-006 | Phase 3: ApicurioRegistryClient | Architecture, Implementation Strategy §Phase 3 |
+| FR-007 | Phase 4: AvroSerializer | Architecture, Implementation Strategy §Phase 4 |
+| FR-008 | Phase 3: ApicurioRegistryClient | Architecture, Implementation Strategy §Phase 3 |
+| FR-009 | Phase 3: ApicurioRegistryClient | Architecture, Implementation Strategy §Phase 3 |
+| FR-010 | Phase 4: AvroSerializer | Key Technical Decisions D6, Implementation Strategy §Phase 4 |
+| FR-011 | Phase 3: ApicurioRegistryClient | Architecture, Implementation Strategy §Phase 3 |
+| FR-012 | Phase 4: AvroSerializer | Implementation Strategy §Phase 4 |
+| FR-013 | Phase 4: AvroSerializer | Implementation Strategy §Phase 4 |
+| NFR-001 | Phase 3: ApicurioRegistryClient | Implementation Strategy §Phase 3 |
+| SC-001 | Phase 5: Integration + Polish | Summary, Implementation Strategy §Phase 5 |
+| SC-002 | Phase 5: Integration + Polish | Implementation Strategy §Phase 5 |
+| SC-003 | Phase 3: ApicurioRegistryClient | Technical Context: Performance Goals |
+| SC-004 | Phase 5: Integration + Polish | Constitution Check table |
 
 ## Complexity Tracking
 

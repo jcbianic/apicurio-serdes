@@ -2,7 +2,7 @@
 
 **Input**: Design documents from `/specs/001-avro-serializer/`
 **Prerequisites**: plan.md ✓, spec.md ✓, research.md ✓, data-model.md ✓, contracts/public-api.md ✓
-**Test Specs**: 18 BDD scenarios in `specs/001-avro-serializer/tests/features/` (TS-001 – TS-018)
+**Test Specs**: 18 BDD scenarios in `specs/001-avro-serializer/tests/features/` (TS-001, TS-002, TS-003, TS-004, TS-005, TS-006, TS-007, TS-008, TS-009, TS-010, TS-011, TS-012, TS-013, TS-014, TS-015, TS-016, TS-017, TS-018)
 
 ## Format: `[ID] [P?] [Story] Description`
 
@@ -115,7 +115,7 @@
 - [x] T020 [P] Run `mypy --strict src/` and fix all type annotation gaps and incomplete docstrings across all public symbols in `src/apicurio_serdes/`
 - [x] T021 [P] Run `pytest --cov=src/apicurio_serdes --cov-branch --cov-fail-under=100` and add missing step definitions or tests for any uncovered branch in `src/`
 - [x] T022 [P] Run `ruff check . && ruff format --check .` and fix all linting and formatting violations across `src/` and `tests/`
-- [ ] T023 Verify `quickstart.md` code examples execute correctly end-to-end against mock registry in test suite; confirm SC-001 (no custom HTTP or Avro library calls at call site)
+- [x] T023 Verify `quickstart.md` code examples execute correctly end-to-end against mock registry in test suite; confirm SC-001 (no custom HTTP or Avro library calls at call site)
 
 ---
 
