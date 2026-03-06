@@ -9,7 +9,7 @@ from apicurio_serdes import ApicurioRegistryClient
 
 
 @scenario(
-    "../../specs/001-avro-serializer/tests/features/avro_serialization.feature",
+    "../specs/001-avro-serializer/tests/features/avro_serialization.feature",
     "group_id is a required parameter for ApicurioRegistryClient",
 )
 def test_group_id_required() -> None:

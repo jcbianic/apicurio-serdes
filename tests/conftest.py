@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, Generator
 
 import pytest
 import respx
 from httpx import Response
+from pytest_bdd import given, parsers
+
+from apicurio_serdes import ApicurioRegistryClient
+from apicurio_serdes.avro import AvroSerializer
 
 REGISTRY_URL = "http://registry:8080/apis/registry/v3"
 GROUP_ID = "test-group"
@@ -78,7 +82,36 @@ def _not_found_route(
 
 
 @pytest.fixture()
-def mock_registry() -> respx.MockRouter:
+def mock_registry() -> Generator[respx.MockRouter, None, None]:
     """Provide a started respx mock router for the registry."""
     with respx.mock(assert_all_called=False) as router:
         yield router
+
+
+# ── Background step definitions (avro_serialization.feature) ──
+
+
+@given(
+    parsers.cfparse(
+        'a configured ApicurioRegistryClient pointing at a registry that holds a known Avro schema for artifact "{artifact_id}"'
+    ),
+    target_fixture="registry_client",
+)
+def given_configured_client(artifact_id: str) -> ApicurioRegistryClient:
+    with respx.mock(assert_all_called=False) as router:
+        _schema_route(router, artifact_id)
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        # Store the router on the client so it stays active for the test scope
+        client._test_router = router  # type: ignore[attr-defined]
+        client._test_router_ctx = router  # type: ignore[attr-defined]
+    return client
+
+
+@given(
+    parsers.cfparse(
+        'an AvroSerializer created with that client and artifact_id "{artifact_id}"'
+    ),
+    target_fixture="serializer",
+)
+def given_serializer(registry_client: ApicurioRegistryClient, artifact_id: str) -> AvroSerializer:
+    return AvroSerializer(registry_client=registry_client, artifact_id=artifact_id)

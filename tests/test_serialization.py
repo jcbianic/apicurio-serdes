@@ -8,7 +8,7 @@ from apicurio_serdes.serialization import MessageField, SerializationContext
 
 
 @scenario(
-    "../../specs/001-avro-serializer/tests/features/avro_serialization.feature",
+    "../specs/001-avro-serializer/tests/features/avro_serialization.feature",
     "SerializationContext carries the Kafka topic name and field type",
 )
 def test_serialization_context_carries_topic_and_field() -> None:

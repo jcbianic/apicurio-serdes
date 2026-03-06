@@ -1,1 +1,5 @@
-# Re-exports will be added as modules are implemented.
+"""Avro serialization support for apicurio-serdes."""
+
+from apicurio_serdes.avro._serializer import AvroSerializer
+
+__all__ = ["AvroSerializer"]
