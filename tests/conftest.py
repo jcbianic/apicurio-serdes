@@ -97,14 +97,11 @@ def mock_registry() -> Generator[respx.MockRouter, None, None]:
     ),
     target_fixture="registry_client",
 )
-def given_configured_client(artifact_id: str) -> ApicurioRegistryClient:
-    with respx.mock(assert_all_called=False) as router:
-        _schema_route(router, artifact_id)
-        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
-        # Store the router on the client so it stays active for the test scope
-        client._test_router = router  # type: ignore[attr-defined]
-        client._test_router_ctx = router  # type: ignore[attr-defined]
-    return client
+def given_configured_client(
+    mock_registry: respx.MockRouter, artifact_id: str
+) -> ApicurioRegistryClient:
+    _schema_route(mock_registry, artifact_id)
+    return ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
 
 @given(
@@ -113,5 +110,7 @@ def given_configured_client(artifact_id: str) -> ApicurioRegistryClient:
     ),
     target_fixture="serializer",
 )
-def given_serializer(registry_client: ApicurioRegistryClient, artifact_id: str) -> AvroSerializer:
+def given_serializer(
+    registry_client: ApicurioRegistryClient, artifact_id: str
+) -> AvroSerializer:
     return AvroSerializer(registry_client=registry_client, artifact_id=artifact_id)

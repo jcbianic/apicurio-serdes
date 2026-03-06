@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any
+
+import httpx
+
+from apicurio_serdes._errors import RegistryConnectionError, SchemaNotFoundError
 
 
 @dataclass
@@ -44,6 +49,8 @@ class ApicurioRegistryClient:
             raise ValueError("group_id must not be empty")
         self.url = url
         self.group_id = group_id
+        self._http_client = httpx.Client(base_url=url)
+        self._schema_cache: dict[tuple[str, str], CachedSchema] = {}
 
     def get_schema(self, artifact_id: str) -> CachedSchema:
         """Retrieve an Avro schema by artifact ID.
@@ -61,4 +68,24 @@ class ApicurioRegistryClient:
             SchemaNotFoundError: If the artifact does not exist (HTTP 404).
             RegistryConnectionError: If the registry is unreachable.
         """
-        raise NotImplementedError
+        cache_key = (self.group_id, artifact_id)
+        if cache_key in self._schema_cache:
+            return self._schema_cache[cache_key]
+
+        endpoint = f"/groups/{self.group_id}/artifacts/{artifact_id}/versions/latest/content"
+        try:
+            response = self._http_client.get(endpoint)
+        except httpx.ConnectError as exc:
+            raise RegistryConnectionError(self.url, exc) from exc
+
+        if response.status_code == 404:
+            raise SchemaNotFoundError(self.group_id, artifact_id)
+        response.raise_for_status()
+
+        schema = json.loads(response.text)
+        global_id = int(response.headers["X-Registry-GlobalId"])
+        content_id = int(response.headers["X-Registry-ContentId"])
+
+        cached = CachedSchema(schema=schema, global_id=global_id, content_id=content_id)
+        self._schema_cache[cache_key] = cached
+        return cached
