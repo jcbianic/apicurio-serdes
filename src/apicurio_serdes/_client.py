@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from dataclasses import dataclass
 from typing import Any
 
@@ -51,6 +52,7 @@ class ApicurioRegistryClient:
         self.group_id = group_id
         self._http_client = httpx.Client(base_url=url)
         self._schema_cache: dict[tuple[str, str], CachedSchema] = {}
+        self._lock = threading.RLock()
 
     def get_schema(self, artifact_id: str) -> CachedSchema:
         """Retrieve an Avro schema by artifact ID.
@@ -72,20 +74,25 @@ class ApicurioRegistryClient:
         if cache_key in self._schema_cache:
             return self._schema_cache[cache_key]
 
-        endpoint = f"/groups/{self.group_id}/artifacts/{artifact_id}/versions/latest/content"
-        try:
-            response = self._http_client.get(endpoint)
-        except httpx.ConnectError as exc:
-            raise RegistryConnectionError(self.url, exc) from exc
+        with self._lock:
+            # Double-check after acquiring the lock (NFR-001)
+            if cache_key in self._schema_cache:
+                return self._schema_cache[cache_key]
 
-        if response.status_code == 404:
-            raise SchemaNotFoundError(self.group_id, artifact_id)
-        response.raise_for_status()
+            endpoint = f"/groups/{self.group_id}/artifacts/{artifact_id}/versions/latest/content"
+            try:
+                response = self._http_client.get(endpoint)
+            except httpx.ConnectError as exc:
+                raise RegistryConnectionError(self.url, exc) from exc
 
-        schema = json.loads(response.text)
-        global_id = int(response.headers["X-Registry-GlobalId"])
-        content_id = int(response.headers["X-Registry-ContentId"])
+            if response.status_code == 404:
+                raise SchemaNotFoundError(self.group_id, artifact_id)
+            response.raise_for_status()
 
-        cached = CachedSchema(schema=schema, global_id=global_id, content_id=content_id)
-        self._schema_cache[cache_key] = cached
-        return cached
+            schema = json.loads(response.text)
+            global_id = int(response.headers["X-Registry-GlobalId"])
+            content_id = int(response.headers["X-Registry-ContentId"])
+
+            cached = CachedSchema(schema=schema, global_id=global_id, content_id=content_id)
+            self._schema_cache[cache_key] = cached
+            return cached

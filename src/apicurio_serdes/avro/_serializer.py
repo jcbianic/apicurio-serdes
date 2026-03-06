@@ -8,6 +8,8 @@ from typing import TYPE_CHECKING, Any
 
 import fastavro
 
+from apicurio_serdes._errors import SerializationError
+
 if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Literal
@@ -76,9 +78,12 @@ class AvroSerializer:
             self._schema = cached
             self._parsed_schema = fastavro.parse_schema(cached.schema)
 
-        # Apply to_dict hook if provided (FR-007)
+        # Apply to_dict hook if provided (FR-007, FR-013)
         if self.to_dict is not None:
-            data = self.to_dict(data, ctx)
+            try:
+                data = self.to_dict(data, ctx)
+            except Exception as exc:
+                raise SerializationError(exc) from exc
 
         # Strict mode validation (FR-012)
         if self.strict:
