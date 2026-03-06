@@ -59,8 +59,8 @@ specifies the intended behaviour. The Red-Green-Refactor cycle is mandatory.
 - No production code may be written without a corresponding failing test
   already in place and reviewed.
 - Tests must cover specified behaviour, not implementation details.
-- 100% statement coverage is required before any feature is considered
-  complete.
+- 100% line and branch coverage is required before any feature is
+  considered complete.
 - Test assertions may not be modified to make failing tests pass — only
   production code may change.
 
@@ -108,11 +108,20 @@ in a single session.
 - All public symbols must carry static type annotations.
 - All public APIs must have docstrings describing parameters, return values,
   and raised exceptions.
-- 100% statement test coverage is a hard quality gate enforced by CI.
+- 100% line and branch coverage is a hard quality gate enforced by CI.
 - No release may ship with known correctness bugs in the core
   serialization/deserialization path.
 - All releases must be published to the public package registry with a
   corresponding signed tag.
+- Documentation is a first-class deliverable, not an afterthought:
+  - API reference must be auto-generated from docstrings and published
+    alongside each release.
+  - A narrative user guide (installation, quickstart, how-to guides, and
+    conceptual explanations) must be maintained and kept current.
+  - A changelog must be maintained and updated on every release, recording
+    all user-visible changes.
+  - Documentation must be published as a hosted site and kept in sync with
+    the released version.
 
 ## Development Workflow
 
@@ -139,4 +148,14 @@ applies to all contributors and all code within this repository.
 **Compliance:** All PRs and code reviews must verify compliance with this
 constitution. Violations must be flagged before merge.
 
-**Version**: 1.0.0 | **Ratified**: 2026-03-06 | **Last Amended**: 2026-03-06
+**Version**: 1.2.0 | **Ratified**: 2026-03-06 | **Last Amended**: 2026-03-06
+
+## Clarifications
+
+### Session 2026-03-06
+
+- Q: What coverage metric is the hard quality gate? -> A: 100% line and branch
+  coverage (coverage.py --branch). [Principle III, Quality Standards]
+- Q: What documentation standard is constitutionally mandated? -> A: D — auto-generated
+  API reference + narrative user guide + changelog + hosted site, published on every
+  release and kept in sync with the released version. [Quality Standards]
