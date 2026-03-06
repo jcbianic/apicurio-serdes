@@ -1,3 +1,11 @@
 {
-  "tdd_determination": "mandatory"
+  "tdd_determination": "mandatory",
+  "planview": {
+    "nodeClassifications": {
+      "apicurio_serdes": "server",
+      "fastavro": "server",
+      "httpx": "server",
+      "Apicurio Registry v3": "external"
+    }
+  }
 }
