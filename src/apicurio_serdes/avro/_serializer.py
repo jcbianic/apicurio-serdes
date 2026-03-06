@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import io
+import struct
 from typing import TYPE_CHECKING, Any
+
+import fastavro
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Literal
 
-    from apicurio_serdes._client import ApicurioRegistryClient
+    from apicurio_serdes._client import ApicurioRegistryClient, CachedSchema
     from apicurio_serdes.serialization import SerializationContext
 
 
@@ -41,7 +45,60 @@ class AvroSerializer:
         self.to_dict = to_dict
         self.use_id = use_id
         self.strict = strict
+        self._schema: CachedSchema | None = None
+        self._parsed_schema: dict[str, Any] | None = None
 
     def __call__(self, data: Any, ctx: SerializationContext) -> bytes:
-        """Serialize data to Confluent-framed Avro bytes."""
-        raise NotImplementedError
+        """Serialize data to Confluent-framed Avro bytes.
+
+        Output format (FR-003):
+          Byte 0:    Magic byte 0x00
+          Bytes 1-4: schema identifier as 4-byte big-endian unsigned int
+          Bytes 5+:  Avro binary payload (schemaless encoding)
+
+        Args:
+            data: The data to serialize. Must be a dict (or convertible
+                  via to_dict) conforming to the Avro schema.
+            ctx: Serialization context with topic and field metadata.
+
+        Returns:
+            Confluent wire format bytes.
+
+        Raises:
+            SchemaNotFoundError: If the artifact_id does not exist.
+            RegistryConnectionError: If the registry is unreachable.
+            SerializationError: If the to_dict callable raises an exception.
+            ValueError: If data does not conform to the Avro schema.
+        """
+        # Lazy schema fetch (cached by client)
+        if self._schema is None:
+            cached = self.registry_client.get_schema(self.artifact_id)
+            self._schema = cached
+            self._parsed_schema = fastavro.parse_schema(cached.schema)
+
+        # Apply to_dict hook if provided (FR-007)
+        if self.to_dict is not None:
+            data = self.to_dict(data, ctx)
+
+        # Strict mode validation (FR-012)
+        if self.strict:
+            schema_fields = {f["name"] for f in self._schema.schema["fields"]}
+            extra = set(data.keys()) - schema_fields
+            if extra:
+                raise ValueError(
+                    f"Extra fields not in schema: {', '.join(sorted(extra))}"
+                )
+
+        # Select wire format ID (FR-010)
+        if self.use_id == "contentId":
+            schema_id = self._schema.content_id
+        else:
+            schema_id = self._schema.global_id
+
+        # Encode to Avro binary
+        buffer = io.BytesIO()
+        fastavro.schemaless_writer(buffer, self._parsed_schema, data)
+
+        # Confluent wire format: 0x00 + 4-byte ID + Avro payload
+        header = b"\x00" + struct.pack(">I", schema_id)
+        return header + buffer.getvalue()

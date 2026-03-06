@@ -5,6 +5,7 @@ from __future__ import annotations
 import struct
 from typing import Any
 
+import httpx
 import pytest
 import respx
 from pytest_bdd import given, parsers, scenario, then, when
@@ -102,10 +103,12 @@ def given_registry_returns_404() -> None:
     parsers.cfparse("an ApicurioRegistryClient configured with an unreachable registry URL"),
     target_fixture="unreachable_client",
 )
-def given_unreachable_client() -> ApicurioRegistryClient:
-    return ApicurioRegistryClient(
-        url="http://unreachable-host:9999/apis/registry/v3", group_id=GROUP_ID
+def given_unreachable_client(mock_registry: respx.MockRouter) -> ApicurioRegistryClient:
+    unreachable_url = "http://unreachable-host:9999/apis/registry/v3"
+    mock_registry.get(url__startswith=unreachable_url).mock(
+        side_effect=httpx.ConnectError("Connection refused")
     )
+    return ApicurioRegistryClient(url=unreachable_url, group_id=GROUP_ID)
 
 
 @given(
