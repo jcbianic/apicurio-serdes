@@ -1,0 +1,56 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "apicurio-serdes"
+version = "0.1.0"
+description = "Python serialization library for Apicurio Registry"
+requires-python = ">=3.10"
+dependencies = [
+    "fastavro>=1.9.0",
+    "httpx>=0.27.0",
+]
+
+[dependency-groups]
+docs = [
+    "mkdocs>=1.6,<2.0",
+    "mkdocs-material>=9.5.0,<10.0",
+    "mkdocstrings[python]>=0.25.0",
+]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-bdd>=8.0.0",
+    "pytest-cov>=5.0.0",
+    "respx>=0.21.0",
+    "mypy>=1.10.0",
+    "ruff>=0.5.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--cov=src/apicurio_serdes --cov-branch --cov-fail-under=100"
+
+[tool.mypy]
+strict = true
+packages = ["apicurio_serdes"]
+mypy_path = "src"
+
+[tool.ruff]
+src = ["src"]
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "TCH"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["E501", "TCH"]
+
+[tool.coverage.run]
+source = ["src/apicurio_serdes"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true

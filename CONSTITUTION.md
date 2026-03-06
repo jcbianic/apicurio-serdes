@@ -132,6 +132,9 @@ in a single session.
 - Every PR must reference the task(s) it addresses.
 - All changes to the public API require an explicit backward-compatibility
   assessment documented in the PR description.
+- Every feature's `tasks.md` must include at least one `[DOCS]` task that
+  produces or updates the corresponding page in `docs/user-guide/` and keeps
+  API reference docstrings current with any public API changes.
 
 ## Governance
 
@@ -148,7 +151,7 @@ applies to all contributors and all code within this repository.
 **Compliance:** All PRs and code reviews must verify compliance with this
 constitution. Violations must be flagged before merge.
 
-**Version**: 1.2.0 | **Ratified**: 2026-03-06 | **Last Amended**: 2026-03-06
+**Version**: 1.2.1 | **Ratified**: 2026-03-06 | **Last Amended**: 2026-03-06
 
 ## Clarifications
 
