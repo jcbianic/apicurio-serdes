@@ -32,7 +32,7 @@ ctx = SerializationContext(topic="user-events", field=MessageField.VALUE)
 payload: bytes = serializer({"userId": "abc-123", "country": "FR"}, ctx)
 
 # payload is now Confluent wire format:
-#   0x00 + 4-byte content_id + Avro binary
+#   0x00 + 4-byte globalId (default) + Avro binary
 ```
 
 ## With a Custom to_dict Hook
@@ -58,12 +58,16 @@ payload = serializer(event, ctx)
 ## Error Handling
 
 ```python
-from apicurio_serdes._errors import SchemaNotFoundError
+from apicurio_serdes._errors import SchemaNotFoundError, RegistryConnectionError, SerializationError
 
 try:
     payload = serializer(data, ctx)
 except SchemaNotFoundError as e:
     print(f"Schema not found: group={e.group_id}, artifact={e.artifact_id}")
+except RegistryConnectionError as e:
+    print(f"Registry unreachable: {e.url}")
+except SerializationError as e:
+    print(f"to_dict hook failed: {e.cause}")
 except ValueError as e:
     print(f"Data does not match schema: {e}")
 ```

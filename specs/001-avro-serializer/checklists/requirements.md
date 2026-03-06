@@ -31,13 +31,32 @@
 - [x] **FR-READY-005**: Spec is consistent with PREMISE.md scope (MVP in-scope components match) — PASS
 - [x] **FR-READY-006**: Spec is consistent with CONSTITUTION.md principles (API compatibility SC-004, no schema representation opinion FR-007 default identity, minimal footprint — registry management excluded) — PASS
 
+## Clarity
+
+- [x] **CL-001**: FR-003 / SC-002 refer to a "4-byte schema identifier" — research.md D6 decides to use `globalId`, but `contracts/public-api.md` wire format spec and `quickstart.md` consistently use `content_id` as the 4-byte field. Which identifier is authoritative? [Conflict, FR-003, SC-002, research.md D6] — RESOLVED: FR-010 added to spec; `use_id` parameter (default `"globalId"`) makes it configurable. `public-api.md`, `quickstart.md`, and `research.md D6` updated to match.
+
+## Edge Case Coverage
+
+- [x] **EC-001**: No FR specifies the behavior when the registry is unreachable (network error). The edge cases section lists it as an open question; `contracts/public-api.md` documents `httpx.ConnectError` propagating, but this is an implementation detail — not a spec requirement. [Gap, Edge Cases section] — RESOLVED: FR-011 added; `RegistryConnectionError` wraps network errors and includes the registry URL. `public-api.md` and `quickstart.md` updated.
+
+- [x] **EC-002**: No FR specifies the behavior when the input dict contains extra fields not present in the Avro schema (fastavro: silent drop vs. strict error). The edge cases section lists this as an open question with no answer. [Gap, Edge Cases section] — RESOLVED: FR-012 added; `strict` parameter on `AvroSerializer` (default `False` = silent drop; `True` = `ValueError`). `public-api.md` updated.
+
+- [x] **EC-003**: No FR specifies the behavior when the `to_dict` callable itself raises an exception — whether it propagates as-is or is wrapped. [Gap, FR-007, Edge Cases section] — RESOLVED: FR-013 added; `to_dict` exceptions are wrapped in `SerializationError` (with `cause` attribute). `public-api.md` and `quickstart.md` updated.
+
+## Non-Functional Requirements
+
+- [x] **NF-001**: `contracts/public-api.md` states `ApicurioRegistryClient` is "Thread-safe for read operations" but the spec contains no NFR about thread safety. If mandated, it should be in the spec. [Gap, FR-006] — RESOLVED: NFR-001 added to spec; concurrent reads must be safe and concurrent first-fetch must not produce duplicate requests or cache corruption.
+
 ## Summary
 
-| Category | Items | Pass | Fail |
+| Category | Items | Pass | Open |
 |---|---|---|---|
 | Content Quality | 6 | 6 | 0 |
 | Requirement Completeness | 7 | 7 | 0 |
 | Feature Readiness | 6 | 6 | 0 |
-| **Total** | **19** | **19** | **0** |
+| Clarity | 1 | 1 | 0 |
+| Edge Case Coverage | 3 | 3 | 0 |
+| Non-Functional Requirements | 1 | 1 | 0 |
+| **Total** | **24** | **24** | **0** |
 
-**Status**: READY for next phase
+**Status**: COMPLETE — all items resolved. Spec updated with FR-010, FR-011, FR-012, FR-013, NFR-001.

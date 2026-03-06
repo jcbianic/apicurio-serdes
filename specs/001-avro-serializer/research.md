@@ -85,7 +85,7 @@
 - Matches the behavior users expect when migrating from confluent-kafka (which uses schema ID = a per-version integer)
 - The intent document mentions defaulting to `contentId`, but the Apicurio Java serde actually defaults to `globalId`. We follow the Java serde default for compatibility (SC-002: byte-for-byte compatible with Apicurio native serializer).
 
-**Note**: The intent doc's open question #2 (contentId vs globalId) is resolved here. Future features may add a `use_id` configuration option.
+**Note**: The intent doc's open question #2 (contentId vs globalId) is resolved here. `AvroSerializer` accepts a `use_id` parameter (default: `"globalId"`) — see FR-010 in spec.md. This makes ID type user-selectable without breaking the default byte-for-byte compatibility with Apicurio's native serializer.
 
 **Verification needed**: Confirm against live Apicurio 3.x serde source code that `globalId` is indeed the default for `IdOption` in the Confluent wire format handler.
 

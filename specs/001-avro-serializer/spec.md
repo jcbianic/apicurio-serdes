@@ -73,7 +73,13 @@ As a Python developer whose message payloads are domain objects rather than plai
 
 - **FR-002**: The library MUST provide an `AvroSerializer` that accepts an `ApicurioRegistryClient` and an `artifact_id`, and serializes Python data to Avro-encoded bytes.
 
-- **FR-003**: The output of `AvroSerializer` MUST conform to the Confluent wire format: magic byte `0x00`, followed by a 4-byte schema identifier, followed by the Avro binary payload.
+- **FR-003**: The output of `AvroSerializer` MUST conform to the Confluent wire format: magic byte `0x00`, followed by a 4-byte schema identifier, followed by the Avro binary payload. The default schema identifier is `globalId` (Apicurio 3.x default). See FR-010 for the configurable identifier option.
+
+- **FR-013**: When the `to_dict` callable raises an exception, `AvroSerializer` MUST catch it and re-raise as a `SerializationError` that includes the original exception as its cause and identifies the failed conversion in its message.
+
+- **FR-012**: `AvroSerializer` MUST accept an optional `strict` boolean parameter (default `False`). When `True`, extra fields in the input dict that are not present in the Avro schema MUST raise a `ValueError` before any bytes are produced. When `False`, extra fields are silently dropped.
+
+- **FR-010**: `AvroSerializer` MUST accept an optional `use_id` parameter (default: `"globalId"`) that selects which registry-assigned identifier is embedded in the 4-byte wire format field. Accepted values are `"globalId"` and `"contentId"`. When `"globalId"` is selected the `X-Registry-GlobalId` response header value is used; when `"contentId"` is selected the `X-Registry-ContentId` response header value is used.
 
 - **FR-004**: The library MUST provide a `SerializationContext` that carries the target Kafka topic name and a field indicator (KEY or VALUE).
 
@@ -85,7 +91,13 @@ As a Python developer whose message payloads are domain objects rather than plai
 
 - **FR-008**: When the referenced `artifact_id` is not found in the registry, `AvroSerializer` MUST raise a descriptive error that identifies the missing artifact.
 
+- **FR-011**: When the Apicurio Registry is unreachable due to a network error, `ApicurioRegistryClient` MUST raise a `RegistryConnectionError` that wraps the underlying network exception and includes the registry URL in its message.
+
 - **FR-009**: The `group_id` MUST be a required configuration parameter of `ApicurioRegistryClient` and MUST be applied to every schema lookup made by that client instance.
+
+### Non-Functional Requirements
+
+- **NFR-001**: `ApicurioRegistryClient` MUST be safe to use from multiple concurrent threads. Specifically, the schema cache MUST allow concurrent reads without data races, and concurrent cache population (first fetch for a given `artifact_id`) MUST not result in duplicate HTTP requests or cache corruption.
 
 ### Key Entities
 

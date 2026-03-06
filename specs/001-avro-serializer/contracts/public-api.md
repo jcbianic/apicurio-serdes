@@ -64,8 +64,10 @@ class ApicurioRegistryClient:
             SchemaNotFoundError: If the artifact does not exist in the
                 registry (HTTP 404). Includes group_id and artifact_id
                 in the error message (FR-008).
-            httpx.HTTPStatusError: For other HTTP error responses.
-            httpx.ConnectError: If the registry is unreachable.
+            httpx.HTTPStatusError: For other non-404 HTTP error responses.
+            RegistryConnectionError: If the registry is unreachable due
+                to a network error (FR-011). Wraps the underlying exception
+                and includes the registry URL.
         """
         ...
 ```
@@ -100,6 +102,8 @@ class AvroSerializer:
         registry_client: ApicurioRegistryClient,
         artifact_id: str,
         to_dict: Callable[[Any, SerializationContext], dict] | None = None,
+        use_id: Literal["globalId", "contentId"] = "globalId",
+        strict: bool = False,
     ) -> None: ...
 
     def __call__(self, data: Any, ctx: SerializationContext) -> bytes:
@@ -120,8 +124,11 @@ class AvroSerializer:
 
         Raises:
             SchemaNotFoundError: If the artifact_id does not exist.
+            RegistryConnectionError: If the registry is unreachable.
+            SerializationError: If the `to_dict` callable raises an
+                exception (FR-013). Wraps the original exception as cause.
             ValueError: If data does not conform to the Avro schema
-                (e.g., missing required field).
+                (e.g., missing required field, extra fields with strict=True).
         """
         ...
 ```
@@ -182,24 +189,55 @@ class SchemaNotFoundError(Exception):
     """
 
     def __init__(self, group_id: str, artifact_id: str) -> None: ...
+
+
+class SerializationError(Exception):
+    """Raised when the `to_dict` callable fails during serialization (FR-013).
+
+    Wraps the original exception as its cause so the full traceback is
+    preserved. Distinguishes hook failure from Avro schema validation errors.
+
+    Attributes:
+        cause: The original exception raised by the `to_dict` callable.
+    """
+
+    def __init__(self, cause: Exception) -> None: ...
+
+
+class RegistryConnectionError(Exception):
+    """Raised when the Apicurio Registry is unreachable (FR-011).
+
+    Wraps the underlying network exception. Includes the registry URL
+    in the error message so callers can identify which endpoint failed.
+
+    Attributes:
+        url: The registry base URL that could not be reached.
+    """
+
+    def __init__(self, url: str, cause: Exception) -> None: ...
 ```
 
 ---
 
-## Wire Format Specification (FR-003)
+## Wire Format Specification (FR-003, FR-010)
 
 ```
 Offset  Size  Description
 ------  ----  -----------
 0       1     Magic byte: 0x00
-1       4     Schema identifier: content_id as big-endian uint32
+1       4     Schema identifier: globalId (default) or contentId — big-endian uint32
 5       var   Avro binary payload (fastavro schemaless encoding)
 ```
+
+The identifier value is selected by `use_id` (default `"globalId"`):
+- `"globalId"` → value from `X-Registry-GlobalId` response header
+- `"contentId"` → value from `X-Registry-ContentId` response header
 
 Encoding:
 ```python
 import struct
-header = b'\x00' + struct.pack('>I', content_id)
+schema_id = cached_schema.global_id  # or content_id, based on use_id
+header = b'\x00' + struct.pack('>I', schema_id)
 # payload = fastavro schemaless_writer output
 result = header + payload
 ```
