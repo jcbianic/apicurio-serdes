@@ -1,0 +1,8 @@
+{
+  "testify": {
+    "assertion_hash": "89daa5a9e25c9b487bbe67ca76410632e46201ddaca2ac69860a379096538dc5",
+    "generated_at": "2026-03-06T15:45:45Z",
+    "features_dir": "/Users/jcbianic/Projets/Libon-Data/apicurio-serdes/specs/001-avro-serializer/tests/features",
+    "file_count": 4
+  }
+}
