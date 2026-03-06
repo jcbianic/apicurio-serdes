@@ -133,17 +133,33 @@ fastavro.schemaless_writer(buffer, schema, record)
 payload = buffer.getvalue()
 ```
 
+### Function Signature
+
+```python
+fastavro.schemaless_writer(fo, schema, record, strict=False, strict_allow_default=False, disable_tuple_notation=False)
+```
+
+- `fo`: File-like object (use `io.BytesIO()` for in-memory encoding)
+- `schema`: Parsed schema from `fastavro.parse_schema()`
+- `strict=True`: Raises error on extra fields in record (recommended for production)
+
+**Important**: `parse_schema()` accepts a Python dict, not a raw JSON string. Always `json.loads()` first.
+
 ### Error Handling
 
 - Missing required field: raises `ValueError` (e.g., `"no value and no default for name"`)
-- Wrong type: raises `ValueError`
+- Wrong type: raises `ValueError` or `TypeError`
 - Schema parse error: raises `fastavro.schema.SchemaParseException`
+- Extra fields with `strict=True`: raises `ValueError`
+- Explicit pre-validation available via `fastavro.validation.validate(record, schema, raise_errors=True)` → raises `ValidationError` (subclass of `ValueError`)
 
 ### Best Practices
 
 - Always use `fastavro.parse_schema()` to normalize the schema before encoding — this resolves named types and handles schema references
 - Use `schemaless_writer` (not `writer`) for single-record encoding without Avro container file overhead
 - Parse the schema once and reuse it — aligns with our caching strategy
+- Use `strict=True` in production to catch extra fields that would be silently dropped
+- Instantiate a fresh `io.BytesIO()` per call rather than reusing (avoids position/truncation bugs)
 
 ## Tessl Tiles
 
