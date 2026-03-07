@@ -11,12 +11,14 @@ from pytest_bdd import given, parsers, scenario, then, when
 from apicurio_serdes import ApicurioRegistryClient
 from apicurio_serdes.avro import AvroDeserializer
 from apicurio_serdes.serialization import MessageField, SerializationContext
+
 from tests.conftest import (
     REGISTRY_URL,
     GROUP_ID,
     USER_EVENT_SCHEMA_JSON,
     VALID_USER_EVENT,
     _id_schema_route,
+    _schema_route,
     make_confluent_bytes,
 )
 
@@ -48,6 +50,35 @@ def test_ts017_global_id_mode() -> None:
 )
 def test_ts018_callable_interface() -> None:
     """TS-018."""
+
+
+# ── Background steps ──
+
+
+@given(
+    parsers.cfparse(
+        "a configured ApicurioRegistryClient pointing at a registry that returns"
+        ' globalId {global_id:d} and contentId {content_id:d} for artifact "{artifact_id}"'
+    ),
+    target_fixture="registry_client",
+)
+def given_client_with_ids(
+    mock_registry: respx.MockRouter, global_id: int, content_id: int, artifact_id: str
+) -> ApicurioRegistryClient:
+    _schema_route(
+        mock_registry, artifact_id, global_id=global_id, content_id=content_id
+    )
+    _id_schema_route(mock_registry, "contentId", content_id)
+    _id_schema_route(mock_registry, "globalId", global_id)
+    return ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+
+
+@given(
+    parsers.cfparse('a SerializationContext for topic "{topic}" and field {field}'),
+    target_fixture="ctx",
+)
+def given_ctx_wf(topic: str, field: str) -> SerializationContext:
+    return SerializationContext(topic=topic, field=MessageField[field])
 
 
 # ── Given steps ──

@@ -163,3 +163,51 @@ def test_concurrent_deserialization_single_http_call(
 
     assert all(r == VALID_USER_EVENT for r in results)
     assert route.call_count == 1
+
+
+# ── T021: from_dict hook unit tests ──
+
+
+def test_from_dict_applied(mock_registry: respx.MockRouter) -> None:
+    """from_dict callable is applied to decoded dict [FR-008]."""
+    from dataclasses import dataclass
+
+    @dataclass
+    class UserEvent:
+        userId: str
+        country: str
+
+    def from_dict(d: dict[str, Any], ctx: SerializationContext) -> UserEvent:
+        return UserEvent(**d)
+
+    client = _make_client(mock_registry)
+    deser = AvroDeserializer(registry_client=client, from_dict=from_dict)
+    data = make_confluent_bytes(CONTENT_ID, VALID_USER_EVENT)
+    result = deser(data, _ctx())
+    assert isinstance(result, UserEvent)
+    assert result.userId == "abc-123"
+    assert result.country == "FR"
+
+
+def test_from_dict_absent_returns_dict(mock_registry: respx.MockRouter) -> None:
+    """Absent from_dict returns plain dict [FR-008]."""
+    client = _make_client(mock_registry)
+    deser = AvroDeserializer(registry_client=client)
+    data = make_confluent_bytes(CONTENT_ID, VALID_USER_EVENT)
+    result = deser(data, _ctx())
+    assert isinstance(result, dict)
+    assert result == VALID_USER_EVENT
+
+
+def test_from_dict_error_wrapped(mock_registry: respx.MockRouter) -> None:
+    """from_dict exception wrapped as DeserializationError with cause [FR-009]."""
+
+    def bad_hook(d: dict[str, Any], ctx: SerializationContext) -> Any:
+        raise RuntimeError("hook failed")
+
+    client = _make_client(mock_registry)
+    deser = AvroDeserializer(registry_client=client, from_dict=bad_hook)
+    data = make_confluent_bytes(CONTENT_ID, VALID_USER_EVENT)
+    with pytest.raises(DeserializationError, match="from_dict") as exc_info:
+        deser(data, _ctx())
+    assert isinstance(exc_info.value.__cause__, RuntimeError)
