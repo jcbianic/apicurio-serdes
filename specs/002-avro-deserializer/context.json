@@ -1,0 +1,8 @@
+{
+  "testify": {
+    "assertion_hash": "ef249cdc38ed109e0fbe282eb43ebf9fbe9ff95b050d1748d63efa38cdab1772",
+    "generated_at": "2026-03-06T20:37:56Z",
+    "features_dir": "specs/002-avro-deserializer/tests/features",
+    "file_count": 4
+  }
+}

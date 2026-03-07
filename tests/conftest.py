@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import io
 import json
+import struct
 from collections.abc import Generator
 from typing import Any
+
+import fastavro
 
 import pytest
 import respx
@@ -82,11 +86,76 @@ def _not_found_route(
     )
 
 
+def _id_schema_route(
+    router: respx.MockRouter,
+    id_type: str,
+    id_value: int,
+    *,
+    schema: dict[str, Any] = USER_EVENT_SCHEMA_JSON,
+) -> respx.Route:
+    """Register a mock route for an ID-based schema lookup (globalId/contentId)."""
+    url = f"{REGISTRY_URL}/ids/{id_type}s/{id_value}"
+    return router.get(url).mock(
+        return_value=Response(200, content=json.dumps(schema).encode())
+    )
+
+
+def _id_not_found_route(
+    router: respx.MockRouter,
+    id_type: str,
+    id_value: int,
+) -> respx.Route:
+    """Register a mock 404 route for an ID-based schema lookup."""
+    url = f"{REGISTRY_URL}/ids/{id_type}s/{id_value}"
+    return router.get(url).mock(
+        return_value=Response(
+            404,
+            json={
+                "error_code": 404,
+                "message": f"No schema with {id_type} '{id_value}' found.",
+            },
+        )
+    )
+
+
+def make_confluent_bytes(
+    schema_id: int,
+    data: dict[str, Any],
+    schema: dict[str, Any] | None = None,
+) -> bytes:
+    """Build Confluent wire format bytes: 0x00 + 4-byte ID + Avro payload."""
+    if schema is None:
+        schema = USER_EVENT_SCHEMA_JSON
+    parsed = fastavro.parse_schema(json.loads(json.dumps(schema)))
+    buf = io.BytesIO()
+    fastavro.schemaless_writer(buf, parsed, data)
+    return b"\x00" + struct.pack(">I", schema_id) + buf.getvalue()
+
+
 @pytest.fixture()
 def mock_registry() -> Generator[respx.MockRouter, None, None]:
     """Provide a started respx mock router for the registry."""
     with respx.mock(assert_all_called=False) as router:
         yield router
+
+
+# ── Shared Background step (wire_format.feature — serializer + deserializer) ──
+
+
+@given(
+    parsers.cfparse(
+        "a configured ApicurioRegistryClient pointing at a registry that returns"
+        ' globalId {global_id:d} and contentId {content_id:d} for artifact "{artifact_id}"'
+    ),
+    target_fixture="registry_client",
+)
+def given_client_with_global_and_content_ids(
+    mock_registry: respx.MockRouter, global_id: int, content_id: int, artifact_id: str
+) -> ApicurioRegistryClient:
+    _schema_route(mock_registry, artifact_id, global_id=global_id, content_id=content_id)
+    _id_schema_route(mock_registry, "globalId", global_id)
+    _id_schema_route(mock_registry, "contentId", content_id)
+    return ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
 
 # ── Background step definitions (avro_serialization.feature) ──

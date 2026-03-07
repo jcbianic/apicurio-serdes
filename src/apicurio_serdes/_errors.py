@@ -4,12 +4,17 @@ from __future__ import annotations
 
 
 class SchemaNotFoundError(Exception):
-    """Raised when an artifact_id does not exist in the registry.
+    """Raised when an artifact or schema ID does not exist in the registry.
 
     Attributes:
-        group_id: The group that was searched.
-        artifact_id: The artifact that was not found.
+        group_id: The group that was searched (artifact-based lookups).
+        artifact_id: The artifact that was not found (artifact-based lookups).
+        id_type: The ID type that was searched ("globalId" or "contentId").
+        id_value: The numeric ID that was not found.
     """
+
+    id_type: str
+    id_value: int
 
     def __init__(self, group_id: str, artifact_id: str) -> None:
         self.group_id = group_id
@@ -17,6 +22,41 @@ class SchemaNotFoundError(Exception):
         super().__init__(
             f"Schema not found: artifact '{artifact_id}' in group '{group_id}'"
         )
+
+    @classmethod
+    def from_id(cls, id_type: str, id_value: int) -> SchemaNotFoundError:
+        """Create a SchemaNotFoundError for an ID-based lookup failure.
+
+        Args:
+            id_type: "globalId" or "contentId".
+            id_value: The numeric identifier that was not found.
+
+        Returns:
+            A SchemaNotFoundError with id_type and id_value attributes set.
+        """
+        err = cls.__new__(cls)
+        err.id_type = id_type
+        err.id_value = id_value
+        Exception.__init__(err, f"Schema not found: {id_type} {id_value}")
+        return err
+
+
+class DeserializationError(Exception):
+    """Raised when deserialization fails (FR-003, FR-004, FR-009, FR-011).
+
+    Covers: invalid magic byte, input too short, Avro decode failure,
+    and from_dict hook failure. When wrapping an underlying exception,
+    the original is set as __cause__ to preserve the full traceback.
+
+    Attributes:
+        cause: The original exception, if any.
+    """
+
+    def __init__(self, message: str, cause: Exception | None = None) -> None:
+        self.cause = cause
+        super().__init__(message)
+        if cause is not None:
+            self.__cause__ = cause
 
 
 class SerializationError(Exception):
