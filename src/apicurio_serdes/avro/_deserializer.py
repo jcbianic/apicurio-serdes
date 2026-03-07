@@ -99,8 +99,8 @@ class AvroDeserializer:
 
         # FR-011: decode Avro payload
         try:
-            result: dict[str, Any] = fastavro.schemaless_reader(
-                io.BytesIO(data[5:]), parsed_schema
+            result: Any = fastavro.schemaless_reader(
+                io.BytesIO(data[5:]), parsed_schema, parsed_schema
             )
         except Exception as exc:
             raise DeserializationError(

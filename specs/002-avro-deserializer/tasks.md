@@ -75,13 +75,13 @@
 
 ### Tests (RED first)
 
-- [ ] T016 [P] [US2] Write BDD step definitions for schema_caching.feature scenarios in tests/features/test_schema_caching.py [TS-010, TS-011, TS-012]
+- [x] T016 [P] [US2] Write BDD step definitions for schema_caching.feature scenarios in tests/features/test_schema_caching.py [TS-010, TS-011, TS-012]
 - [x] T017 [P] [US2] Write BDD step definition for wire_format.feature globalId scenario in tests/features/test_wire_format.py [TS-017]
 
 ### Implementation
 
 - [x] T018 [US2] Implement _parsed_cache in AvroDeserializer for fastavro parsed schema caching in src/apicurio_serdes/avro/_deserializer.py (depends on T013) [FR-007, NFR-001]
-- [ ] T019 [US2] Write thread-safety test for concurrent deserialization with same schema ID in tests/test_deserializer.py [TS-012, NFR-001]
+- [x] T019 [US2] Write thread-safety test for concurrent deserialization with same schema ID in tests/test_deserializer.py [TS-012, NFR-001]
 
 **Checkpoint**: US2 complete — sequential caching, multi-schema caching, and thread safety all GREEN.
 
@@ -95,8 +95,8 @@
 
 ### Tests (RED first)
 
-- [ ] T020 [P] [US3] Write BDD step definitions for from_dict_hook.feature scenarios in tests/features/test_from_dict_hook.py [TS-013, TS-014, TS-015]
-- [ ] T021 [P] [US3] Write unit tests for from_dict hook in tests/test_deserializer.py (callable applied, absent callable returns dict, exception wrapping) [FR-008, FR-009]
+- [x] T020 [P] [US3] Write BDD step definitions for from_dict_hook.feature scenarios in tests/features/test_from_dict_hook.py [TS-013, TS-014, TS-015]
+- [x] T021 [P] [US3] Write unit tests for from_dict hook in tests/test_deserializer.py (callable applied, absent callable returns dict, exception wrapping) [FR-008, FR-009]
 
 ### Implementation
 
@@ -110,13 +110,13 @@
 
 **Purpose**: Integration validation, coverage gate, documentation
 
-- [ ] T023 Run full round-trip integration test (serialize + deserialize) and verify SC-002, SC-005
-- [ ] T024 Run 100% line + branch coverage gate and fix any gaps
-- [ ] T025 Run mypy strict type checking and fix any annotation gaps
-- [ ] T026 [P] Verify API naming matches confluent-kafka conventions (SC-004 — side-by-side comparison)
-- [ ] T027 [P] [DOCS] Update docs/user-guide/ with deserializer usage, round-trip example, and error handling (per Constitution Development Workflow)
-- [ ] T028 [P] [DOCS] Ensure all public API docstrings are complete and current for AvroDeserializer, DeserializationError, new client methods
-- [ ] T029 Run quickstart.md validation — execute all code examples and verify output
+- [x] T023 Run full round-trip integration test (serialize + deserialize) and verify SC-002, SC-005
+- [x] T024 Run 100% line + branch coverage gate and fix any gaps
+- [x] T025 Run mypy strict type checking and fix any annotation gaps
+- [x] T026 [P] Verify API naming matches confluent-kafka conventions (SC-004 — side-by-side comparison)
+- [x] T027 [P] [DOCS] Update docs/user-guide/ with deserializer usage, round-trip example, and error handling (per Constitution Development Workflow)
+- [x] T028 [P] [DOCS] Ensure all public API docstrings are complete and current for AvroDeserializer, DeserializationError, new client methods
+- [x] T029 Run quickstart.md validation — execute all code examples and verify output
 
 ---
 
