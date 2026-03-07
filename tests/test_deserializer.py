@@ -1,8 +1,9 @@
-"""Unit tests for AvroDeserializer [T012, FR-001 through FR-012]."""
+"""Unit tests for AvroDeserializer [T012, T019, FR-001 through FR-012]."""
 
 from __future__ import annotations
 
 import struct
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 import pytest
@@ -139,3 +140,26 @@ def test_call_network_error(mock_registry: respx.MockRouter) -> None:
     data = make_confluent_bytes(CONTENT_ID, VALID_USER_EVENT)
     with pytest.raises(RegistryConnectionError):
         deser(data, _ctx())
+
+
+# ── T019: Thread safety ──
+
+
+def test_concurrent_deserialization_single_http_call(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """Concurrent deserialization with same schema ID triggers exactly 1 HTTP call [TS-012, NFR-001]."""
+    route = _id_schema_route(mock_registry, "contentId", CONTENT_ID)
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    deser = AvroDeserializer(registry_client=client)
+    data = make_confluent_bytes(CONTENT_ID, VALID_USER_EVENT)
+    ctx = SerializationContext(topic="concurrent", field=MessageField.VALUE)
+
+    def _call(_: int) -> dict[str, Any]:
+        return deser(data, ctx)  # type: ignore[return-value]
+
+    with ThreadPoolExecutor(max_workers=20) as pool:
+        results = list(pool.map(_call, range(20)))
+
+    assert all(r == VALID_USER_EVENT for r in results)
+    assert route.call_count == 1

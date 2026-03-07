@@ -59,9 +59,9 @@
 
 ### Implementation
 
-- [ ] T013 [US1] Implement AvroDeserializer in src/apicurio_serdes/avro/_deserializer.py (depends on T006, T007, T008, T009) [FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, FR-011]
-- [ ] T014 [US1] Re-export AvroDeserializer from src/apicurio_serdes/avro/__init__.py
-- [ ] T015 [US1] Export DeserializationError from src/apicurio_serdes/_errors.py (verify public import path)
+- [x] T013 [US1] Implement AvroDeserializer in src/apicurio_serdes/avro/_deserializer.py (depends on T006, T007, T008, T009) [FR-001, FR-002, FR-003, FR-004, FR-005, FR-006, FR-011]
+- [x] T014 [US1] Re-export AvroDeserializer from src/apicurio_serdes/avro/__init__.py
+- [x] T015 [US1] Export DeserializationError from src/apicurio_serdes/_errors.py (verify public import path)
 
 **Checkpoint**: US1 complete — valid deserialization, all error paths, wire format contract, round-trip test all GREEN.
 
@@ -76,11 +76,11 @@
 ### Tests (RED first)
 
 - [ ] T016 [P] [US2] Write BDD step definitions for schema_caching.feature scenarios in tests/features/test_schema_caching.py [TS-010, TS-011, TS-012]
-- [ ] T017 [P] [US2] Write BDD step definition for wire_format.feature globalId scenario in tests/features/test_wire_format.py [TS-017]
+- [x] T017 [P] [US2] Write BDD step definition for wire_format.feature globalId scenario in tests/features/test_wire_format.py [TS-017]
 
 ### Implementation
 
-- [ ] T018 [US2] Implement _parsed_cache in AvroDeserializer for fastavro parsed schema caching in src/apicurio_serdes/avro/_deserializer.py (depends on T013) [FR-007, NFR-001]
+- [x] T018 [US2] Implement _parsed_cache in AvroDeserializer for fastavro parsed schema caching in src/apicurio_serdes/avro/_deserializer.py (depends on T013) [FR-007, NFR-001]
 - [ ] T019 [US2] Write thread-safety test for concurrent deserialization with same schema ID in tests/test_deserializer.py [TS-012, NFR-001]
 
 **Checkpoint**: US2 complete — sequential caching, multi-schema caching, and thread safety all GREEN.
@@ -100,7 +100,7 @@
 
 ### Implementation
 
-- [ ] T022 [US3] Implement from_dict hook logic in AvroDeserializer.__call__ in src/apicurio_serdes/avro/_deserializer.py (depends on T013) [FR-008, FR-009]
+- [x] T022 [US3] Implement from_dict hook logic in AvroDeserializer.__call__ in src/apicurio_serdes/avro/_deserializer.py (depends on T013) [FR-008, FR-009]
 
 **Checkpoint**: US3 complete — from_dict applied, identity default, exception wrapping all GREEN.
 
