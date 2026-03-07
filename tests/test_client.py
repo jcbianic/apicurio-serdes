@@ -397,3 +397,33 @@ def test_double_check_locking_cache_hit(mock_registry: respx.MockRouter) -> None
     client._schema_cache = _RaceDict()  # type: ignore[assignment]
     result = client.get_schema("Race")
     assert result is cached
+
+
+def test_id_cache_double_check_locking(mock_registry: respx.MockRouter) -> None:
+    """Exercise the double-checked locking return path for _id_cache (line 156).
+
+    Simulates a race where another thread populates the ID cache between
+    the fast-path check and the lock-guarded check.
+    """
+    _id_schema_route(mock_registry, "contentId", 42)
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+
+    cached_schema: dict[str, Any] = {"type": "record", "name": "X", "fields": []}
+    cache_key = ("contentId", 42)
+    check_count: dict[str, int] = {"n": 0}
+
+    class _RaceDict(dict[tuple[str, int], Any]):
+        """Dict that misses the first __contains__ then simulates a race fill."""
+
+        def __contains__(self, key: object) -> bool:
+            if key == cache_key:
+                check_count["n"] += 1
+                if check_count["n"] == 1:
+                    return False  # fast-path miss
+                self[cache_key] = cached_schema  # type: ignore[index]
+                return True
+            return super().__contains__(key)
+
+    client._id_cache = _RaceDict()  # type: ignore[assignment]
+    result = client.get_schema_by_content_id(42)
+    assert result is cached_schema
