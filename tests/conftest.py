@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
+import io
 import json
+import struct
 from collections.abc import Generator
 from typing import Any
+
+import fastavro
 
 import pytest
 import respx
@@ -80,6 +84,52 @@ def _not_found_route(
             },
         )
     )
+
+
+def _id_schema_route(
+    router: respx.MockRouter,
+    id_type: str,
+    id_value: int,
+    *,
+    schema: dict[str, Any] = USER_EVENT_SCHEMA_JSON,
+) -> respx.Route:
+    """Register a mock route for an ID-based schema lookup (globalId/contentId)."""
+    url = f"{REGISTRY_URL}/ids/{id_type}s/{id_value}"
+    return router.get(url).mock(
+        return_value=Response(200, content=json.dumps(schema).encode())
+    )
+
+
+def _id_not_found_route(
+    router: respx.MockRouter,
+    id_type: str,
+    id_value: int,
+) -> respx.Route:
+    """Register a mock 404 route for an ID-based schema lookup."""
+    url = f"{REGISTRY_URL}/ids/{id_type}s/{id_value}"
+    return router.get(url).mock(
+        return_value=Response(
+            404,
+            json={
+                "error_code": 404,
+                "message": f"No schema with {id_type} '{id_value}' found.",
+            },
+        )
+    )
+
+
+def make_confluent_bytes(
+    schema_id: int,
+    data: dict[str, Any],
+    schema: dict[str, Any] | None = None,
+) -> bytes:
+    """Build Confluent wire format bytes: 0x00 + 4-byte ID + Avro payload."""
+    if schema is None:
+        schema = USER_EVENT_SCHEMA_JSON
+    parsed = fastavro.parse_schema(json.loads(json.dumps(schema)))
+    buf = io.BytesIO()
+    fastavro.schemaless_writer(buf, parsed, data)
+    return b"\x00" + struct.pack(">I", schema_id) + buf.getvalue()
 
 
 @pytest.fixture()
