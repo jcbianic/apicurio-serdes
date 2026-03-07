@@ -13,6 +13,9 @@ class SchemaNotFoundError(Exception):
         id_value: The numeric ID that was not found.
     """
 
+    id_type: str
+    id_value: int
+
     def __init__(self, group_id: str, artifact_id: str) -> None:
         self.group_id = group_id
         self.artifact_id = artifact_id
