@@ -19,7 +19,7 @@
 
 **Purpose**: BDD infrastructure for .feature file execution
 
-- [ ] T001 Add pytest-bdd step definition scaffolding in tests/features/ and configure pytest to discover .feature files from specs/002-avro-deserializer/tests/features/
+- [x] T001 Add pytest-bdd step definition scaffolding in tests/features/ and configure pytest to discover .feature files from specs/002-avro-deserializer/tests/features/
 
 ---
 
@@ -29,17 +29,17 @@
 
 ### Tests (RED first)
 
-- [ ] T002 [P] Write tests for DeserializationError construction, message, and cause chaining in tests/test_errors.py [TS-003, TS-005, TS-006, TS-007, TS-015]
-- [ ] T003 [P] Write tests for SchemaNotFoundError.from_id classmethod (message format, id_type/id_value attributes) in tests/test_errors.py [TS-004]
-- [ ] T004 [P] Write tests for ApicurioRegistryClient.get_schema_by_global_id (cache miss, cache hit, 404, network error) in tests/test_client.py [TS-017, FR-007, FR-010, FR-012]
-- [ ] T005 [P] Write tests for ApicurioRegistryClient.get_schema_by_content_id (cache miss, cache hit, 404, network error) in tests/test_client.py [TS-016, FR-007, FR-010, FR-012]
+- [x] T002 [P] Write tests for DeserializationError construction, message, and cause chaining in tests/test_errors.py [TS-003, TS-005, TS-006, TS-007, TS-015]
+- [x] T003 [P] Write tests for SchemaNotFoundError.from_id classmethod (message format, id_type/id_value attributes) in tests/test_errors.py [TS-004]
+- [x] T004 [P] Write tests for ApicurioRegistryClient.get_schema_by_global_id (cache miss, cache hit, 404, network error) in tests/test_client.py [TS-017, FR-007, FR-010, FR-012]
+- [x] T005 [P] Write tests for ApicurioRegistryClient.get_schema_by_content_id (cache miss, cache hit, 404, network error) in tests/test_client.py [TS-016, FR-007, FR-010, FR-012]
 
 ### Implementation (GREEN)
 
-- [ ] T006 [P] Implement DeserializationError in src/apicurio_serdes/_errors.py [FR-003, FR-004, FR-009, FR-011]
-- [ ] T007 [P] Implement SchemaNotFoundError.from_id classmethod in src/apicurio_serdes/_errors.py [FR-010]
-- [ ] T008 Add _id_cache dict and get_schema_by_global_id method to ApicurioRegistryClient in src/apicurio_serdes/_client.py [FR-007, FR-010, FR-012]
-- [ ] T009 Add get_schema_by_content_id method to ApicurioRegistryClient in src/apicurio_serdes/_client.py (depends on T008 for _id_cache) [FR-007, FR-010, FR-012]
+- [x] T006 [P] Implement DeserializationError in src/apicurio_serdes/_errors.py [FR-003, FR-004, FR-009, FR-011]
+- [x] T007 [P] Implement SchemaNotFoundError.from_id classmethod in src/apicurio_serdes/_errors.py [FR-010]
+- [x] T008 Add _id_cache dict and get_schema_by_global_id method to ApicurioRegistryClient in src/apicurio_serdes/_client.py [FR-007, FR-010, FR-012]
+- [x] T009 Add get_schema_by_content_id method to ApicurioRegistryClient in src/apicurio_serdes/_client.py (depends on T008 for _id_cache) [FR-007, FR-010, FR-012]
 
 **Checkpoint**: All foundational tests GREEN. Error classes and client ID-based lookups verified.
 
@@ -53,9 +53,9 @@
 
 ### Tests (RED first)
 
-- [ ] T010 [P] [US1] Write BDD step definitions for avro_deserialization.feature scenarios in tests/features/test_avro_deserialization.py [TS-001, TS-002, TS-003, TS-004, TS-005, TS-006, TS-007, TS-008, TS-009]
-- [ ] T011 [P] [US1] Write BDD step definitions for wire_format.feature contract scenarios (default contentId, callable interface) in tests/features/test_wire_format.py [TS-016, TS-018]
-- [ ] T012 [P] [US1] Write unit tests for AvroDeserializer.__init__ and __call__ in tests/test_deserializer.py covering: valid decode, bad magic byte, short input, unknown ID, corrupt payload [FR-001, FR-002, FR-003, FR-004, FR-005, FR-011]
+- [x] T010 [P] [US1] Write BDD step definitions for avro_deserialization.feature scenarios in tests/features/test_avro_deserialization.py [TS-001, TS-002, TS-003, TS-004, TS-005, TS-006, TS-007, TS-008, TS-009]
+- [x] T011 [P] [US1] Write BDD step definitions for wire_format.feature contract scenarios (default contentId, callable interface) in tests/features/test_wire_format.py [TS-016, TS-018]
+- [x] T012 [P] [US1] Write unit tests for AvroDeserializer.__init__ and __call__ in tests/test_deserializer.py covering: valid decode, bad magic byte, short input, unknown ID, corrupt payload [FR-001, FR-002, FR-003, FR-004, FR-005, FR-011]
 
 ### Implementation
 

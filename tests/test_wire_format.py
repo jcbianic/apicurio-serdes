@@ -44,23 +44,6 @@ def test_ts018_callable_interface() -> None:
     """TS-018."""
 
 
-# ── Background steps (wire_format.feature) ──
-
-
-@given(
-    parsers.cfparse(
-        'a configured ApicurioRegistryClient pointing at a registry that returns globalId {global_id:d} and contentId {content_id:d} for artifact "{artifact_id}"'
-    ),
-    target_fixture="registry_client",
-)
-def given_client_with_ids(
-    mock_registry: respx.MockRouter, global_id: int, content_id: int, artifact_id: str
-) -> ApicurioRegistryClient:
-    _schema_route(
-        mock_registry, artifact_id, global_id=global_id, content_id=content_id
-    )
-    return ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
-
 
 @given(
     parsers.cfparse('a valid dict conforming to the "{artifact_id}" schema'),

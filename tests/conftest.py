@@ -139,6 +139,25 @@ def mock_registry() -> Generator[respx.MockRouter, None, None]:
         yield router
 
 
+# ── Shared Background step (wire_format.feature — serializer + deserializer) ──
+
+
+@given(
+    parsers.cfparse(
+        "a configured ApicurioRegistryClient pointing at a registry that returns"
+        ' globalId {global_id:d} and contentId {content_id:d} for artifact "{artifact_id}"'
+    ),
+    target_fixture="registry_client",
+)
+def given_client_with_global_and_content_ids(
+    mock_registry: respx.MockRouter, global_id: int, content_id: int, artifact_id: str
+) -> ApicurioRegistryClient:
+    _schema_route(mock_registry, artifact_id, global_id=global_id, content_id=content_id)
+    _id_schema_route(mock_registry, "globalId", global_id)
+    _id_schema_route(mock_registry, "contentId", content_id)
+    return ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+
+
 # ── Background step definitions (avro_serialization.feature) ──
 
 
