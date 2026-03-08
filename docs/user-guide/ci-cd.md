@@ -12,7 +12,7 @@ configuration:
 |----------|---------|---------|
 | `ci.yml` | Push to main, pull requests | Quality gates (lint, typecheck, test, docs) |
 | `publish.yml` | GitHub Release published | Package publication to TestPyPI → PyPI |
-| `security.yml` | Pull requests, weekly schedule | Vulnerability scanning and CodeQL analysis |
+| `security.yml` | Push to main, pull requests, weekly schedule | Vulnerability scanning and CodeQL analysis |
 | `dependabot.yml` | Daily (pip), weekly (Actions) | Automated dependency update PRs |
 
 ## CI Workflow
@@ -77,7 +77,8 @@ Create two GitHub environments in the repository settings: `testpypi` and `pypi`
 
 ## Security Workflow
 
-Runs on every PR to `main` and on a weekly schedule (Monday 06:00 UTC):
+Runs on every push to `main`, every PR to `main`, and on a weekly schedule
+(Monday 06:00 UTC):
 
 - **dependency-audit** — Runs `pip-audit` to scan for known vulnerabilities in
   the dependency tree

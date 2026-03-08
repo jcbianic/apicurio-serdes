@@ -22,7 +22,7 @@ class TestCodecovUpload:
         ]
         assert len(codecov_steps) >= 1, "Test job must have a codecov-action step"
 
-    def test_codecov_action_is_pinned(self, ci_workflow: dict[str, Any]) -> None:
+    def test_codecov_action_is_sha_pinned(self, ci_workflow: dict[str, Any]) -> None:
         test_job = ci_workflow["jobs"]["test"]
         codecov_steps = [
             s
@@ -30,8 +30,9 @@ class TestCodecovUpload:
             if s.get("uses", "").startswith("codecov/codecov-action")
         ]
         uses = codecov_steps[0]["uses"]
-        assert uses.startswith("codecov/codecov-action@"), (
-            f"Codecov action must be pinned: {uses}"
+        ref = uses.split("@", 1)[1]
+        assert len(ref) == 40 and all(c in "0123456789abcdef" for c in ref), (
+            f"Codecov action must be pinned to a commit SHA, got: {uses}"
         )
 
     def test_codecov_uploads_coverage_xml(
