@@ -38,10 +38,10 @@ Test tasks for all three user stories are grouped in Phase 3 to maintain TDD dis
 
 ### Tests for US1 + US5 + US6
 
-- [ ] T003 [P] [US1] Write YAML validation tests for ci.yml triggers, lint job, typecheck job, and test job structure in tests/ci/test_ci_workflow.py [TS-001, TS-002, TS-003, TS-004, TS-005] (depends on T001)
-- [ ] T004 [P] [US1] Write YAML validation tests for ci.yml coverage artifact upload configuration in tests/ci/test_ci_artifacts.py [TS-006] (depends on T001)
-- [ ] T005 [P] [US5] Write YAML validation tests for ci.yml docs job using `uv run mkdocs build --strict` in tests/ci/test_docs_job.py [TS-023, TS-024] (depends on T001)
-- [ ] T006 [P] [US6] Write YAML validation tests for ci.yml test matrix covering Python 3.10, 3.11, 3.12, 3.13 in tests/ci/test_matrix.py [TS-025, TS-026] (depends on T001)
+- [x] T003 [P] [US1] Write YAML validation tests for ci.yml triggers, lint job, typecheck job, and test job structure in tests/ci/test_ci_workflow.py [TS-001, TS-002, TS-003, TS-004, TS-005] (depends on T001)
+- [x] T004 [P] [US1] Write YAML validation tests for ci.yml coverage artifact upload configuration in tests/ci/test_ci_artifacts.py [TS-006] (depends on T001)
+- [x] T005 [P] [US5] Write YAML validation tests for ci.yml docs job using `uv run mkdocs build --strict` in tests/ci/test_docs_job.py [TS-023, TS-024] (depends on T001)
+- [x] T006 [P] [US6] Write YAML validation tests for ci.yml test matrix covering Python 3.10, 3.11, 3.12, 3.13 in tests/ci/test_matrix.py [TS-025, TS-026] (depends on T001)
 
 ### Implementation for US1
 
