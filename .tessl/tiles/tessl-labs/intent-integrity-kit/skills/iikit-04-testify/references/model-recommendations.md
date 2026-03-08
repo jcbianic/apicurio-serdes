@@ -1,7 +1,7 @@
 # Model Recommendations by Phase
 
-**Expires**: 2026-03-06
-**Last researched**: 2026-02-20
+**Expires**: 2026-03-20
+**Last researched**: 2026-03-06
 
 When this file is expired, the agent MUST do a fresh web search for current model rankings (speed, reasoning, cost) and update the recommendations and expiration date (+2 weeks).
 

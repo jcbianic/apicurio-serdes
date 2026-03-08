@@ -4,10 +4,13 @@
     "nodeClassifications": {
       "apicurio_serdes": "server",
       "AvroSerializer": "server",
+      "AsyncApicurioRegistryClient": "client",
       "ApicurioRegistryClient": "client",
       "fastavro": "server",
+      "httpx.AsyncClient": "client",
       "httpx.Client": "client",
-      "Apicurio Registry v3 API": "external"
+      "Apicurio Registry v3 API": "external",
+      "_schema_cache / _lock": "storage"
     }
   },
   "checklist_reviewed_at": "2026-03-08T13:23:22Z"

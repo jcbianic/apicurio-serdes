@@ -1,0 +1,90 @@
+site_name: apicurio-serdes
+site_description: Python serialization library for Apicurio Registry native v3 API
+
+theme:
+  name: material
+  language: en
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - navigation.footer
+    - content.code.copy
+    - content.tabs.link
+    - search.highlight
+    - search.suggest
+    - toc.integrate
+
+plugins:
+  - autorefs:
+      resolve_closest: true
+  - search:
+      lang:
+        - en
+        - fr
+      separator: '[\s\u00a0\-,:!=\[\]()"/]+|(?!\b)(?=[A-Z][a-z])|\.(?!\d)|&[lg]t;'
+  - i18n:
+      docs_structure: suffix
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: fr
+          name: "Français"
+          build: true
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            docstring_style: google
+            show_source: false
+            show_root_heading: true
+            show_symbol_type_heading: true
+            separate_signature: true
+            signature_crossrefs: true
+            members_order: source
+
+extra:
+  alternate:
+    - name: English
+      link: /
+      lang: en
+    - name: "Français"
+      link: /fr/
+      lang: fr
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Installation: getting-started/installation.md
+      - Quickstart: getting-started/quickstart.md
+  - User Guide:
+      - Avro Serializer: user-guide/avro-serializer.md
+  - Concepts:
+      - Wire Format: concepts/wire-format.md
+      - Schema Caching: concepts/schema-caching.md
+      - Addressing Model: concepts/addressing-model.md
+  - How-to Guides:
+      - Custom Serialization: how-to/custom-serialization.md
+      - Identifier Selection: how-to/identifier-selection.md
+      - Error Handling: how-to/error-handling.md
+  - Migration:
+      - From confluent-kafka: migration/from-confluent-kafka.md
+  - API Reference: api-reference/index.md
+  - Changelog: changelog.md
