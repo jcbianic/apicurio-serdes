@@ -66,8 +66,8 @@ Test tasks for all three user stories are grouped in Phase 3 to maintain TDD dis
 
 ### Implementation for US2
 
-- [ ] T010 [US2] Update .github/workflows/ci.yml test job to add upload-artifact (coverage XML) and codecov/codecov-action@v5 steps [TS-007, TS-008, TS-010] (depends on T007, T008)
-- [ ] T011 [P] [US2] Add GitHub Actions CI status badge and Codecov coverage percentage badge to README.md [TS-009] (depends on T009)
+- [x] T010 [US2] Update .github/workflows/ci.yml test job to add upload-artifact (coverage XML) and codecov/codecov-action@v5 steps [TS-007, TS-008, TS-010] (depends on T007, T008)
+- [x] T011 [P] [US2] Add GitHub Actions CI status badge and Codecov coverage percentage badge to README.md [TS-009] (depends on T009)
 
 **Checkpoint**: CI run uploads coverage to Codecov; both badges render correctly in README
 
@@ -87,7 +87,7 @@ Test tasks for all three user stories are grouped in Phase 3 to maintain TDD dis
 
 ### Implementation for US3
 
-- [ ] T013 [US3] Create .github/workflows/publish.yml with validate-version, build, publish-testpypi, validate-testpypi, and publish-pypi jobs using pypa/gh-action-pypi-publish@v1 with OIDC trusted publishing per specs/005-ci-cd-pipeline/contracts/publish-workflow.md [TS-011, TS-012, TS-013, TS-014, TS-015, TS-016, TS-017] (depends on T012)
+- [x] T013 [US3] Create .github/workflows/publish.yml with validate-version, build, publish-testpypi, validate-testpypi, and publish-pypi jobs using pypa/gh-action-pypi-publish@v1 with OIDC trusted publishing per specs/005-ci-cd-pipeline/contracts/publish-workflow.md [TS-011, TS-012, TS-013, TS-014, TS-015, TS-016, TS-017] (depends on T012)
 
 **Checkpoint**: publish.yml sequential job chain passes YAML validation; version mismatch check and OIDC configuration confirmed
 
@@ -108,8 +108,8 @@ Test tasks for all three user stories are grouped in Phase 3 to maintain TDD dis
 
 ### Implementation for US4
 
-- [ ] T016 [US4] Create .github/workflows/security.yml with dependency-audit (pip-audit) and codeql jobs per specs/005-ci-cd-pipeline/contracts/security-workflow.md [TS-018, TS-019, TS-020, TS-021, TS-022] (depends on T002, T014)
-- [ ] T017 [P] [US4] Create .github/dependabot.yml with daily pip package-ecosystem and weekly github-actions package-ecosystem schedules [TS-019] (depends on T015)
+- [x] T016 [US4] Create .github/workflows/security.yml with dependency-audit (pip-audit) and codeql jobs per specs/005-ci-cd-pipeline/contracts/security-workflow.md [TS-018, TS-019, TS-020, TS-021, TS-022] (depends on T002, T014)
+- [x] T017 [P] [US4] Create .github/dependabot.yml with daily pip package-ecosystem and weekly github-actions package-ecosystem schedules [TS-019] (depends on T015)
 
 **Checkpoint**: security.yml triggers on PRs and weekly schedule; dependabot.yml auto-PR configuration confirmed by YAML tests
 
