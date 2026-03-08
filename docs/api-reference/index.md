@@ -1,5 +1,7 @@
 # API Reference
 
+Complete reference for all public classes, methods, and exceptions in `apicurio-serdes`.
+
 ## Core
 
 ### ApicurioRegistryClient
@@ -22,8 +24,14 @@
 
 ## Exceptions
 
+### SchemaNotFoundError
+
 ::: apicurio_serdes._errors.SchemaNotFoundError
 
+### RegistryConnectionError
+
 ::: apicurio_serdes._errors.RegistryConnectionError
+
+### SerializationError
 
 ::: apicurio_serdes._errors.SerializationError
