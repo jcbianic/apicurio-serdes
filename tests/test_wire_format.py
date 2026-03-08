@@ -141,3 +141,109 @@ def then_is_bytes(result_bytes: bytes) -> None:
 @then("the return value begins with magic byte 0x00")
 def then_begins_with_magic(result_bytes: bytes) -> None:
     assert result_bytes[0:1] == b"\x00"
+
+
+# ── KAFKA_HEADERS byte-level unit tests ──
+
+from apicurio_serdes.serialization import SerializedMessage, WireFormat
+from tests.conftest import CONTENT_ID, GLOBAL_ID
+
+
+def _serialize_kafka_headers(
+    mock_registry: respx.MockRouter,
+    *,
+    use_id: str = "globalId",
+    field: MessageField = MessageField.VALUE,
+) -> SerializedMessage:
+    """Helper: serialize VALID_USER_EVENT with KAFKA_HEADERS wire format."""
+    _schema_route(mock_registry, "UserEvent")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    serializer = AvroSerializer(
+        registry_client=client,
+        artifact_id="UserEvent",
+        use_id=use_id,  # type: ignore[arg-type]
+        wire_format=WireFormat.KAFKA_HEADERS,
+    )
+    ctx = SerializationContext(topic="test-topic", field=field)
+    return serializer.serialize(VALID_USER_EVENT, ctx)
+
+
+def test_kafka_headers_header_name_value_global_id(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """KAFKA_HEADERS with field=VALUE, use_id=globalId produces header key 'apicurio.value.globalId'."""
+    result = _serialize_kafka_headers(
+        mock_registry, use_id="globalId", field=MessageField.VALUE
+    )
+    assert "apicurio.value.globalId" in result.headers
+
+
+def test_kafka_headers_header_name_value_content_id(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """KAFKA_HEADERS with field=VALUE, use_id=contentId produces header key 'apicurio.value.contentId'."""
+    result = _serialize_kafka_headers(
+        mock_registry, use_id="contentId", field=MessageField.VALUE
+    )
+    assert "apicurio.value.contentId" in result.headers
+
+
+def test_kafka_headers_header_name_key_global_id(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """KAFKA_HEADERS with field=KEY, use_id=globalId produces header key 'apicurio.key.globalId'."""
+    result = _serialize_kafka_headers(
+        mock_registry, use_id="globalId", field=MessageField.KEY
+    )
+    assert "apicurio.key.globalId" in result.headers
+
+
+def test_kafka_headers_header_name_key_content_id(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """KAFKA_HEADERS with field=KEY, use_id=contentId produces header key 'apicurio.key.contentId'."""
+    result = _serialize_kafka_headers(
+        mock_registry, use_id="contentId", field=MessageField.KEY
+    )
+    assert "apicurio.key.contentId" in result.headers
+
+
+def test_kafka_headers_header_value_8byte_big_endian(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """KAFKA_HEADERS encodes globalId as 8-byte big-endian signed long."""
+    result = _serialize_kafka_headers(
+        mock_registry, use_id="globalId", field=MessageField.VALUE
+    )
+    value = result.headers["apicurio.value.globalId"]
+    assert len(value) == 8
+    assert struct.unpack(">q", value)[0] == GLOBAL_ID
+
+
+def test_kafka_headers_header_value_content_id_encoding(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """KAFKA_HEADERS encodes contentId as 8-byte big-endian signed long."""
+    result = _serialize_kafka_headers(
+        mock_registry, use_id="contentId", field=MessageField.VALUE
+    )
+    value = result.headers["apicurio.value.contentId"]
+    assert len(value) == 8
+    assert struct.unpack(">q", value)[0] == CONTENT_ID
+
+
+def test_kafka_headers_payload_no_magic_byte(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """KAFKA_HEADERS payload does not start with the confluent magic byte 0x00."""
+    result = _serialize_kafka_headers(mock_registry)
+    assert len(result.payload) > 0
+    assert result.payload[0:1] != b"\x00"
+
+
+def test_kafka_headers_exactly_one_header(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """KAFKA_HEADERS produces exactly one header entry."""
+    result = _serialize_kafka_headers(mock_registry)
+    assert len(result.headers) == 1
