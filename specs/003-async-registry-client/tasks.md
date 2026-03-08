@@ -107,7 +107,7 @@
 - [x] T015 [P] Run `mypy --strict src/apicurio_serdes/_async_client.py` and fix all type annotation gaps; add or verify complete docstrings (parameters, return values, raised exceptions) on all public symbols: AsyncApicurioRegistryClient, get_schema, aclose, __aenter__, __aexit__
 - [x] T016 [P] Run `pytest --cov-fail-under=100` and fill any line or branch coverage gaps in src/apicurio_serdes/_async_client.py
 - [x] T017 [P] [DOCS] Create docs/user-guide/async-client.md — async usage guide covering basic fetch, context manager pattern, FastAPI lifespan integration, and side-by-side sync/async comparison (per Constitution Development Workflow)
-- [ ] T018 Run quickstart.md validation — execute all code examples in specs/003-async-registry-client/quickstart.md against the implemented client and verify output
+- [x] T018 Run quickstart.md validation — execute all code examples in specs/003-async-registry-client/quickstart.md against the implemented client and verify output
 
 ---
 
