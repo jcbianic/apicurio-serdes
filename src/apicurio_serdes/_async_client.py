@@ -42,6 +42,7 @@ class AsyncApicurioRegistryClient:
         self._http_client = httpx.AsyncClient(base_url=url)
         self._schema_cache: dict[tuple[str, str], CachedSchema] = {}
         self._lock = asyncio.Lock()
+        self._closed = False
 
     async def get_schema(self, artifact_id: str) -> CachedSchema:
         """Retrieve an Avro schema by artifact ID (async).
@@ -59,8 +60,12 @@ class AsyncApicurioRegistryClient:
 
         Raises:
             SchemaNotFoundError: If the artifact does not exist (HTTP 404).
-            RegistryConnectionError: If the registry is unreachable.
+            RegistryConnectionError: If the registry is unreachable or returns
+                an unexpected HTTP status code.
+            RuntimeError: If the client has been closed.
         """
+        if self._closed:
+            raise RuntimeError("client is closed")
         cache_key = (self.group_id, artifact_id)
         if cache_key in self._schema_cache:
             return self._schema_cache[cache_key]
@@ -81,7 +86,10 @@ class AsyncApicurioRegistryClient:
 
             if response.status_code == 404:
                 raise SchemaNotFoundError(self.group_id, artifact_id)
-            response.raise_for_status()
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                raise RegistryConnectionError(self.url, exc) from exc
 
             schema: dict[str, Any] = json.loads(response.text)
             global_id = int(response.headers["X-Registry-GlobalId"])
@@ -101,6 +109,7 @@ class AsyncApicurioRegistryClient:
         Call this when the client is no longer needed and you are not
         using it as an async context manager. Safe to call multiple times.
         """
+        self._closed = True
         await self._http_client.aclose()
 
     async def __aenter__(self) -> AsyncApicurioRegistryClient:

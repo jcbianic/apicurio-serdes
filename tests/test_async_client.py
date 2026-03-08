@@ -283,18 +283,19 @@ class TestPackageExport:
 
 
 class TestUnexpectedHttpStatus:
-    """T019: Unexpected HTTP status (e.g. 500) raises httpx.HTTPStatusError."""
+    """T019: Unexpected HTTP status (e.g. 500) raises RegistryConnectionError."""
 
-    async def test_get_schema_500_raises_http_status_error(
+    async def test_get_schema_500_raises_registry_connection_error(
         self, mock_registry: respx.MockRouter
     ) -> None:
         from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+        from apicurio_serdes._errors import RegistryConnectionError
 
         url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/Broken/versions/latest/content"
         mock_registry.get(url).mock(return_value=Response(500))
         client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
-        with pytest.raises(httpx.HTTPStatusError):
+        with pytest.raises(RegistryConnectionError):
             await client.get_schema("Broken")
 
 
