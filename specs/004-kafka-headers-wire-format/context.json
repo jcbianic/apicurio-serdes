@@ -1,0 +1,8 @@
+{
+  "testify": {
+    "assertion_hash": "fc8274708bb738161bb992a9ed990196bd11de0a79abcc7d02ec42fa1c57643d",
+    "generated_at": "2026-03-08T13:30:07Z",
+    "features_dir": "specs/004-kafka-headers-wire-format/tests/features",
+    "file_count": 3
+  }
+}
