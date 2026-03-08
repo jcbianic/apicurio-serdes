@@ -54,13 +54,13 @@
 
 ### Tests (RED first)
 
-- [ ] T007 [US2] Write failing cache tests: (1) same artifact_id called twice → registry contacted exactly once; (2) different artifact_ids called sequentially → each fetched independently, no cross-contamination in tests/test_async_client.py [FR-004, SC-003]
-- [ ] T008 [P] [US2] Write failing concurrency test: two concurrent get_schema coroutines for the same uncached artifact_id → exactly 1 HTTP request (cache stampede prevention) in tests/test_async_client.py [NFR-001]
-- [ ] T009 [P] [US3] Write failing interface parity test: AsyncApicurioRegistryClient constructor accepts same parameters (url, group_id) as ApicurioRegistryClient; get_schema return type is the same CachedSchema class [FR-003, SC-002, SC-004]
+- [x] T007 [US2] Write failing cache tests: (1) same artifact_id called twice → registry contacted exactly once; (2) different artifact_ids called sequentially → each fetched independently, no cross-contamination in tests/test_async_client.py [FR-004, SC-003]
+- [x] T008 [P] [US2] Write failing concurrency test: two concurrent get_schema coroutines for the same uncached artifact_id → exactly 1 HTTP request (cache stampede prevention) in tests/test_async_client.py [NFR-001]
+- [x] T009 [P] [US3] Write failing interface parity test: AsyncApicurioRegistryClient constructor accepts same parameters (url, group_id) as ApicurioRegistryClient; get_schema return type is the same CachedSchema class [FR-003, SC-002, SC-004]
 
 ### Implementation (GREEN)
 
-- [ ] T010 [US2] Add asyncio.Lock + double-check cache pattern to get_schema in src/apicurio_serdes/_async_client.py: fast-path check → acquire lock → inner check → fetch → store [FR-004, NFR-001, D14]
+- [x] T010 [US2] Add asyncio.Lock + double-check cache pattern to get_schema in src/apicurio_serdes/_async_client.py: fast-path check → acquire lock → inner check → fetch → store [FR-004, NFR-001, D14]
 
 **Checkpoint**: US2/US3 tests GREEN — caching correct, stampede prevention verified, interface parity confirmed.
 

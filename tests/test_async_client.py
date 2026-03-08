@@ -128,3 +128,102 @@ class TestRegistryConnectionError:
             await client.get_schema("UserEvent")
 
         assert exc_info.value.url == REGISTRY_URL
+
+
+SCHEMA_B_JSON: dict[str, Any] = {
+    "type": "record",
+    "name": "SchemaB",
+    "namespace": "com.example",
+    "fields": [{"name": "id", "type": "string"}],
+}
+
+
+class TestSchemaCaching:
+    """FR-004, SC-003: Cache prevents redundant HTTP calls."""
+
+    async def test_same_artifact_called_twice_contacts_registry_once(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+
+        route = _async_schema_route(mock_registry, "UserEvent")
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+
+        result1 = await client.get_schema("UserEvent")
+        result2 = await client.get_schema("UserEvent")
+
+        assert route.call_count == 1
+        assert result1 is result2
+
+    async def test_different_artifacts_fetched_independently(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+
+        route_a = _async_schema_route(
+            mock_registry, "SchemaA", global_id=10, content_id=1
+        )
+        route_b = _async_schema_route(
+            mock_registry, "SchemaB", schema=SCHEMA_B_JSON, global_id=20, content_id=2
+        )
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+
+        result_a = await client.get_schema("SchemaA")
+        result_b = await client.get_schema("SchemaB")
+
+        assert route_a.call_count == 1
+        assert route_b.call_count == 1
+        assert result_a.schema == USER_EVENT_SCHEMA_JSON
+        assert result_b.schema == SCHEMA_B_JSON
+
+
+class TestConcurrentStampedePrevention:
+    """NFR-001: Concurrent coroutines for same artifact → exactly 1 HTTP request."""
+
+    async def test_concurrent_get_schema_single_http_request(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        import asyncio
+
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+
+        route = _async_schema_route(mock_registry, "UserEvent")
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+
+        results = await asyncio.gather(
+            *[client.get_schema("UserEvent") for _ in range(10)]
+        )
+
+        assert route.call_count == 1
+        assert all(r is results[0] for r in results)
+
+
+class TestInterfaceParity:
+    """FR-003, SC-002, SC-004: Async client mirrors sync client interface."""
+
+    def test_constructor_accepts_same_parameters(self) -> None:
+        import inspect
+
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+        from apicurio_serdes._client import ApicurioRegistryClient
+
+        sync_params = list(
+            inspect.signature(ApicurioRegistryClient.__init__).parameters.keys()
+        )
+        async_params = list(
+            inspect.signature(AsyncApicurioRegistryClient.__init__).parameters.keys()
+        )
+        assert sync_params == async_params
+
+    async def test_get_schema_returns_same_cached_schema_type(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+        from apicurio_serdes._client import CachedSchema
+
+        _async_schema_route(mock_registry, "UserEvent")
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+
+        result = await client.get_schema("UserEvent")
+
+        assert type(result) is CachedSchema
