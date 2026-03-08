@@ -102,18 +102,18 @@
 
 **CRITICAL**: This phase depends on ALL English content tasks (T006–T016) being complete. All translation tasks within this phase can run in parallel.
 
-- [ ] T017 [P] [US4] Translate `docs/index.fr.md` — French homepage matching index.en.md structure and depth — to pass [TS-010, TS-011] — depends on T006
-- [ ] T018 [P] [US4] Translate `docs/getting-started/installation.fr.md` — French installation guide — to pass [TS-011] — depends on T002
-- [ ] T019 [P] [US4] Translate `docs/getting-started/quickstart.fr.md` — French quickstart including troubleshooting section, fully functional end-to-end in French — to pass [TS-011, TS-012] — depends on T007
-- [ ] T020 [P] [US4] Translate `docs/user-guide/avro-serializer.fr.md` — French user guide — to pass [TS-011] — depends on T002
-- [ ] T021 [P] [US4] Translate `docs/concepts/wire-format.fr.md` — French wire format conceptual page — to pass [TS-011] — depends on T011
-- [ ] T022 [P] [US4] Translate `docs/concepts/schema-caching.fr.md` — French schema caching conceptual page — to pass [TS-011] — depends on T012
-- [ ] T023 [P] [US4] Translate `docs/concepts/addressing-model.fr.md` — French addressing model conceptual page — to pass [TS-011] — depends on T013
-- [ ] T024 [P] [US4] Translate `docs/how-to/custom-serialization.fr.md` — French custom serialization guide — to pass [TS-011] — depends on T014
-- [ ] T025 [P] [US4] Translate `docs/how-to/identifier-selection.fr.md` — French identifier selection guide — to pass [TS-011] — depends on T015
-- [ ] T026 [P] [US4] Translate `docs/how-to/error-handling.fr.md` — French error handling guide — to pass [TS-011] — depends on T016
-- [ ] T027 [P] [US4] Translate `docs/migration/from-confluent-kafka.fr.md` — French migration guide — to pass [TS-011] — depends on T008
-- [ ] T028 [P] [US4] Translate `docs/changelog.fr.md` — French changelog — to pass [TS-011] — depends on T002
+- [x] T017 [P] [US4] Translate `docs/index.fr.md` — French homepage matching index.en.md structure and depth — to pass [TS-010, TS-011] — depends on T006
+- [x] T018 [P] [US4] Translate `docs/getting-started/installation.fr.md` — French installation guide — to pass [TS-011] — depends on T002
+- [x] T019 [P] [US4] Translate `docs/getting-started/quickstart.fr.md` — French quickstart including troubleshooting section, fully functional end-to-end in French — to pass [TS-011, TS-012] — depends on T007
+- [x] T020 [P] [US4] Translate `docs/user-guide/avro-serializer.fr.md` — French user guide — to pass [TS-011] — depends on T002
+- [x] T021 [P] [US4] Translate `docs/concepts/wire-format.fr.md` — French wire format conceptual page — to pass [TS-011] — depends on T011
+- [x] T022 [P] [US4] Translate `docs/concepts/schema-caching.fr.md` — French schema caching conceptual page — to pass [TS-011] — depends on T012
+- [x] T023 [P] [US4] Translate `docs/concepts/addressing-model.fr.md` — French addressing model conceptual page — to pass [TS-011] — depends on T013
+- [x] T024 [P] [US4] Translate `docs/how-to/custom-serialization.fr.md` — French custom serialization guide — to pass [TS-011] — depends on T014
+- [x] T025 [P] [US4] Translate `docs/how-to/identifier-selection.fr.md` — French identifier selection guide — to pass [TS-011] — depends on T015
+- [x] T026 [P] [US4] Translate `docs/how-to/error-handling.fr.md` — French error handling guide — to pass [TS-011] — depends on T016
+- [x] T027 [P] [US4] Translate `docs/migration/from-confluent-kafka.fr.md` — French migration guide — to pass [TS-011] — depends on T008
+- [x] T028 [P] [US4] Translate `docs/changelog.fr.md` — French changelog — to pass [TS-011] — depends on T002
 
 **Checkpoint**: US4 complete — French and English page trees are structurally identical with full content parity.
 
@@ -123,10 +123,10 @@
 
 **Purpose**: End-to-end build validation, content quality gate, and acceptance criteria verification.
 
-- [ ] T029 Run `uv run --group docs mkdocs build --strict` — verify zero build warnings and zero missing-documentation warnings across the complete site (EN + FR) — to pass [TS-008] — depends on T017–T028
-- [ ] T030 Verify EN/FR page tree parity — every page in the English site has a corresponding French page; use `find docs/ -name "*.en.md"` vs `find docs/ -name "*.fr.md"` to confirm 1:1 mapping (excluding api-reference/index.md) — to pass [TS-011] — depends on T017–T028
-- [ ] T031 Verify full-text search returns relevant results — spot-check search for: "serializer", "group_id", "wire format", "caching", "migration", "error" in both English and French by inspecting the generated search index in `site/search/search_index.json` — to pass [TS-013] — depends on T029
-- [ ] T032 Validate all code examples — review all `.en.md` files with code blocks and confirm every Python snippet is syntactically valid and consistent with the current public API; fix any stale examples — depends on T029
+- [x] T029 Run `uv run --group docs mkdocs build --strict` — verify zero build warnings and zero missing-documentation warnings across the complete site (EN + FR) — to pass [TS-008] — depends on T017–T028
+- [x] T030 Verify EN/FR page tree parity — every page in the English site has a corresponding French page; use `find docs/ -name "*.en.md"` vs `find docs/ -name "*.fr.md"` to confirm 1:1 mapping (excluding api-reference/index.md) — to pass [TS-011] — depends on T017–T028
+- [x] T031 Verify full-text search returns relevant results — spot-check search for: "serializer", "group_id", "wire format", "caching", "migration", "error" in both English and French by inspecting the generated search index in `site/search/search_index.json` — to pass [TS-013] — depends on T029
+- [x] T032 Validate all code examples — review all `.en.md` files with code blocks and confirm every Python snippet is syntactically valid and consistent with the current public API; fix any stale examples — depends on T029
 
 ---
 
