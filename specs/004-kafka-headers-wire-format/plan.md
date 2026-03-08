@@ -36,7 +36,7 @@ FR-010 is resolved: **Option C** — `AvroSerializer.serialize()` returns `Seria
 ## Architecture
 
 ```
-apicurio-serdes (004 addition — changes in bold)
+apicurio-serdes (004 addition — changes in brackets)
 ┌──────────────────────────────────────────────────────────────┐
 │                                                               │
 │  apicurio_serdes/                                             │
