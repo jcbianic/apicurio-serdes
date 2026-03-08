@@ -108,7 +108,12 @@ class AvroSerializer:
 
         # Strict mode validation
         if self.strict:
-            schema_fields = {f["name"] for f in self._schema.schema["fields"]}
+            fields = self._schema.schema.get("fields")
+            if fields is None:
+                raise ValueError(
+                    "strict mode requires a record schema with 'fields'"
+                )
+            schema_fields = {f["name"] for f in fields}
             extra = set(data.keys()) - schema_fields
             if extra:
                 raise ValueError(
@@ -123,7 +128,8 @@ class AvroSerializer:
 
         # Encode to Avro binary
         buffer = io.BytesIO()
-        assert self._parsed_schema is not None
+        if self._parsed_schema is None:
+            raise RuntimeError("schema not parsed — call get_schema first")
         fastavro.schemaless_writer(buffer, self._parsed_schema, data)
         avro_bytes = buffer.getvalue()
 
