@@ -2,11 +2,12 @@
   "tdd_determination": "mandatory",
   "planview": {
     "nodeClassifications": {
-      "ApicurioRegistryClient": "server",
-      "AvroSerializer": "client",
-      "AvroDeserializer": "client",
+      "AsyncApicurioRegistryClient": "client",
+      "ApicurioRegistryClient": "client",
+      "httpx.AsyncClient": "client",
+      "httpx.Client": "client",
       "Apicurio Registry v3 API": "external",
-      "_schema_cache / _id_cache": "storage"
+      "_schema_cache / _lock": "storage"
     }
   },
   "checklist_reviewed_at": "2026-03-06T15:34:41Z"

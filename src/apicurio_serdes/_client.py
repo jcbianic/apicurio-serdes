@@ -95,7 +95,10 @@ class ApicurioRegistryClient:
 
             if response.status_code == 404:
                 raise SchemaNotFoundError(self.group_id, artifact_id)
-            response.raise_for_status()
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                raise RegistryConnectionError(self.url, exc) from exc
 
             schema = json.loads(response.text)
             global_id = int(response.headers["X-Registry-GlobalId"])
@@ -163,7 +166,10 @@ class ApicurioRegistryClient:
 
             if response.status_code == 404:
                 raise SchemaNotFoundError.from_id(id_type, id_value)
-            response.raise_for_status()
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                raise RegistryConnectionError(self.url, exc) from exc
 
             schema: dict[str, Any] = json.loads(response.content)
             self._id_cache[cache_key] = schema

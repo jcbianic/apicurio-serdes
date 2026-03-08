@@ -268,6 +268,35 @@ def test_empty_url_raises_value_error() -> None:
         ApicurioRegistryClient(url="", group_id="g")
 
 
+def test_get_schema_500_raises_registry_connection_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """Unexpected HTTP status in get_schema raises RegistryConnectionError [FR-013]."""
+    from apicurio_serdes._errors import RegistryConnectionError
+    from httpx import Response
+
+    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/Broken/versions/latest/content"
+    mock_registry.get(url).mock(return_value=Response(500))
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(RegistryConnectionError):
+        client.get_schema("Broken")
+
+
+def test_get_schema_by_global_id_500_raises_registry_connection_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """Unexpected HTTP status in _get_schema_by_id raises RegistryConnectionError [FR-013]."""
+    from apicurio_serdes._errors import RegistryConnectionError
+    from httpx import Response
+
+    mock_registry.get(url__startswith=f"{REGISTRY_URL}/ids/globalIds/").mock(
+        return_value=Response(500)
+    )
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(RegistryConnectionError):
+        client.get_schema_by_global_id(7)
+
+
 # ── T004: get_schema_by_global_id ──
 
 
