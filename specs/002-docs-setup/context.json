@@ -1,0 +1,8 @@
+{
+  "testify": {
+    "assertion_hash": "f52a56b90afa9ef31e28e05a3f98ba2cf1c1de4ff61f754948b187384db52d0e",
+    "generated_at": "2026-03-08T13:54:06Z",
+    "features_dir": "specs/002-docs-setup/tests/features",
+    "file_count": 5
+  }
+}

@@ -9,7 +9,10 @@ from typing import Any
 
 import httpx
 
-from apicurio_serdes._errors import RegistryConnectionError, SchemaNotFoundError
+from apicurio_serdes._errors import (
+    RegistryConnectionError,
+    SchemaNotFoundError,
+)
 
 
 @dataclass
@@ -35,12 +38,23 @@ class ApicurioRegistryClient:
 
     Args:
         url: Base URL of the Apicurio Registry v3 API.
-             Example: "http://registry:8080/apis/registry/v3"
+             Example: ``"http://registry:8080/apis/registry/v3"``.
         group_id: Schema group identifier. Applied to every
                   schema lookup made by this client instance.
 
     Raises:
-        ValueError: If url or group_id is empty.
+        ValueError: If *url* or *group_id* is empty.
+
+    Example:
+        ```python
+        from apicurio_serdes import ApicurioRegistryClient
+
+        client = ApicurioRegistryClient(
+            url="http://localhost:8080/apis/registry/v3",
+            group_id="com.example.schemas",
+        )
+        schema = client.get_schema("UserEvent")
+        ```
     """
 
     def __init__(self, url: str, group_id: str) -> None:
@@ -52,6 +66,7 @@ class ApicurioRegistryClient:
         self.group_id = group_id
         self._http_client = httpx.Client(base_url=url)
         self._schema_cache: dict[tuple[str, str], CachedSchema] = {}
+        self._id_cache: dict[tuple[str, int], dict[str, Any]] = {}
         self._lock = threading.RLock()
 
     def get_schema(self, artifact_id: str) -> CachedSchema:
@@ -91,11 +106,24 @@ class ApicurioRegistryClient:
 
             if response.status_code == 404:
                 raise SchemaNotFoundError(self.group_id, artifact_id)
-            response.raise_for_status()
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                raise RegistryConnectionError(self.url, exc) from exc
 
             schema = json.loads(response.text)
             global_id = int(response.headers["X-Registry-GlobalId"])
             content_id = int(response.headers["X-Registry-ContentId"])
+
+            _INT64_MIN, _INT64_MAX = -(2**63), 2**63 - 1
+            if not (_INT64_MIN <= global_id <= _INT64_MAX):
+                raise ValueError(
+                    f"globalId {global_id} is outside signed 64-bit range"
+                )
+            if not (_INT64_MIN <= content_id <= _INT64_MAX):
+                raise ValueError(
+                    f"contentId {content_id} is outside signed 64-bit range"
+                )
 
             cached = CachedSchema(
                 schema=schema,
@@ -104,3 +132,66 @@ class ApicurioRegistryClient:
             )
             self._schema_cache[cache_key] = cached
             return cached
+
+    def get_schema_by_global_id(self, global_id: int) -> dict[str, Any]:
+        """Retrieve an Avro schema by its globalId.
+
+        Returns a cached result on subsequent calls for the same
+        globalId (FR-007).
+
+        Args:
+            global_id: The globalId from the wire format header.
+
+        Returns:
+            Parsed Avro schema as a Python dict.
+
+        Raises:
+            SchemaNotFoundError: If no schema exists for this globalId (FR-010).
+            RegistryConnectionError: If the registry is unreachable (FR-012).
+        """
+        return self._get_schema_by_id("globalId", global_id)
+
+    def get_schema_by_content_id(self, content_id: int) -> dict[str, Any]:
+        """Retrieve an Avro schema by its contentId.
+
+        Returns a cached result on subsequent calls for the same
+        contentId (FR-007).
+
+        Args:
+            content_id: The contentId from the wire format header.
+
+        Returns:
+            Parsed Avro schema as a Python dict.
+
+        Raises:
+            SchemaNotFoundError: If no schema exists for this contentId (FR-010).
+            RegistryConnectionError: If the registry is unreachable (FR-012).
+        """
+        return self._get_schema_by_id("contentId", content_id)
+
+    def _get_schema_by_id(self, id_type: str, id_value: int) -> dict[str, Any]:
+        """Shared implementation for ID-based schema lookups (D12)."""
+        cache_key = (id_type, id_value)
+        if cache_key in self._id_cache:
+            return self._id_cache[cache_key]
+
+        with self._lock:
+            if cache_key in self._id_cache:
+                return self._id_cache[cache_key]
+
+            endpoint = f"/ids/{id_type}s/{id_value}"
+            try:
+                response = self._http_client.get(endpoint)
+            except httpx.ConnectError as exc:
+                raise RegistryConnectionError(self.url, exc) from exc
+
+            if response.status_code == 404:
+                raise SchemaNotFoundError.from_id(id_type, id_value)
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                raise RegistryConnectionError(self.url, exc) from exc
+
+            schema: dict[str, Any] = json.loads(response.content)
+            self._id_cache[cache_key] = schema
+            return schema
