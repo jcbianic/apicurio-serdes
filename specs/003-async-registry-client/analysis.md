@@ -4,8 +4,8 @@
 
 | ID | Category | Severity | Location(s) | Summary | Recommendation |
 |----|----------|----------|-------------|---------|----------------|
-| C3-01 | Underspecification | MEDIUM | spec.md §Edge Cases | Edge case "async client used after connection pool closed" listed but no FR, SC, or task defines expected behavior | Add FR + task: define raised exception (e.g. `RuntimeError`) when calling `get_schema` on a closed client |
-| C3-02 | Underspecification | MEDIUM | spec.md §Edge Cases | Edge case "registry returns HTTP 500 or unexpected status code" listed but no FR, SC, or task defines expected behavior | Add FR + task: define that unexpected 5xx → `RegistryConnectionError` with status code included |
+| C3-01 | Underspecification | MEDIUM | spec.md §Edge Cases | Edge case "async client used after connection pool closed" listed but no FR, SC, or task defines expected behavior | **RESOLVED**: FR-012 added to spec.md; T021 (test) + T022 (impl) added to tasks.md Phase 4 |
+| C3-02 | Underspecification | MEDIUM | spec.md §Edge Cases | Edge case "registry returns HTTP 500 or unexpected status code" listed but no FR, SC, or task defines expected behavior | **RESOLVED**: FR-013 added to spec.md; T019 (test) + T020 (impl) added to tasks.md Phase 2 |
 | B4-01 | Traceability | LOW | tests/features/validation.feature | Feature file missing `@US-XXX` traceability tag at Feature level (all other 4 feature files carry `@US-001`–`@US-004`) | Add `@US-001` tag to `validation.feature` Feature header (FR-008 is part of User Story 1) |
 
 ---

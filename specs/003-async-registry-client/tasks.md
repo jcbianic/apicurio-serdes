@@ -35,10 +35,12 @@
 - [x] T003 [P] [US1] Write failing test for successful get_schema — returns CachedSchema with schema dict, global_id, and content_id parsed from response headers in tests/test_async_client.py [FR-001, FR-002, SC-001]
 - [x] T004 [P] [US1] Write failing test for SchemaNotFoundError raised on HTTP 404 (group_id and artifact_id attributes populated) in tests/test_async_client.py [FR-005]
 - [x] T005 [P] [US1] Write failing test for RegistryConnectionError raised on httpx.ConnectError (url attribute populated) in tests/test_async_client.py [FR-006]
+- [ ] T019 [P] [US1] Write failing test for RegistryConnectionError raised on unexpected HTTP status (e.g. 500) — error includes the status code and registry URL in tests/test_async_client.py [FR-013]
 
 ### Implementation (GREEN)
 
 - [x] T006 [US1] Create src/apicurio_serdes/_async_client.py — AsyncApicurioRegistryClient with __init__ (url/group_id validation, FR-008), async get_schema (HTTP fetch via httpx.AsyncClient, response parsing, SchemaNotFoundError on 404, RegistryConnectionError on ConnectError, group_id applied to every lookup) [FR-001, FR-002, FR-005, FR-006, FR-007, FR-008]
+- [ ] T020 [US1] Extend get_schema HTTP error mapping: raise RegistryConnectionError (with status code + URL) for any non-200, non-404 response in src/apicurio_serdes/_async_client.py [FR-013]
 
 **Checkpoint**: US1 tests GREEN — async schema retrieval, construction validation, and error paths all verified.
 
@@ -75,12 +77,14 @@
 ### Tests (RED first)
 
 - [x] T011 [US4] Write failing tests for `async with` lifecycle (__aenter__ returns self; __aexit__ closes the underlying httpx.AsyncClient) and for explicit `await client.aclose()` in tests/test_async_client.py [FR-009, FR-010]
+- [ ] T021 [P] [US4] Write failing test for RuntimeError raised when get_schema is called after aclose() or after an async with block exits in tests/test_async_client.py [FR-012]
 
 ### Implementation (GREEN)
 
 - [x] T012 [US4] Implement `async __aenter__`, `async __aexit__`, and `async aclose()` methods in src/apicurio_serdes/_async_client.py [FR-009, FR-010]
+- [ ] T022 [US4] Add closed-client guard to get_schema in src/apicurio_serdes/_async_client.py: track closed state in aclose()/__aexit__ and raise RuntimeError("client is closed") at the start of get_schema if closed [FR-012]
 
-**Checkpoint**: US4 tests GREEN — context manager lifecycle and explicit close both verified.
+**Checkpoint**: US4 tests GREEN — context manager lifecycle, explicit close, and closed-client guard all verified.
 
 ---
 
@@ -127,9 +131,10 @@ T001 → T002 → T006 → T007 → T010 → T011 → T012 → T013 → T014 →
 
 | Batch | Tasks | Phase |
 |-------|-------|-------|
-| A | T003, T004, T005 | Phase 2 tests (after T002 establishes conftest patterns) |
+| A | T003, T004, T005, T019 | Phase 2 tests (after T002 establishes conftest patterns) |
 | B | T008, T009 | Phase 3 tests (after T007 establishes cache test pattern) |
 | C | T015, T016, T017 | Phase 6 polish |
+| D | T021 | Phase 4 tests (parallel with T011) |
 
 ### Story Independence
 
@@ -145,14 +150,14 @@ T001 → T002 → T006 → T007 → T010 → T011 → T012 → T013 → T014 →
 
 | Metric | Value |
 |--------|-------|
-| Total tasks | 18 |
+| Total tasks | 22 |
 | Phase 1 (Setup) | 1 |
-| Phase 2 (US1/P1) | 5 |
+| Phase 2 (US1/P1) | 7 |
 | Phase 3 (US2+US3/P2) | 4 |
-| Phase 4 (US4/P3) | 2 |
+| Phase 4 (US4/P3) | 4 |
 | Phase 5 (Export) | 2 |
 | Phase 6 (Polish) | 4 |
-| Parallel opportunities | 3 batches |
+| Parallel opportunities | 4 batches |
 | MVP scope | Phases 1–2 (6 tasks) deliver core async schema retrieval |
 
 ---

@@ -106,6 +106,10 @@ As a Python developer using structured resource management in asyncio, I want to
 
 - **FR-011**: The async client MUST be importable from the top-level package alongside the sync client (e.g., `from apicurio_serdes import AsyncApicurioRegistryClient`).
 
+- **FR-012**: If `get_schema` is called on a closed async client (after `aclose()` has been called, or after an `async with` block has exited), it MUST raise a `RuntimeError` with a message indicating the client is closed.
+
+- **FR-013**: When the Apicurio Registry returns an HTTP response with an unexpected status code (any code other than 200 or 404), the async client MUST raise a `RegistryConnectionError` that includes the HTTP status code and the registry URL.
+
 ### Non-Functional Requirements
 
 - **NFR-001**: The async client MUST be safe for concurrent use from multiple coroutines within the same event loop. Specifically, concurrent cache population for the same `artifact_id` MUST NOT result in duplicate HTTP requests or cache corruption.
