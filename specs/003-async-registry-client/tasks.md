@@ -38,7 +38,7 @@
 
 ### Implementation (GREEN)
 
-- [ ] T006 [US1] Create src/apicurio_serdes/_async_client.py — AsyncApicurioRegistryClient with __init__ (url/group_id validation, FR-008), async get_schema (HTTP fetch via httpx.AsyncClient, response parsing, SchemaNotFoundError on 404, RegistryConnectionError on ConnectError, group_id applied to every lookup) [FR-001, FR-002, FR-005, FR-006, FR-007, FR-008]
+- [x] T006 [US1] Create src/apicurio_serdes/_async_client.py — AsyncApicurioRegistryClient with __init__ (url/group_id validation, FR-008), async get_schema (HTTP fetch via httpx.AsyncClient, response parsing, SchemaNotFoundError on 404, RegistryConnectionError on ConnectError, group_id applied to every lookup) [FR-001, FR-002, FR-005, FR-006, FR-007, FR-008]
 
 **Checkpoint**: US1 tests GREEN — async schema retrieval, construction validation, and error paths all verified.
 
