@@ -19,7 +19,9 @@ def _load_workflow(name: str) -> dict[str, Any]:
     Access trigger configuration via ``workflow[True]``.
     """
     path = WORKFLOWS_DIR / name
-    with path.open() as f:
+    if not path.exists():
+        pytest.fail(f"Workflow file missing: {path}")
+    with path.open(encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -45,7 +47,9 @@ def security_workflow() -> dict[str, Any]:
 def dependabot_config() -> dict[str, Any]:
     """Load dependabot.yml configuration."""
     path = REPO_ROOT / ".github" / "dependabot.yml"
-    with path.open() as f:
+    if not path.exists():
+        pytest.fail(f"Dependabot config missing: {path}")
+    with path.open(encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -53,4 +57,6 @@ def dependabot_config() -> dict[str, Any]:
 def readme_content() -> str:
     """Load README.md content."""
     path = REPO_ROOT / "README.md"
-    return path.read_text()
+    if not path.exists():
+        pytest.fail(f"README missing: {path}")
+    return path.read_text(encoding="utf-8")

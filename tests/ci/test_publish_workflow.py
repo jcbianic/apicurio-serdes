@@ -62,6 +62,17 @@ class TestPublishJobChain:
             needs = [needs]
         assert "publish-testpypi" in needs
 
+    def test_validate_testpypi_needs_validate_version(
+        self, publish_workflow: dict[str, Any]
+    ) -> None:
+        job = publish_workflow["jobs"]["validate-testpypi"]
+        needs = job.get("needs", [])
+        if isinstance(needs, str):
+            needs = [needs]
+        assert "validate-version" in needs, (
+            "validate-testpypi must depend on validate-version for version output"
+        )
+
     def test_publish_pypi_needs_validate_testpypi(
         self, publish_workflow: dict[str, Any]
     ) -> None:
@@ -80,14 +91,23 @@ class TestVersionValidation:
     ) -> None:
         assert "validate-version" in publish_workflow["jobs"]
 
-    def test_validate_version_compares_tag_to_pyproject(
+    def test_validate_version_reads_pyproject_toml(
         self, publish_workflow: dict[str, Any]
     ) -> None:
         job = publish_workflow["jobs"]["validate-version"]
         run_steps = [s.get("run", "") for s in job["steps"]]
         combined = " ".join(run_steps)
-        assert "pyproject.toml" in combined or "version" in combined.lower(), (
-            "Version validation must reference pyproject.toml or version"
+        assert "pyproject.toml" in combined and "tomllib" in combined, (
+            "Version validation must parse pyproject.toml using tomllib"
+        )
+
+    def test_validate_version_exposes_output(
+        self, publish_workflow: dict[str, Any]
+    ) -> None:
+        job = publish_workflow["jobs"]["validate-version"]
+        outputs = job.get("outputs", {})
+        assert "version" in outputs, (
+            "validate-version must expose a 'version' output for downstream jobs"
         )
 
 

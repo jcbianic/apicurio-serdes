@@ -9,7 +9,14 @@ from typing import Any
 
 
 class TestSecurityTriggers:
-    """TS-021, TS-022: Security workflow triggers on PRs and weekly schedule."""
+    """TS-021, TS-022: Security workflow triggers on push, PRs, and weekly schedule."""
+
+    def test_triggers_on_push_to_main(
+        self, security_workflow: dict[str, Any]
+    ) -> None:
+        triggers = security_workflow[True]
+        assert "push" in triggers
+        assert triggers["push"]["branches"] == ["main"]
 
     def test_triggers_on_pull_request_to_main(
         self, security_workflow: dict[str, Any]

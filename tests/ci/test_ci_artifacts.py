@@ -54,8 +54,8 @@ class TestCoverageArtifactUpload:
             for s in upload_steps
             if "coverage" in s.get("with", {}).get("name", "").lower()
         ]
-        assert len(coverage_uploads) >= 1
+        assert len(coverage_uploads) >= 1, "Prerequisite: coverage upload must exist"
         name = coverage_uploads[0]["with"]["name"]
         assert (
             "python-version" in name or "matrix" in name
-        ), "Coverage artifact name should include python version for matrix distinction"
+        ), f"Coverage artifact name must include python version for matrix distinction, got: {name}"

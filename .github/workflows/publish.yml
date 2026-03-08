@@ -4,11 +4,16 @@ on:
   release:
     types: [published]
 
+permissions: {}
+
 jobs:
   validate-version:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.pkg.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
       - name: Extract version from pyproject.toml
         id: pkg
         run: |
@@ -19,9 +24,10 @@ jobs:
           ")
           echo "version=$PKG_VERSION" >> "$GITHUB_OUTPUT"
       - name: Compare with release tag
+        env:
+          PKG: ${{ steps.pkg.outputs.version }}
         run: |
           TAG="${GITHUB_REF_NAME#v}"
-          PKG="${{ steps.pkg.outputs.version }}"
           if [ "$TAG" != "$PKG" ]; then
             echo "::error::Version mismatch: pyproject.toml has $PKG but release tag is $GITHUB_REF_NAME"
             exit 1
@@ -30,14 +36,15 @@ jobs:
   build:
     needs: validate-version
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
         with:
           python-version: "3.13"
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86  # v5
       - run: uv build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02  # v4
         with:
           name: dist
           path: dist/
@@ -45,44 +52,57 @@ jobs:
   publish-testpypi:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment: testpypi
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
         with:
           name: dist
           path: dist/
-      - uses: pypa/gh-action-pypi-publish@v1
+      - uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e  # v1.13.0
         with:
           repository-url: https://test.pypi.org/legacy/
 
   validate-testpypi:
-    needs: publish-testpypi
+    needs: [publish-testpypi, validate-version]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - name: Wait for index propagation
-        run: sleep 30
-      - name: Install from TestPyPI and smoke test
+      - name: Install from TestPyPI with retry
         env:
-          PKG_VERSION: ${{ github.ref_name }}
+          PKG_VERSION: ${{ needs.validate-version.outputs.version }}
         run: |
-          VERSION="${PKG_VERSION#v}"
-          pip install \
-            --index-url https://test.pypi.org/simple/ \
-            --extra-index-url https://pypi.org/simple/ \
-            "apicurio-serdes==${VERSION}"
-          python -c "import apicurio_serdes; print(apicurio_serdes.__name__)"
+          for attempt in 1 2 3 4 5; do
+            echo "Attempt $attempt: installing apicurio-serdes==${PKG_VERSION} from TestPyPI..."
+            if pip install \
+              --index-url https://test.pypi.org/simple/ \
+              --no-deps \
+              "apicurio-serdes==${PKG_VERSION}"; then
+              echo "Install succeeded on attempt $attempt"
+              break
+            fi
+            if [ "$attempt" -eq 5 ]; then
+              echo "::error::Failed to install from TestPyPI after 5 attempts"
+              exit 1
+            fi
+            echo "Waiting $(( attempt * 15 ))s for index propagation..."
+            sleep $(( attempt * 15 ))
+          done
+      - name: Smoke test import
+        run: python -c "import apicurio_serdes; print(apicurio_serdes.__name__)"
 
   publish-pypi:
     needs: validate-testpypi
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment: pypi
     permissions:
       id-token: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093  # v4
         with:
           name: dist
           path: dist/
-      - uses: pypa/gh-action-pypi-publish@v1
+      - uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e  # v1.13.0

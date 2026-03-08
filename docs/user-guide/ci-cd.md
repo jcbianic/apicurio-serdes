@@ -113,5 +113,7 @@ After merging the workflow files:
 - [ ] Install the [Codecov GitHub App](https://github.com/apps/codecov) on the
   repository
 - [ ] Configure trusted publishers on TestPyPI and PyPI (see above)
-- [ ] Create `testpypi` and `pypi` environments in repository settings
+- [ ] Create `testpypi` environment in repository settings (no protection rules)
+- [ ] Create `pypi` environment in repository settings with at least one required
+  reviewer (production publication gate)
 - [ ] Enable Dependabot alerts in repository settings
