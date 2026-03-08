@@ -31,10 +31,10 @@
 
 ### Tests (RED first)
 
-- [ ] T002 [US1] Write failing constructor validation tests (empty url → ValueError; empty group_id → ValueError) in tests/test_async_client.py [FR-008]
-- [ ] T003 [P] [US1] Write failing test for successful get_schema — returns CachedSchema with schema dict, global_id, and content_id parsed from response headers in tests/test_async_client.py [FR-001, FR-002, SC-001]
-- [ ] T004 [P] [US1] Write failing test for SchemaNotFoundError raised on HTTP 404 (group_id and artifact_id attributes populated) in tests/test_async_client.py [FR-005]
-- [ ] T005 [P] [US1] Write failing test for RegistryConnectionError raised on httpx.ConnectError (url attribute populated) in tests/test_async_client.py [FR-006]
+- [x] T002 [US1] Write failing constructor validation tests (empty url → ValueError; empty group_id → ValueError) in tests/test_async_client.py [FR-008]
+- [x] T003 [P] [US1] Write failing test for successful get_schema — returns CachedSchema with schema dict, global_id, and content_id parsed from response headers in tests/test_async_client.py [FR-001, FR-002, SC-001]
+- [x] T004 [P] [US1] Write failing test for SchemaNotFoundError raised on HTTP 404 (group_id and artifact_id attributes populated) in tests/test_async_client.py [FR-005]
+- [x] T005 [P] [US1] Write failing test for RegistryConnectionError raised on httpx.ConnectError (url attribute populated) in tests/test_async_client.py [FR-006]
 
 ### Implementation (GREEN)
 
