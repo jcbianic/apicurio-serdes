@@ -119,8 +119,8 @@ Test tasks for all three user stories are grouped in Phase 3 to maintain TDD dis
 
 **Purpose**: Documentation, setup guide validation, and compliance
 
-- [ ] T018 [P] [DOCS] Create docs/user-guide/ci-cd.md documenting pipeline architecture, badge setup, Codecov app installation, TestPyPI and PyPI trusted publisher registration, and release process
-- [ ] T019 [P] Run specs/005-ci-cd-pipeline/quickstart.md validation scenarios: verify trusted publisher setup steps, badge URL correctness, and first-release checklist accuracy
+- [x] T018 [P] [DOCS] Create docs/user-guide/ci-cd.md documenting pipeline architecture, badge setup, Codecov app installation, TestPyPI and PyPI trusted publisher registration, and release process
+- [x] T019 [P] Run specs/005-ci-cd-pipeline/quickstart.md validation scenarios: verify trusted publisher setup steps, badge URL correctness, and first-release checklist accuracy
 
 ---
 
