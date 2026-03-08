@@ -35,12 +35,23 @@ class ApicurioRegistryClient:
 
     Args:
         url: Base URL of the Apicurio Registry v3 API.
-             Example: "http://registry:8080/apis/registry/v3"
+             Example: ``"http://registry:8080/apis/registry/v3"``.
         group_id: Schema group identifier. Applied to every
                   schema lookup made by this client instance.
 
     Raises:
-        ValueError: If url or group_id is empty.
+        ValueError: If *url* or *group_id* is empty.
+
+    Example:
+        ```python
+        from apicurio_serdes import ApicurioRegistryClient
+
+        client = ApicurioRegistryClient(
+            url="http://localhost:8080/apis/registry/v3",
+            group_id="com.example.schemas",
+        )
+        schema = client.get_schema("UserEvent")
+        ```
     """
 
     def __init__(self, url: str, group_id: str) -> None:

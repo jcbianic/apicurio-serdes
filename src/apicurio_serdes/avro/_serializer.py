@@ -22,16 +22,46 @@ class AvroSerializer:
     """Serializes Python data to Confluent-framed Avro bytes.
 
     Fetches the Avro schema from the registry on first call and
-    caches it via the underlying ApicurioRegistryClient.
+    caches it via the underlying
+    [ApicurioRegistryClient][apicurio_serdes._client.ApicurioRegistryClient].
 
     Args:
-        registry_client: An ApicurioRegistryClient instance.
+        registry_client: An
+            [ApicurioRegistryClient][apicurio_serdes._client.ApicurioRegistryClient]
+            instance.
         artifact_id: The artifact identifier for the target schema.
         to_dict: Optional callable that converts input data to a dict
-                 before Avro encoding. Signature: (data, ctx) -> dict.
-                 When None, input is passed directly to the encoder (FR-007).
+                 before Avro encoding. Signature: ``(data, ctx) -> dict``.
+                 When ``None``, input is passed directly to the encoder.
         use_id: Which registry ID to embed in the wire format header.
-        strict: When True, reject extra fields not in the schema.
+                ``"globalId"`` (default) or ``"contentId"``.
+        strict: When ``True``, reject extra fields not in the schema
+                with a ``ValueError``.
+
+    Example:
+        ```python
+        from apicurio_serdes import ApicurioRegistryClient
+        from apicurio_serdes.avro import AvroSerializer
+        from apicurio_serdes.serialization import (
+            SerializationContext,
+            MessageField,
+        )
+
+        client = ApicurioRegistryClient(
+            url="http://localhost:8080/apis/registry/v3",
+            group_id="com.example.schemas",
+        )
+        serializer = AvroSerializer(
+            registry_client=client,
+            artifact_id="UserEvent",
+        )
+        ctx = SerializationContext(
+            topic="user-events", field=MessageField.VALUE,
+        )
+        payload: bytes = serializer(
+            {"userId": "abc-123", "country": "FR"}, ctx,
+        )
+        ```
     """
 
     def __init__(

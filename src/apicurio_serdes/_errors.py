@@ -4,7 +4,11 @@ from __future__ import annotations
 
 
 class SchemaNotFoundError(Exception):
-    """Raised when an artifact_id does not exist in the registry.
+    """Raised when an artifact does not exist in the registry (HTTP 404).
+
+    Args:
+        group_id: The group that was searched.
+        artifact_id: The artifact that was not found.
 
     Attributes:
         group_id: The group that was searched.
@@ -20,13 +24,16 @@ class SchemaNotFoundError(Exception):
 
 
 class SerializationError(Exception):
-    """Raised when the to_dict callable fails during serialization (FR-013).
+    """Raised when the ``to_dict`` callable fails during serialization.
 
-    Wraps the original exception as its cause so the full traceback is
+    Wraps the original exception as ``__cause__`` so the full traceback is
     preserved. Distinguishes hook failure from Avro schema validation errors.
 
+    Args:
+        cause: The original exception raised by the ``to_dict`` callable.
+
     Attributes:
-        cause: The original exception raised by the to_dict callable.
+        cause: The original exception raised by the ``to_dict`` callable.
     """
 
     def __init__(self, cause: Exception) -> None:
@@ -36,10 +43,15 @@ class SerializationError(Exception):
 
 
 class RegistryConnectionError(Exception):
-    """Raised when the Apicurio Registry is unreachable (FR-011).
+    """Raised when the Apicurio Registry is unreachable.
 
-    Wraps the underlying network exception. Includes the registry URL
-    in the error message so callers can identify which endpoint failed.
+    Wraps the underlying network exception as ``__cause__``. Includes
+    the registry URL in the error message so callers can identify which
+    endpoint failed.
+
+    Args:
+        url: The registry base URL that could not be reached.
+        cause: The underlying network exception.
 
     Attributes:
         url: The registry base URL that could not be reached.
