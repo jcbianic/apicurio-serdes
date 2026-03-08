@@ -2,15 +2,16 @@
   "tdd_determination": "mandatory",
   "planview": {
     "nodeClassifications": {
-      "apicurio_serdes": "server",
-      "AvroSerializer": "server",
-      "AsyncApicurioRegistryClient": "client",
-      "ApicurioRegistryClient": "client",
-      "fastavro": "server",
-      "httpx.AsyncClient": "client",
-      "httpx.Client": "client",
-      "Apicurio Registry v3 API": "external",
-      "_schema_cache / _lock": "storage"
+      "Developer": "client",
+      "GitHub Repository": "server",
+      "ci.yml": "server",
+      "publish.yml": "server",
+      "security.yml": "server",
+      "Codecov": "external",
+      "TestPyPI": "external",
+      "PyPI": "external",
+      "CodeQL": "external",
+      "Dependabot": "external"
     }
   },
   "checklist_reviewed_at": "2026-03-08T13:23:22Z"
