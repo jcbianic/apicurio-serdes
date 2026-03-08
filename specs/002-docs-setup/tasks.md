@@ -40,8 +40,8 @@
 
 **Independent Test**: A developer unfamiliar with the library follows only the homepage and quickstart and produces valid Confluent-framed Avro bytes.
 
-- [ ] T006 [P] [US1] Rewrite `docs/index.en.md` — homepage with: problem statement (what apicurio-serdes solves), target audience (Python data engineers), value proposition vs confluent-kafka, feature overview, and link to quickstart — to pass [TS-001] — depends on T002
-- [ ] T007 [P] [US1] Enhance `docs/getting-started/quickstart.en.md` — add full working serialization example (prerequisites, install, registry setup or local alternative, minimal producer script) and troubleshooting section covering: wrong registry URL, non-existent artifact, invalid input data — to pass [TS-002, TS-003] — depends on T002
+- [x] T006 [P] [US1] Rewrite `docs/index.en.md` — homepage with: problem statement (what apicurio-serdes solves), target audience (Python data engineers), value proposition vs confluent-kafka, feature overview, and link to quickstart — to pass [TS-001] — depends on T002
+- [x] T007 [P] [US1] Enhance `docs/getting-started/quickstart.en.md` — add full working serialization example (prerequisites, install, registry setup or local alternative, minimal producer script) and troubleshooting section covering: wrong registry URL, non-existent artifact, invalid input data — to pass [TS-002, TS-003] — depends on T002
 
 **Checkpoint**: US1 complete — first-time visitor can get from zero to working serialization in a single reading.
 
@@ -53,7 +53,7 @@
 
 **Independent Test**: A developer familiar with confluent-kafka reads only the migration guide and adapts a sample producer.
 
-- [ ] T008 [US2] Write `docs/migration/from-confluent-kafka.en.md` — side-by-side API comparison table (class names, constructor parameters, invocation patterns), group_id explanation (what it is, why required, mapping from Confluent schema naming), behavioral differences table, and minimal migration code example showing import-and-config-only change — to pass [TS-004, TS-005, TS-006] — depends on T003
+- [x] T008 [US2] Write `docs/migration/from-confluent-kafka.en.md` — side-by-side API comparison table (class names, constructor parameters, invocation patterns), group_id explanation (what it is, why required, mapping from Confluent schema naming), behavioral differences table, and minimal migration code example showing import-and-config-only change — to pass [TS-004, TS-005, TS-006] — depends on T003
 
 **Checkpoint**: US2 complete — a confluent-kafka user can identify all differences and migrate their producer code.
 
@@ -65,8 +65,8 @@
 
 **Independent Test**: Every public symbol appears in the reference with description, parameters, return type, exceptions, and a usage example.
 
-- [ ] T009 [US3] Audit and complete Google-style docstrings for all public symbols in `src/apicurio_serdes/` — cover: AvroSerializer (constructor signature with all parameters and defaults, description, usage example), all public exceptions (SchemaNotFoundError including group_id and artifact_id attributes, RegistryConnectionError, SerializationError with trigger conditions), all public methods (parameters, return type, raised exceptions) — to pass [TS-007, TS-009]
-- [ ] T010 [US3] Update `docs/api-reference/index.md` to reference all public symbols via `:::` directives; run `uv run --group docs mkdocs build --strict` and confirm zero missing-documentation warnings — to pass [TS-008] — depends on T009
+- [x] T009 [US3] Audit and complete Google-style docstrings for all public symbols in `src/apicurio_serdes/` — cover: AvroSerializer (constructor signature with all parameters and defaults, description, usage example), all public exceptions (SchemaNotFoundError including group_id and artifact_id attributes, RegistryConnectionError, SerializationError with trigger conditions), all public methods (parameters, return type, raised exceptions) — to pass [TS-007, TS-009]
+- [x] T010 [US3] Update `docs/api-reference/index.md` to reference all public symbols via `:::` directives; run `uv run --group docs mkdocs build --strict` and confirm zero missing-documentation warnings — to pass [TS-008] — depends on T009
 
 **Checkpoint**: US3 complete — API reference covers 100% of public symbols with zero build warnings.
 
@@ -80,15 +80,15 @@
 
 ### Conceptual Pages (US5)
 
-- [ ] T011 [P] [US5] Write `docs/concepts/wire-format.en.md` — byte-level layout diagram (magic byte `0x00`, 4-byte schema identifier, Avro binary payload), purpose of each field, difference between globalId and contentId, when each identifier is used — to pass [TS-014] — depends on T003
-- [ ] T012 [P] [US5] Write `docs/concepts/schema-caching.en.md` — how the cache is populated on first use, cache lifetime (per-client-instance), when to create a new instance, thread-safety guarantees — to pass [TS-015] — depends on T003
-- [ ] T013 [P] [US5] Write `docs/concepts/addressing-model.en.md` — group → artifact → version hierarchy diagram, why group_id is mandatory in apicurio-serdes, mapping table from Confluent subject naming to Apicurio group/artifact model — to pass [TS-016] — depends on T003
+- [x] T011 [P] [US5] Write `docs/concepts/wire-format.en.md` — byte-level layout diagram (magic byte `0x00`, 4-byte schema identifier, Avro binary payload), purpose of each field, difference between globalId and contentId, when each identifier is used — to pass [TS-014] — depends on T003
+- [x] T012 [P] [US5] Write `docs/concepts/schema-caching.en.md` — how the cache is populated on first use, cache lifetime (per-client-instance), when to create a new instance, thread-safety guarantees — to pass [TS-015] — depends on T003
+- [x] T013 [P] [US5] Write `docs/concepts/addressing-model.en.md` — group → artifact → version hierarchy diagram, why group_id is mandatory in apicurio-serdes, mapping table from Confluent subject naming to Apicurio group/artifact model — to pass [TS-016] — depends on T003
 
 ### How-to Guides (Cross-cutting, FR-007)
 
-- [ ] T014 [P] Write `docs/how-to/custom-serialization.en.md` — to_dict hook pattern with dataclass example and Pydantic example, when to use it, limitations — depends on T003
-- [ ] T015 [P] Write `docs/how-to/identifier-selection.en.md` — globalId vs contentId decision guide: tradeoffs, registry behaviour, when to use each — depends on T003
-- [ ] T016 [P] Write `docs/how-to/error-handling.en.md` — handling SchemaNotFoundError (group_id, artifact_id attributes), RegistryConnectionError (retry pattern), SerializationError (input validation pattern) with code examples — depends on T003
+- [x] T014 [P] Write `docs/how-to/custom-serialization.en.md` — to_dict hook pattern with dataclass example and Pydantic example, when to use it, limitations — depends on T003
+- [x] T015 [P] Write `docs/how-to/identifier-selection.en.md` — globalId vs contentId decision guide: tradeoffs, registry behaviour, when to use each — depends on T003
+- [x] T016 [P] Write `docs/how-to/error-handling.en.md` — handling SchemaNotFoundError (group_id, artifact_id attributes), RegistryConnectionError (retry pattern), SerializationError (input validation pattern) with code examples — depends on T003
 
 **Checkpoint**: US5 complete — conceptual pages and how-to guides answer "why" and "how" questions beyond the quickstart.
 
