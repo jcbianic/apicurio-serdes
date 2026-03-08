@@ -24,11 +24,11 @@
 
 **CRITICAL**: No content tasks can begin until this phase is complete.
 
-- [ ] T001 [P] Add `mkdocs-static-i18n[material]>=1.3.0,<2.0` to `docs` dependency group in `pyproject.toml`
-- [ ] T002 [P] Rename existing docs to `.en.md` suffix: `docs/index.md` → `docs/index.en.md`, `docs/getting-started/installation.md` → `docs/getting-started/installation.en.md`, `docs/getting-started/quickstart.md` → `docs/getting-started/quickstart.en.md`, `docs/user-guide/avro-serializer.md` → `docs/user-guide/avro-serializer.en.md`, `docs/changelog.md` → `docs/changelog.en.md`
-- [ ] T003 [P] Create directory scaffolds for new content sections: `docs/concepts/`, `docs/how-to/`, `docs/migration/`
-- [ ] T004 Update `mkdocs.yml` with: i18n plugin (suffix mode, en + fr), multilingual search (en + fr separator), Material feature flags (`navigation.tabs`, `navigation.sections`, `navigation.instant`, `navigation.top`, `navigation.indexes`, `navigation.footer`, `content.code.copy`, `content.tabs.link`, `search.highlight`, `search.suggest`, `toc.integrate`), language switcher (`extra.alternate`), and expanded nav (concepts, how-to, migration sections) — depends on T002, T003
-- [ ] T005 Verify baseline build passes `uv run --group docs mkdocs build --strict` — depends on T001, T004
+- [x] T001 [P] Add `mkdocs-static-i18n[material]>=1.3.0,<2.0` to `docs` dependency group in `pyproject.toml`
+- [x] T002 [P] Rename existing docs to `.en.md` suffix: `docs/index.md` → `docs/index.en.md`, `docs/getting-started/installation.md` → `docs/getting-started/installation.en.md`, `docs/getting-started/quickstart.md` → `docs/getting-started/quickstart.en.md`, `docs/user-guide/avro-serializer.md` → `docs/user-guide/avro-serializer.en.md`, `docs/changelog.md` → `docs/changelog.en.md`
+- [x] T003 [P] Create directory scaffolds for new content sections: `docs/concepts/`, `docs/how-to/`, `docs/migration/`
+- [x] T004 Update `mkdocs.yml` with: i18n plugin (suffix mode, en + fr), multilingual search (en + fr separator), Material feature flags (`navigation.tabs`, `navigation.sections`, `navigation.instant`, `navigation.top`, `navigation.indexes`, `navigation.footer`, `content.code.copy`, `content.tabs.link`, `search.highlight`, `search.suggest`, `toc.integrate`), language switcher (`extra.alternate`), and expanded nav (concepts, how-to, migration sections) — depends on T002, T003
+- [x] T005 Verify baseline build passes `uv run --group docs mkdocs build --strict` — depends on T001, T004
 
 **Checkpoint**: Infrastructure ready — all content tasks can now begin in parallel.
 
