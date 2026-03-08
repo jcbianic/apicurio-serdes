@@ -83,7 +83,7 @@ ctx = SerializationContext(topic="user-events", field=MessageField.VALUE)
 payload: bytes = serializer({"userId": "abc-123", "country": "FR"}, ctx)
 
 print(f"Serialized {len(payload)} bytes")
-# Serialized 19 bytes
+# Serialized 16 bytes
 ```
 
 `payload` est désormais au [wire format Confluent](../concepts/wire-format.md) en octets :
