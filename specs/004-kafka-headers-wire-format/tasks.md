@@ -18,7 +18,7 @@
 
 **Purpose**: BDD test infrastructure — one-time setup before any story implementation.
 
-- [ ] T001 Set up pytest-bdd step definition modules directory at `tests/step_defs/` and register feature file paths from `specs/004-kafka-headers-wire-format/tests/features/` in `conftest.py` or `pyproject.toml`
+- [x] T001 Set up pytest-bdd step definition modules directory at `tests/step_defs/` and register feature file paths from `specs/004-kafka-headers-wire-format/tests/features/` in `conftest.py` or `pyproject.toml`
 
 ---
 
@@ -33,18 +33,18 @@ technical prerequisite for US1 (P1) KAFKA_HEADERS. Plan §Implementation Strateg
 
 ### TDD-First: Write Failing Tests (RED)
 
-- [ ] T002 [P] Write failing step definitions for WireFormat API scenarios [TS-020, TS-021, TS-022, TS-023, TS-024] in `tests/step_defs/test_wire_format_api.py`
-- [ ] T003 [P] Write failing unit tests for `WireFormat` enum members and `SerializedMessage` frozen dataclass in `tests/test_serialization.py`
-- [ ] T004 [P] Write failing step definitions for CONFLUENT_PAYLOAD compatibility scenarios [TS-010, TS-011, TS-012, TS-013, TS-014] in `tests/step_defs/test_confluent_payload_compat.py`
-- [ ] T005 [P] Write failing unit tests for `AvroSerializer` `wire_format` parameter and `serialize()` CONFLUENT_PAYLOAD path in `tests/test_serializer.py`
+- [x] T002 [P] Write failing step definitions for WireFormat API scenarios [TS-020, TS-021, TS-022, TS-023, TS-024] in `tests/step_defs/test_wire_format_api.py`
+- [x] T003 [P] Write failing unit tests for `WireFormat` enum members and `SerializedMessage` frozen dataclass in `tests/test_serialization.py`
+- [x] T004 [P] Write failing step definitions for CONFLUENT_PAYLOAD compatibility scenarios [TS-010, TS-011, TS-012, TS-013, TS-014] in `tests/step_defs/test_confluent_payload_compat.py`
+- [x] T005 [P] Write failing unit tests for `AvroSerializer` `wire_format` parameter and `serialize()` CONFLUENT_PAYLOAD path in `tests/test_serializer.py`
 
 ### Implementation: GREEN (after T002–T005 are confirmed RED)
 
-- [ ] T006 Implement `WireFormat(enum.Enum)` with `CONFLUENT_PAYLOAD` and `KAFKA_HEADERS` members and `SerializedMessage(payload: bytes, headers: dict[str, bytes])` frozen dataclass in `src/apicurio_serdes/serialization.py` [passes TS-020, TS-021]
-- [ ] T007 Re-export `WireFormat` from `src/apicurio_serdes/__init__.py` and add to `__all__` (FR-002) [passes TS-020]
-- [ ] T008 Add `wire_format: WireFormat = WireFormat.CONFLUENT_PAYLOAD` parameter to `AvroSerializer.__init__` in `src/apicurio_serdes/avro/_serializer.py` [passes TS-022, TS-023, TS-024]
-- [ ] T009 Implement `AvroSerializer.serialize(data, ctx) -> SerializedMessage` method — CONFLUENT_PAYLOAD branch: framed bytes with `0x00` + 4-byte big-endian schema ID + Avro payload, empty `headers` dict — in `src/apicurio_serdes/avro/_serializer.py` [passes TS-010, TS-011, TS-012]
-- [ ] T010 Refactor `AvroSerializer.__call__` to delegate to `serialize()` and return `.payload` in `src/apicurio_serdes/avro/_serializer.py` [passes TS-013, TS-014]
+- [x] T006 Implement `WireFormat(enum.Enum)` with `CONFLUENT_PAYLOAD` and `KAFKA_HEADERS` members and `SerializedMessage(payload: bytes, headers: dict[str, bytes])` frozen dataclass in `src/apicurio_serdes/serialization.py` [passes TS-020, TS-021]
+- [x] T007 Re-export `WireFormat` from `src/apicurio_serdes/__init__.py` and add to `__all__` (FR-002) [passes TS-020]
+- [x] T008 Add `wire_format: WireFormat = WireFormat.CONFLUENT_PAYLOAD` parameter to `AvroSerializer.__init__` in `src/apicurio_serdes/avro/_serializer.py` [passes TS-022, TS-023, TS-024]
+- [x] T009 Implement `AvroSerializer.serialize(data, ctx) -> SerializedMessage` method — CONFLUENT_PAYLOAD branch: framed bytes with `0x00` + 4-byte big-endian schema ID + Avro payload, empty `headers` dict — in `src/apicurio_serdes/avro/_serializer.py` [passes TS-010, TS-011, TS-012]
+- [x] T010 Refactor `AvroSerializer.__call__` to delegate to `serialize()` and return `.payload` in `src/apicurio_serdes/avro/_serializer.py` [passes TS-013, TS-014]
 
 **Checkpoint**: Foundational complete — US2 scenarios [TS-010, TS-011, TS-012, TS-013, TS-014] and US3 scenarios [TS-020, TS-021, TS-022, TS-023, TS-024] all pass. US1 KAFKA_HEADERS implementation can begin.
 
@@ -62,13 +62,13 @@ call `.serialize(data, ctx)`, verify (a) payload has no magic byte or schema ID 
 
 ### TDD-First: Write Failing Tests (RED)
 
-- [ ] T011 [P] [US1] Write failing step definitions for KAFKA_HEADERS scenarios [TS-001, TS-002, TS-003, TS-004, TS-005, TS-006, TS-007, TS-008] in `tests/step_defs/test_kafka_headers_serialization.py`
-- [ ] T012 [P] [US1] Write failing byte-level tests for KAFKA_HEADERS header name lookup (4 field/use_id combinations) and `struct.pack(">q", schema_id)` value encoding in `tests/test_wire_format.py`
+- [x] T011 [P] [US1] Write failing step definitions for KAFKA_HEADERS scenarios [TS-001, TS-002, TS-003, TS-004, TS-005, TS-006, TS-007, TS-008] in `tests/step_defs/test_kafka_headers_serialization.py`
+- [x] T012 [P] [US1] Write failing byte-level tests for KAFKA_HEADERS header name lookup (4 field/use_id combinations) and `struct.pack(">q", schema_id)` value encoding in `tests/test_wire_format.py`
 
 ### Implementation: GREEN (after T011–T012 are confirmed RED)
 
-- [ ] T013 [US1] Implement KAFKA_HEADERS branch in `AvroSerializer.serialize()` in `src/apicurio_serdes/avro/_serializer.py`: raw Avro binary payload (no magic byte, no schema ID prefix), header name lookup table for all 4 `MessageField` × `use_id` combinations (`apicurio.{key|value}.{globalId|contentId}`), `struct.pack(">q", schema_id)` 8-byte big-endian signed long header value, `SchemaNotFoundError` raised before any payload or headers are produced for missing artifacts [passes TS-001, TS-002, TS-003, TS-004, TS-005, TS-006, TS-007]
-- [ ] T014 [US1] Verify schema caching preserved in KAFKA_HEADERS mode: assert exactly 1 HTTP call to registry for 1000 consecutive `serialize()` calls against the same artifact in `tests/test_wire_format.py` [passes TS-008]
+- [x] T013 [US1] Implement KAFKA_HEADERS branch in `AvroSerializer.serialize()` in `src/apicurio_serdes/avro/_serializer.py`: raw Avro binary payload (no magic byte, no schema ID prefix), header name lookup table for all 4 `MessageField` × `use_id` combinations (`apicurio.{key|value}.{globalId|contentId}`), `struct.pack(">q", schema_id)` 8-byte big-endian signed long header value, `SchemaNotFoundError` raised before any payload or headers are produced for missing artifacts [passes TS-001, TS-002, TS-003, TS-004, TS-005, TS-006, TS-007]
+- [x] T014 [US1] Verify schema caching preserved in KAFKA_HEADERS mode: assert exactly 1 HTTP call to registry for 1000 consecutive `serialize()` calls against the same artifact in `tests/test_wire_format.py` [passes TS-008]
 
 **Checkpoint**: US1 complete — all 8 KAFKA_HEADERS scenarios pass. Feature is functional end-to-end.
 
@@ -78,10 +78,10 @@ call `.serialize(data, ctx)`, verify (a) payload has no magic byte or schema ID 
 
 **Purpose**: Quality gates, documentation, and final validation before release.
 
-- [ ] T015 [P] Run `mypy --strict` on `src/apicurio_serdes/serialization.py` and `src/apicurio_serdes/avro/_serializer.py` and fix any missing type annotations or signature gaps
-- [ ] T016 [P] Run `uv run pytest --cov=src --cov-branch --cov-fail-under=100` and verify 100% line and branch coverage gate passes for all modified modules
-- [ ] T017 [DOCS] Write `docs/user-guide/kafka-headers-wire-format.md` user guide page for KAFKA_HEADERS mode and update API reference docstrings in `src/apicurio_serdes/serialization.py` (for `WireFormat`, `SerializedMessage`) and `src/apicurio_serdes/avro/_serializer.py` (for `AvroSerializer.wire_format`, `AvroSerializer.serialize()`)
-- [ ] T018 Validate `specs/004-kafka-headers-wire-format/quickstart.md` code examples run correctly with `uv run python` against the installed package
+- [x] T015 [P] Run `mypy --strict` on `src/apicurio_serdes/serialization.py` and `src/apicurio_serdes/avro/_serializer.py` and fix any missing type annotations or signature gaps
+- [x] T016 [P] Run `uv run pytest --cov=src --cov-branch --cov-fail-under=100` and verify 100% line and branch coverage gate passes for all modified modules
+- [x] T017 [DOCS] Write `docs/user-guide/kafka-headers-wire-format.md` user guide page for KAFKA_HEADERS mode and update API reference docstrings in `src/apicurio_serdes/serialization.py` (for `WireFormat`, `SerializedMessage`) and `src/apicurio_serdes/avro/_serializer.py` (for `AvroSerializer.wire_format`, `AvroSerializer.serialize()`)
+- [x] T018 Validate `specs/004-kafka-headers-wire-format/quickstart.md` code examples run correctly with `uv run python` against the installed package
 
 ---
 
