@@ -61,8 +61,8 @@ Test tasks for all three user stories are grouped in Phase 3 to maintain TDD dis
 
 ### Tests for US2
 
-- [ ] T008 [P] [US2] Write YAML validation tests for ci.yml upload-artifact and codecov/codecov-action@v5 steps in tests/ci/test_codecov_integration.py [TS-007, TS-008, TS-010] (depends on T001)
-- [ ] T009 [P] [US2] Write README badge presence tests in tests/ci/test_readme_badges.py asserting CI status and Codecov badge markdown is present [TS-009]
+- [x] T008 [P] [US2] Write YAML validation tests for ci.yml upload-artifact and codecov/codecov-action@v5 steps in tests/ci/test_codecov_integration.py [TS-007, TS-008, TS-010] (depends on T001)
+- [x] T009 [P] [US2] Write README badge presence tests in tests/ci/test_readme_badges.py asserting CI status and Codecov badge markdown is present [TS-009]
 
 ### Implementation for US2
 
@@ -83,7 +83,7 @@ Test tasks for all three user stories are grouped in Phase 3 to maintain TDD dis
 
 ### Tests for US3
 
-- [ ] T012 [US3] Write YAML validation tests for publish.yml trigger (release: published), sequential job chain (validate-version → build → publish-testpypi → validate-testpypi → publish-pypi), OIDC permissions, and version check step in tests/ci/test_publish_workflow.py [TS-011, TS-012, TS-013, TS-014, TS-015, TS-016, TS-017] (depends on T001)
+- [x] T012 [US3] Write YAML validation tests for publish.yml trigger (release: published), sequential job chain (validate-version → build → publish-testpypi → validate-testpypi → publish-pypi), OIDC permissions, and version check step in tests/ci/test_publish_workflow.py [TS-011, TS-012, TS-013, TS-014, TS-015, TS-016, TS-017] (depends on T001)
 
 ### Implementation for US3
 
@@ -103,8 +103,8 @@ Test tasks for all three user stories are grouped in Phase 3 to maintain TDD dis
 
 ### Tests for US4
 
-- [ ] T014 [P] [US4] Write YAML validation tests for security.yml triggers (pull_request targeting main, weekly cron Monday 06:00 UTC), dependency-audit job (pip-audit), and codeql job in tests/ci/test_security_workflow.py [TS-018, TS-019, TS-020, TS-021, TS-022] (depends on T001)
-- [ ] T015 [P] [US4] Write YAML validation tests for dependabot.yml pip package-ecosystem (daily) and github-actions package-ecosystem (weekly) configuration in tests/ci/test_dependabot.py [TS-019]
+- [x] T014 [P] [US4] Write YAML validation tests for security.yml triggers (pull_request targeting main, weekly cron Monday 06:00 UTC), dependency-audit job (pip-audit), and codeql job in tests/ci/test_security_workflow.py [TS-018, TS-019, TS-020, TS-021, TS-022] (depends on T001)
+- [x] T015 [P] [US4] Write YAML validation tests for dependabot.yml pip package-ecosystem (daily) and github-actions package-ecosystem (weekly) configuration in tests/ci/test_dependabot.py [TS-019]
 
 ### Implementation for US4
 
