@@ -298,3 +298,55 @@ def test_double_check_locking_cache_hit(mock_registry: respx.MockRouter) -> None
     client._schema_cache = _RaceDict()  # type: ignore[assignment]
     result = client.get_schema("Race")
     assert result is cached
+
+
+def test_global_id_outside_int64_raises_value_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """Registry returning a globalId outside signed 64-bit range raises ValueError."""
+    import json
+
+    from httpx import Response
+
+    from tests.conftest import USER_EVENT_SCHEMA_JSON
+
+    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/OverflowTest/versions/latest/content"
+    mock_registry.get(url).mock(
+        return_value=Response(
+            200,
+            content=json.dumps(USER_EVENT_SCHEMA_JSON),
+            headers={
+                "X-Registry-GlobalId": str(2**63),  # outside int64 range
+                "X-Registry-ContentId": "1",
+            },
+        )
+    )
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(ValueError, match="globalId"):
+        client.get_schema("OverflowTest")
+
+
+def test_content_id_outside_int64_raises_value_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """Registry returning a contentId outside signed 64-bit range raises ValueError."""
+    import json
+
+    from httpx import Response
+
+    from tests.conftest import USER_EVENT_SCHEMA_JSON
+
+    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/OverflowTest2/versions/latest/content"
+    mock_registry.get(url).mock(
+        return_value=Response(
+            200,
+            content=json.dumps(USER_EVENT_SCHEMA_JSON),
+            headers={
+                "X-Registry-GlobalId": "1",
+                "X-Registry-ContentId": str(2**63),  # outside int64 range
+            },
+        )
+    )
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(ValueError, match="contentId"):
+        client.get_schema("OverflowTest2")

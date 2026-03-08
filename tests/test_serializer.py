@@ -569,3 +569,17 @@ def test_invalid_wire_format_raises_value_error(
             artifact_id="UserEvent",
             wire_format="not_valid",  # type: ignore[arg-type]
         )
+
+
+def test_invalid_use_id_raises_value_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """Passing an invalid use_id value raises ValueError (M-001)."""
+    _schema_route(mock_registry, "UserEvent")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(ValueError, match="use_id must be"):
+        AvroSerializer(
+            registry_client=client,
+            artifact_id="UserEvent",
+            use_id="badValue",  # type: ignore[arg-type]
+        )

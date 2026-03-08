@@ -39,8 +39,11 @@ class AvroSerializer:
                      WireFormat.CONFLUENT_PAYLOAD (FR-003).
 
     Raises:
-        ValueError: If wire_format is not a WireFormat enum member.
+        ValueError: If wire_format is not a WireFormat enum member, or if
+            use_id is not ``"globalId"`` or ``"contentId"``.
     """
+
+    _VALID_USE_ID = frozenset({"globalId", "contentId"})
 
     def __init__(
         self,
@@ -54,6 +57,10 @@ class AvroSerializer:
         if not isinstance(wire_format, WireFormat):
             raise ValueError(
                 f"wire_format must be a WireFormat enum member, got {wire_format!r}"
+            )
+        if use_id not in self._VALID_USE_ID:
+            raise ValueError(
+                f"use_id must be 'globalId' or 'contentId', got {use_id!r}"
             )
         self.registry_client = registry_client
         self.artifact_id = artifact_id

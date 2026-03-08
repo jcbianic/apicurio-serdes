@@ -97,6 +97,16 @@ class ApicurioRegistryClient:
             global_id = int(response.headers["X-Registry-GlobalId"])
             content_id = int(response.headers["X-Registry-ContentId"])
 
+            _INT64_MIN, _INT64_MAX = -(2**63), 2**63 - 1
+            if not (_INT64_MIN <= global_id <= _INT64_MAX):
+                raise ValueError(
+                    f"globalId {global_id} is outside signed 64-bit range"
+                )
+            if not (_INT64_MIN <= content_id <= _INT64_MAX):
+                raise ValueError(
+                    f"contentId {content_id} is outside signed 64-bit range"
+                )
+
             cached = CachedSchema(
                 schema=schema,
                 global_id=global_id,
