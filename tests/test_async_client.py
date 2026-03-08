@@ -282,6 +282,48 @@ class TestPackageExport:
         assert AsyncApicurioRegistryClient is DirectClass
 
 
+class TestUnexpectedHttpStatus:
+    """T019: Unexpected HTTP status (e.g. 500) raises httpx.HTTPStatusError."""
+
+    async def test_get_schema_500_raises_http_status_error(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+
+        url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/Broken/versions/latest/content"
+        mock_registry.get(url).mock(return_value=Response(500))
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+
+        with pytest.raises(httpx.HTTPStatusError):
+            await client.get_schema("Broken")
+
+
+class TestClosedClientGuard:
+    """T021: get_schema on a closed client raises RuntimeError."""
+
+    async def test_get_schema_after_aclose_raises(self) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        await client.aclose()
+
+        with pytest.raises(RuntimeError):
+            await client.get_schema("UserEvent")
+
+    async def test_get_schema_after_async_with_raises(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+
+        async with AsyncApicurioRegistryClient(
+            url=REGISTRY_URL, group_id=GROUP_ID
+        ) as client:
+            pass
+
+        with pytest.raises(RuntimeError):
+            await client.get_schema("UserEvent")
+
+
 class TestDoubleCheckLocking:
     """Coverage: exercise the inner cache-check return path (line 70)."""
 
