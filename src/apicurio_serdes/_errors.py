@@ -6,9 +6,13 @@ from __future__ import annotations
 class SchemaNotFoundError(Exception):
     """Raised when an artifact or schema ID does not exist in the registry.
 
-    Attributes:
-        group_id: The group that was searched (artifact-based lookups).
-        artifact_id: The artifact that was not found (artifact-based lookups).
+    Two construction paths set different attributes:
+
+    Artifact-based lookups (``SchemaNotFoundError(group_id, artifact_id)``):
+        group_id: The group that was searched.
+        artifact_id: The artifact that was not found.
+
+    ID-based lookups (``SchemaNotFoundError.from_id(id_type, id_value)``):
         id_type: The ID type that was searched ("globalId" or "contentId").
         id_value: The numeric ID that was not found.
     """

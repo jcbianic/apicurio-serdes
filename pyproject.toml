@@ -20,6 +20,7 @@ docs = [
 ]
 dev = [
     "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
     "pytest-bdd>=8.0.0",
     "pytest-cov>=5.0.0",
     "respx>=0.21.0",
@@ -30,6 +31,7 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--cov=src/apicurio_serdes --cov-branch --cov-fail-under=100"
+asyncio_mode = "auto"
 
 [tool.mypy]
 strict = true
