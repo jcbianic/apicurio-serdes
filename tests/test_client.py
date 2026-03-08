@@ -12,11 +12,16 @@ from pytest_bdd import given, parsers, scenario, then, when
 from apicurio_serdes import ApicurioRegistryClient
 from apicurio_serdes.avro import AvroSerializer
 from apicurio_serdes.serialization import MessageField, SerializationContext
+import httpx
+
 from tests.conftest import (
     GROUP_ID,
     REGISTRY_URL,
+    USER_EVENT_SCHEMA_JSON,
     VALID_USER_EVENT,
     VALID_USER_EVENT_ALT,
+    _id_not_found_route,
+    _id_schema_route,
     _schema_route,
 )
 
@@ -263,6 +268,129 @@ def test_empty_url_raises_value_error() -> None:
         ApicurioRegistryClient(url="", group_id="g")
 
 
+def test_get_schema_500_raises_registry_connection_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """Unexpected HTTP status in get_schema raises RegistryConnectionError [FR-013]."""
+    from apicurio_serdes._errors import RegistryConnectionError
+    from httpx import Response
+
+    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/Broken/versions/latest/content"
+    mock_registry.get(url).mock(return_value=Response(500))
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(RegistryConnectionError):
+        client.get_schema("Broken")
+
+
+def test_get_schema_by_global_id_500_raises_registry_connection_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """Unexpected HTTP status in _get_schema_by_id raises RegistryConnectionError [FR-013]."""
+    from apicurio_serdes._errors import RegistryConnectionError
+    from httpx import Response
+
+    mock_registry.get(url__startswith=f"{REGISTRY_URL}/ids/globalIds/").mock(
+        return_value=Response(500)
+    )
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(RegistryConnectionError):
+        client.get_schema_by_global_id(7)
+
+
+# ── T004: get_schema_by_global_id ──
+
+
+def test_get_schema_by_global_id_cache_miss(mock_registry: respx.MockRouter) -> None:
+    """First call hits registry and returns schema dict [TS-017, FR-007]."""
+    _id_schema_route(mock_registry, "globalId", 7)
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    result = client.get_schema_by_global_id(7)
+    assert result == USER_EVENT_SCHEMA_JSON
+
+
+def test_get_schema_by_global_id_cache_hit(mock_registry: respx.MockRouter) -> None:
+    """Second call returns cached result without HTTP call [FR-007]."""
+    route = _id_schema_route(mock_registry, "globalId", 7)
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    r1 = client.get_schema_by_global_id(7)
+    r2 = client.get_schema_by_global_id(7)
+    assert r1 == r2
+    assert route.call_count == 1
+
+
+def test_get_schema_by_global_id_not_found(mock_registry: respx.MockRouter) -> None:
+    """404 raises SchemaNotFoundError with id_type/id_value [FR-010]."""
+    from apicurio_serdes._errors import SchemaNotFoundError
+
+    _id_not_found_route(mock_registry, "globalId", 999)
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(SchemaNotFoundError) as exc_info:
+        client.get_schema_by_global_id(999)
+    err = exc_info.value
+    assert err.id_type == "globalId"
+    assert err.id_value == 999
+
+
+def test_get_schema_by_global_id_network_error(mock_registry: respx.MockRouter) -> None:
+    """Network failure raises RegistryConnectionError [FR-012]."""
+    from apicurio_serdes._errors import RegistryConnectionError
+
+    mock_registry.get(
+        url__startswith=f"{REGISTRY_URL}/ids/globalIds/"
+    ).mock(side_effect=httpx.ConnectError("refused"))
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(RegistryConnectionError):
+        client.get_schema_by_global_id(7)
+
+
+# ── T005: get_schema_by_content_id ──
+
+
+def test_get_schema_by_content_id_cache_miss(mock_registry: respx.MockRouter) -> None:
+    """First call hits registry and returns schema dict [TS-016, FR-007]."""
+    _id_schema_route(mock_registry, "contentId", 42)
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    result = client.get_schema_by_content_id(42)
+    assert result == USER_EVENT_SCHEMA_JSON
+
+
+def test_get_schema_by_content_id_cache_hit(mock_registry: respx.MockRouter) -> None:
+    """Second call returns cached result without HTTP call [FR-007]."""
+    route = _id_schema_route(mock_registry, "contentId", 42)
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    r1 = client.get_schema_by_content_id(42)
+    r2 = client.get_schema_by_content_id(42)
+    assert r1 == r2
+    assert route.call_count == 1
+
+
+def test_get_schema_by_content_id_not_found(mock_registry: respx.MockRouter) -> None:
+    """404 raises SchemaNotFoundError with id_type/id_value [FR-010]."""
+    from apicurio_serdes._errors import SchemaNotFoundError
+
+    _id_not_found_route(mock_registry, "contentId", 9999)
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(SchemaNotFoundError) as exc_info:
+        client.get_schema_by_content_id(9999)
+    err = exc_info.value
+    assert err.id_type == "contentId"
+    assert err.id_value == 9999
+
+
+def test_get_schema_by_content_id_network_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """Network failure raises RegistryConnectionError [FR-012]."""
+    from apicurio_serdes._errors import RegistryConnectionError
+
+    mock_registry.get(
+        url__startswith=f"{REGISTRY_URL}/ids/contentIds/"
+    ).mock(side_effect=httpx.ConnectError("refused"))
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(RegistryConnectionError):
+        client.get_schema_by_content_id(42)
+
+
 def test_double_check_locking_cache_hit(mock_registry: respx.MockRouter) -> None:
     """Exercise the double-checked locking return path (line 80).
 
@@ -298,3 +426,33 @@ def test_double_check_locking_cache_hit(mock_registry: respx.MockRouter) -> None
     client._schema_cache = _RaceDict()  # type: ignore[assignment]
     result = client.get_schema("Race")
     assert result is cached
+
+
+def test_id_cache_double_check_locking(mock_registry: respx.MockRouter) -> None:
+    """Exercise the double-checked locking return path for _id_cache (line 156).
+
+    Simulates a race where another thread populates the ID cache between
+    the fast-path check and the lock-guarded check.
+    """
+    _id_schema_route(mock_registry, "contentId", 42)
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+
+    cached_schema: dict[str, Any] = {"type": "record", "name": "X", "fields": []}
+    cache_key = ("contentId", 42)
+    check_count: dict[str, int] = {"n": 0}
+
+    class _RaceDict(dict[tuple[str, int], Any]):
+        """Dict that misses the first __contains__ then simulates a race fill."""
+
+        def __contains__(self, key: object) -> bool:
+            if key == cache_key:
+                check_count["n"] += 1
+                if check_count["n"] == 1:
+                    return False  # fast-path miss
+                self[cache_key] = cached_schema  # type: ignore[index]
+                return True
+            return super().__contains__(key)
+
+    client._id_cache = _RaceDict()  # type: ignore[assignment]
+    result = client.get_schema_by_content_id(42)
+    assert result is cached_schema

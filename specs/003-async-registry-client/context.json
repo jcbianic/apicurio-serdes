@@ -1,0 +1,8 @@
+{
+  "testify": {
+    "assertion_hash": "6a6848c1dcb008bf7c2f1d30d9189c2ad5ca9f82e603ba1497c8334552bd0ac0",
+    "generated_at": "2026-03-07T18:49:38Z",
+    "features_dir": "specs/003-async-registry-client/tests/features",
+    "file_count": 5
+  }
+}
