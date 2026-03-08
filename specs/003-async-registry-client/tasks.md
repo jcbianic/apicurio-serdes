@@ -19,7 +19,7 @@
 
 **Purpose**: Add the async test runner dependency required by all async test functions.
 
-- [ ] T001 Add `pytest-asyncio>=0.23.0` to `[dependency-groups] dev` in pyproject.toml, set `asyncio_mode = "auto"` in `[tool.pytest.ini_options]`, and run `uv lock --upgrade-package pytest-asyncio`
+- [x] T001 Add `pytest-asyncio>=0.23.0` to `[dependency-groups] dev` in pyproject.toml, set `asyncio_mode = "auto"` in `[tool.pytest.ini_options]`, and run `uv lock --upgrade-package pytest-asyncio`
 
 ---
 
