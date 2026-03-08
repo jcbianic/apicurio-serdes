@@ -89,7 +89,7 @@ As a Python developer configuring serializers for a Kafka pipeline, I want to se
 
 - **FR-009**: The `use_id` parameter (`"globalId"` or `"contentId"`) MUST apply to both wire format modes — it selects which registry-assigned identifier is used, regardless of whether that identifier is transmitted in the payload prefix or in message headers.
 
-- **FR-010**: [NEEDS CLARIFICATION: how does the API surface the headers to the caller when `wire_format=WireFormat.KAFKA_HEADERS`? The choice has a direct impact on the public API contract. Candidate options: (A) `AvroSerializer.__call__` returns `tuple[bytes, dict[str, bytes]]` in KAFKA_HEADERS mode only, (B) `SerializationContext` grows a mutable `headers` attribute populated as a side effect, (C) a dedicated `serialize()` method returns a `SerializedMessage` dataclass with `payload: bytes` and `headers: dict[str, bytes]`.]
+- **FR-010**: When `wire_format=WireFormat.KAFKA_HEADERS`, the API MUST surface the schema identifier header(s) to the caller via a dedicated `serialize()` method that returns a `SerializedMessage` dataclass with `payload: bytes` and `headers: dict[str, bytes]` fields. The existing `__call__` method remains backward-compatible, returning only the payload bytes (headers discarded when KAFKA_HEADERS mode invoked through `__call__`). See plan.md§"FR-010 Resolution" for detailed rationale.
 
 ### Non-Functional Requirements
 
@@ -118,3 +118,12 @@ As a Python developer configuring serializers for a Kafka pipeline, I want to se
 - **SC-004**: `WireFormat` is importable from the library's top-level namespace (`from apicurio_serdes import WireFormat`) and is discoverable via IDE autocompletion with at least `CONFLUENT_PAYLOAD` and `KAFKA_HEADERS` members.
 
 - **SC-005**: Serializing 1,000 consecutive messages with `WireFormat.KAFKA_HEADERS` results in exactly 1 registry HTTP call (schema caching guarantee preserved for the new mode).
+
+## Clarifications
+
+### Session 2026-03-08
+
+- **Q: FR-010 — How does the API surface headers to the caller in KAFKA_HEADERS mode?**
+  **A: Option C — Dedicated `serialize()` method returns `SerializedMessage(payload: bytes, headers: dict[str, bytes])` dataclass. Existing `__call__` remains backward-compatible.**
+  **Rationale**: Fully additive API (no breaking changes), explicit semantics, type-safe, aligns with Constitution Principle I (API compatibility).
+  **References**: [FR-010], [plan.md§FR-010-Resolution]
