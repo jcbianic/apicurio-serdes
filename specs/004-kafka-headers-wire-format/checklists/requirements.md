@@ -28,7 +28,7 @@
 
 | # | Item | Blocking? | Notes |
 |---|------|-----------|-------|
-| CB-01 | FR-010 — API shape for returning headers in KAFKA_HEADERS mode | NO | Explicitly deferred to plan.md; three candidate options listed; spec ratification is not blocked |
+| CB-01 | FR-010 — API shape for returning headers in KAFKA_HEADERS mode | RESOLVED | Plan.md selected Option C: `AvroSerializer.serialize()` returning `SerializedMessage(payload, headers)` dataclass (plan.md#FR-010-Resolution) |
 
 ## Feature Readiness
 
@@ -40,6 +40,36 @@
 | FG-04 | Blocking clarifications resolved | READY (FR-010 deferred to plan, not a spec blocker) |
 | FG-05 | No constitutional violations detected | READY |
 
-**Overall**: READY for `/iikit-02-plan`
+## Edge Case Coverage [Spec Section: Edge Cases]
 
-**Note**: FR-010 (API shape for headers) must be resolved in `plan.md` before `/iikit-04-testify`. The three candidate options (tuple return, mutable SerializationContext, or SerializedMessage dataclass) should be evaluated against Constitution Principle I (API compatibility with confluent-kafka) in the plan phase.
+| # | Edge Case | Requirement Coverage | Notes |
+|---|-----------|---------------------|-------|
+| EC-01 | Consumer receives KAFKA_HEADERS message but expects CONFLUENT_PAYLOAD | implicit in FR-004 (payload framing unchanged) | Interoperability guaranteed by wire format adherence |
+| EC-02 | Missing Kafka headers on consumer side | implicit in FR-008, scope note: deserializer responsibility | Covered in deserialization (out of scope for serializer) |
+| EC-03 | `use_id="contentId"` combined with KAFKA_HEADERS | explicit in FR-009 | Header naming table (plan.md) covers all 4 field/use_id combinations |
+| EC-04 | Invalid `wire_format` value passed to AvroSerializer | implicit in FR-003 (type checking) | Enum type system prevents invalid values |
+| EC-05 | Schema identifier cannot be resolved from registry | explicit in FR-008 (SchemaNotFoundError) | Error handling requirement validated |
+
+## Technical Decision Validation [Spec Section: Key Entities + Plan]
+
+| # | Technical Decision | Decision Made | Alignment Check | Notes |
+|---|---|---|---|---|
+| TD-01 | WireFormat enum placement | `serialization.py` alongside MessageField, SerializationContext | ✓ FR-001, FR-002 | Grouped with serialization concepts |
+| TD-02 | Header value byte encoding | 8-byte big-endian signed long (`struct.pack(">q", id)`) | ✓ FR-007, SC-002 | Apicurio Java KAFKA_HEADERS compatible (plan.md#D3) |
+| TD-03 | Header name derivation | `apicurio.{key\|value}.{globalId\|contentId}` | ✓ FR-006 | Apicurio v3 native convention (plan.md#D2) |
+| TD-04 | `__call__` backward compatibility | Delegates to `serialize()`, returns `.payload` only | ✓ US2, FR-004, SC-003 | No breaking change; headers discarded in `__call__` mode |
+| TD-05 | API surface for headers | Dedicated `serialize()` method → `SerializedMessage` dataclass | ✓ FR-010 (Option C) | Additive API, full type safety, no side effects |
+| TD-06 | Schema caching scope | Cache preserved across both wire format modes | ✓ NFR-001, SC-005 | No new HTTP calls for repeated artifacts |
+
+## Consistency Checks [Cross-artifact Validation]
+
+| # | Check | Target | Status | Notes |
+|---|-------|--------|--------|-------|
+| CK-01 | Spec FRs match plan implementation phases | plan.md§"Requirements Traceability" | ✓ PASS | All FR-001 through FR-010 + NFR-001, NFR-002 traced to phases 1-4 |
+| CK-02 | Plan technical decisions align with Constitution | plan.md§"Constitution Check" | ✓ PASS | All 5 principles (I-V) marked ALIGNED; TDD mandatory (Principle III) |
+| CK-03 | Success criteria measurable without plan | spec.md§"Success Criteria" | ✓ PASS | All SC-001 through SC-005 are testable without implementation details |
+| CK-04 | User stories independent from implementation choice | spec.md§"User Stories" | ✓ PASS | Stories are outcome-focused, not method-focused |
+
+**Overall**: READY for `/iikit-04-testify` (test-first development with BDD scenarios)
+
+**Key Gate**: Constitution Principle III (Test-First Development) is MANDATORY. `/iikit-04-testify` must run next to generate `test-specs.md` and `.feature` files with assertion integrity hashing before any production code is written.
