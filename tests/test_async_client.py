@@ -280,3 +280,37 @@ class TestPackageExport:
         )
 
         assert AsyncApicurioRegistryClient is DirectClass
+
+
+class TestDoubleCheckLocking:
+    """Coverage: exercise the inner cache-check return path (line 70)."""
+
+    async def test_inner_cache_check_returns_cached_value(self) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+        from apicurio_serdes._client import CachedSchema
+
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+
+        cached = CachedSchema(
+            schema={"type": "record", "name": "X", "fields": []},
+            global_id=99,
+            content_id=88,
+        )
+        cache_key = (GROUP_ID, "Race")
+        check_count: dict[str, int] = {"n": 0}
+
+        class _RaceDict(dict[tuple[str, str], Any]):
+            """Dict that misses the first __contains__ then simulates a race fill."""
+
+            def __contains__(self, key: object) -> bool:
+                if key == cache_key:
+                    check_count["n"] += 1
+                    if check_count["n"] == 1:
+                        return False  # fast-path miss
+                    self[cache_key] = cached  # type: ignore[index]
+                    return True
+                return super().__contains__(key)
+
+        client._schema_cache = _RaceDict()  # type: ignore[assignment]
+        result = await client.get_schema("Race")
+        assert result is cached
