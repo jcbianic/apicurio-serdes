@@ -227,3 +227,44 @@ class TestInterfaceParity:
         result = await client.get_schema("UserEvent")
 
         assert type(result) is CachedSchema
+
+
+class TestLifecycleContextManager:
+    """FR-009, FR-010: async with and explicit aclose()."""
+
+    async def test_async_with_closes_http_client(self) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+
+        async with AsyncApicurioRegistryClient(
+            url=REGISTRY_URL, group_id=GROUP_ID
+        ) as client:
+            assert client._http_client.is_closed is False
+
+        assert client._http_client.is_closed is True
+
+    async def test_async_with_returns_self(self) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+
+        instance = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        async with instance as client:
+            assert client is instance
+        await instance.aclose()
+
+    async def test_async_with_closes_on_exception(self) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+
+        with pytest.raises(RuntimeError, match="test error"):
+            async with AsyncApicurioRegistryClient(
+                url=REGISTRY_URL, group_id=GROUP_ID
+            ) as client:
+                raise RuntimeError("test error")
+
+        assert client._http_client.is_closed is True
+
+    async def test_explicit_aclose(self) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        assert client._http_client.is_closed is False
+        await client.aclose()
+        assert client._http_client.is_closed is True

@@ -74,11 +74,11 @@
 
 ### Tests (RED first)
 
-- [ ] T011 [US4] Write failing tests for `async with` lifecycle (__aenter__ returns self; __aexit__ closes the underlying httpx.AsyncClient) and for explicit `await client.aclose()` in tests/test_async_client.py [FR-009, FR-010]
+- [x] T011 [US4] Write failing tests for `async with` lifecycle (__aenter__ returns self; __aexit__ closes the underlying httpx.AsyncClient) and for explicit `await client.aclose()` in tests/test_async_client.py [FR-009, FR-010]
 
 ### Implementation (GREEN)
 
-- [ ] T012 [US4] Implement `async __aenter__`, `async __aexit__`, and `async aclose()` methods in src/apicurio_serdes/_async_client.py [FR-009, FR-010]
+- [x] T012 [US4] Implement `async __aenter__`, `async __aexit__`, and `async aclose()` methods in src/apicurio_serdes/_async_client.py [FR-009, FR-010]
 
 **Checkpoint**: US4 tests GREEN — context manager lifecycle and explicit close both verified.
 
