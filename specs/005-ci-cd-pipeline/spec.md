@@ -1,18 +1,18 @@
 # Feature Specification: CI/CD Pipeline
 
 **Feature Branch**: `005-ci-cd-pipeline`
-**Created**: 2026-03-06
+**Created**: 2026-03-08
 **Status**: Draft
-**Input**: User description: "full CI on github actions with automated test, security audit, generation and publication of docs and publication to the pipy registry (with publication to the testpipy registry first) this is an open source project that will need a publication process (and an automated one at that)"
+**Input**: User description: "we need a ci cd pipeline adapted for an enterprise-grade open source project in python. It needs to run the full test suite, maybe some quality gates tooling that have a good offering for open-source to send signals about the quality of the code, and a publishing process to PyPI and ReadTheDocs (ReadTheDocs might be handled elsewhere)"
 
 ## User Stories *(mandatory)*
 
 ### User Story 1 - Automated Quality Gate on Every Change (Priority: P1)
 
 As a contributor, I want every push and pull request to automatically run the
-full test suite with coverage enforcement and static analysis so that I receive
-fast feedback on whether my changes meet the project's quality standards before
-review begins.
+full test suite with coverage enforcement, static analysis, and type checking so
+that I receive fast feedback on whether my changes meet the project's quality
+standards before review begins.
 
 **Why this priority**: Without automated test execution, quality enforcement
 relies on manual discipline. This is the foundation every other CI/CD capability
@@ -39,7 +39,37 @@ with a failing test and verifying the pipeline rejects it.
 
 ---
 
-### User Story 2 - Automated Package Publication (Priority: P1)
+### User Story 2 - Open-Source Quality Signaling (Priority: P1)
+
+As a maintainer, I want the pipeline to integrate with quality signaling
+services that offer free tiers for open-source projects so that the repository
+publicly communicates code quality, coverage, and health through badges and
+dashboards that build trust with potential adopters.
+
+**Why this priority**: Enterprise users evaluating an open-source library look
+for visible quality signals — coverage badges, code quality ratings, and
+passing CI status — as indicators of project maturity. Without these signals the
+project appears unvetted regardless of its actual quality.
+
+**Independent Test**: Can be fully tested by verifying that after a successful CI
+run, coverage data is uploaded to the external service and the repository badge
+reflects the current coverage percentage.
+
+**Acceptance Scenarios**:
+
+1. **Given** the CI pipeline completes successfully, **When** coverage results
+   are produced, **Then** the results are uploaded to an external coverage
+   reporting service that provides a public dashboard and embeddable badge.
+2. **Given** a pull request is opened, **When** the coverage reporting service
+   receives the results, **Then** the PR displays a coverage summary comment or
+   status check showing coverage change compared to the base branch.
+3. **Given** the repository has quality signaling configured, **When** a
+   potential adopter visits the repository, **Then** they can see up-to-date
+   badges for CI status, coverage percentage, and code quality in the README.
+
+---
+
+### User Story 3 - Automated Package Publication (Priority: P1)
 
 As a maintainer, I want an automated publication process that publishes the
 package to a staging registry first and then to the production registry so that
@@ -70,15 +100,15 @@ production registry.
 
 ---
 
-### User Story 3 - Automated Security Audit (Priority: P2)
+### User Story 4 - Automated Security Audit (Priority: P2)
 
 As a maintainer, I want automated security scanning on every change and on a
 recurring schedule so that known vulnerabilities in dependencies and in the
 codebase are detected early and do not reach production.
 
-**Why this priority**: An open-source library consumed by external teams must
-demonstrate proactive security hygiene. Users need confidence that published
-versions have been audited.
+**Why this priority**: An enterprise-grade open-source library consumed by
+external teams must demonstrate proactive security hygiene. Users need confidence
+that published versions have been audited.
 
 **Independent Test**: Can be fully tested by introducing a dependency with a
 known vulnerability and verifying the pipeline detects and reports it.
@@ -97,34 +127,34 @@ known vulnerability and verifying the pipeline detects and reports it.
 
 ---
 
-### User Story 4 - Automated Documentation Publication (Priority: P2)
+### User Story 5 - Documentation Build Validation (Priority: P2)
 
-As a maintainer, I want documentation to be automatically generated from the
-codebase and published to a hosted site on every release so that end users always
-have access to current, accurate documentation.
+As a maintainer, I want the CI pipeline to validate that documentation builds
+successfully on every pull request so that documentation regressions are caught
+before merge, even if the documentation hosting itself is managed separately.
 
 **Why this priority**: The constitution mandates documentation as a first-class
-deliverable. Automating generation and publication ensures documentation stays in
-sync with the released version.
+deliverable. Even if hosting is handled by an external service (e.g.,
+ReadTheDocs), the pipeline must guarantee that the documentation source is always
+in a buildable state.
 
-**Independent Test**: Can be fully tested by triggering a release and verifying
-the hosted documentation site is updated with the new version's content.
+**Independent Test**: Can be fully tested by introducing a documentation error in
+a pull request and verifying the pipeline detects the build failure.
 
 **Acceptance Scenarios**:
 
-1. **Given** a release is published, **When** the documentation pipeline runs,
-   **Then** the documentation site is rebuilt from the current codebase and
-   deployed.
-2. **Given** a pull request is opened, **When** the CI pipeline runs, **Then**
-   the documentation build is validated (builds without errors) but not
-   published.
-3. **Given** the documentation site is deployed, **When** a user visits the
-   site, **Then** the content reflects the latest released version including API
-   reference and user guide.
+1. **Given** a pull request is opened, **When** the CI pipeline runs, **Then**
+   the documentation build is validated (builds without errors).
+2. **Given** the documentation source contains an error (broken reference,
+   syntax error), **When** the CI pipeline runs, **Then** the build fails and
+   reports the specific documentation error.
+3. **Given** a release is published, **When** the documentation hosting service
+   is configured to track the repository, **Then** the documentation site is
+   rebuilt automatically by the hosting service (outside this pipeline's scope).
 
 ---
 
-### User Story 5 - Multi-Platform Compatibility Verification (Priority: P3)
+### User Story 6 - Multi-Platform Compatibility Verification (Priority: P3)
 
 As a contributor, I want the test suite to run across multiple supported Python
 versions so that compatibility claims are verified automatically rather than
@@ -157,11 +187,14 @@ test results are reported for each declared Python version.
   The pipeline must create an actionable alert with severity, affected
   dependency, and remediation guidance.
 - What happens when the documentation build fails during a release? The release
-  must not proceed if documentation cannot be generated, since documentation is a
+  must not proceed if documentation cannot be built, since documentation is a
   constitutional requirement.
 - What happens when network connectivity to a package registry is temporarily
   unavailable? The pipeline must retry with backoff and report the failure
   clearly if retries are exhausted.
+- What happens when the external coverage reporting service is unavailable? The
+  CI pipeline must still pass or fail based on local coverage enforcement; the
+  upload failure should be non-blocking but logged as a warning.
 
 ## Requirements *(mandatory)*
 
@@ -175,30 +208,33 @@ test results are reported for each declared Python version.
   request.
 - **FR-004**: The CI pipeline MUST block pull request merges when any quality
   check fails.
-- **FR-005**: The publication pipeline MUST publish packages to a staging
-  registry (TestPyPI) before publishing to the production registry (PyPI).
-- **FR-006**: The publication pipeline MUST validate that the package version
-  matches the release identifier before publishing.
-- **FR-007**: The publication pipeline MUST halt and not publish to production if
-  staging publication fails.
-- **FR-008**: The security audit MUST scan for known vulnerabilities in the
-  dependency tree on every pull request.
-- **FR-009**: The security audit MUST run on a recurring schedule to detect newly
-  disclosed vulnerabilities.
-- **FR-010**: The security audit MUST perform static security analysis of the
-  codebase.
-- **FR-011**: The documentation pipeline MUST generate documentation from the
-  codebase and publish it to a hosted site on every release.
-- **FR-012**: The documentation pipeline MUST validate that documentation builds
-  successfully on every pull request.
-- **FR-013**: The CI pipeline MUST run tests on all Python versions declared as
-  supported in the project configuration.
-- **FR-014**: The publication pipeline MUST NOT overwrite a version that has
-  already been published to a registry.
-- **FR-015**: The publication pipeline MUST use secure, non-secret-exposing
-  authentication mechanisms for registry publication (trusted publishing).
-- **FR-016**: The CI pipeline MUST produce a downloadable coverage report as a
+- **FR-005**: The CI pipeline MUST upload coverage results to an external
+  coverage reporting service that provides public dashboards and embeddable
+  badges for the repository.
+- **FR-006**: The CI pipeline MUST produce a downloadable coverage report as a
   build artifact.
+- **FR-007**: The repository MUST display quality signal badges (CI status,
+  coverage percentage) that reflect the current state of the default branch.
+- **FR-008**: The publication pipeline MUST publish packages to a staging
+  registry (TestPyPI) before publishing to the production registry (PyPI).
+- **FR-009**: The publication pipeline MUST validate that the package version
+  matches the release identifier before publishing.
+- **FR-010**: The publication pipeline MUST halt and not publish to production if
+  staging publication fails.
+- **FR-011**: The publication pipeline MUST use secure, non-secret-exposing
+  authentication mechanisms for registry publication (trusted publishing).
+- **FR-012**: The publication pipeline MUST NOT overwrite a version that has
+  already been published to a registry.
+- **FR-013**: The security audit MUST scan for known vulnerabilities in the
+  dependency tree on every pull request.
+- **FR-014**: The security audit MUST run on a recurring schedule to detect newly
+  disclosed vulnerabilities.
+- **FR-015**: The security audit MUST perform static security analysis of the
+  codebase.
+- **FR-016**: The CI pipeline MUST validate that the documentation builds
+  successfully on every pull request.
+- **FR-017**: The CI pipeline MUST run tests on all Python versions declared as
+  supported in the project configuration.
 
 ## Success Criteria *(mandatory)*
 
@@ -207,13 +243,17 @@ test results are reported for each declared Python version.
 - **SC-001**: Every pull request receives automated pass/fail status from all
   quality checks (tests, coverage, lint, type check) within a reasonable time
   window.
-- **SC-002**: Every release results in the package being available on both the
+- **SC-002**: The repository displays up-to-date quality badges (CI status,
+  coverage percentage) that reflect the current state of the default branch.
+- **SC-003**: Pull requests display coverage change information (delta vs. base
+  branch) from the external coverage reporting service.
+- **SC-004**: Every release results in the package being available on both the
   staging and production registries without manual intervention.
-- **SC-003**: Every release results in the documentation site being updated to
-  reflect the new version without manual intervention.
-- **SC-004**: Known dependency vulnerabilities are detected and reported within
+- **SC-005**: Known dependency vulnerabilities are detected and reported within
   24 hours of public disclosure (via scheduled scans).
-- **SC-005**: No release can be published without passing all quality gates
+- **SC-006**: No release can be published without passing all quality gates
   (tests, coverage, lint, type check, security audit, documentation build).
-- **SC-006**: The pipeline correctly prevents publication of duplicate versions.
-- **SC-007**: Tests run on all declared Python versions for every pull request.
+- **SC-007**: The pipeline correctly prevents publication of duplicate versions.
+- **SC-008**: Tests run on all declared Python versions for every pull request.
+- **SC-009**: Documentation build validation catches regressions on every pull
+  request.
