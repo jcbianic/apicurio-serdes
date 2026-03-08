@@ -45,7 +45,7 @@ Test tasks for all three user stories are grouped in Phase 3 to maintain TDD dis
 
 ### Implementation for US1
 
-- [ ] T007 [US1] Create .github/workflows/ci.yml with lint, typecheck, test (3.10–3.13 matrix), and docs jobs per specs/005-ci-cd-pipeline/contracts/ci-workflow.md [TS-001, TS-002, TS-003, TS-004, TS-005, TS-006, TS-023, TS-024, TS-025, TS-026] (depends on T003, T004, T005, T006)
+- [x] T007 [US1] Create .github/workflows/ci.yml with lint, typecheck, test (3.10–3.13 matrix), and docs jobs per specs/005-ci-cd-pipeline/contracts/ci-workflow.md [TS-001, TS-002, TS-003, TS-004, TS-005, TS-006, TS-023, TS-024, TS-025, TS-026] (depends on T003, T004, T005, T006)
 
 **Checkpoint**: All ci.yml YAML tests pass; four jobs (lint, typecheck, test, docs) confirmed; test matrix covers all four Python versions
 

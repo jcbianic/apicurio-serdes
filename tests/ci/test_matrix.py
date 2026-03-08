@@ -49,9 +49,7 @@ class TestPythonMatrix:
     ) -> None:
         """TS-026: Each matrix entry runs as a separate job for clear attribution."""
         test_job = ci_workflow["jobs"]["test"]
-        assert "strategy" in test_job
-        assert not test_job["strategy"].get(
-            "fail-fast", True
-        ) is True or "fail-fast" not in test_job["strategy"], (
-            "fail-fast should be false for clear per-version attribution"
+        strategy = test_job["strategy"]
+        assert strategy.get("fail-fast") is False, (
+            "fail-fast must be false for clear per-version attribution"
         )
