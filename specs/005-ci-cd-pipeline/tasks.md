@@ -20,7 +20,7 @@ Test tasks for all three user stories are grouped in Phase 3 to maintain TDD dis
 
 **Purpose**: Directory structure and dev-tooling prerequisites
 
-- [ ] T001 [P] Create .github/workflows/ directory structure (prerequisite for all workflow files)
+- [x] T001 [P] Create .github/workflows/ directory structure (prerequisite for all workflow files)
 - [ ] T002 [P] Add pip-audit to dev dependency group in pyproject.toml (required by security.yml)
 
 ---
