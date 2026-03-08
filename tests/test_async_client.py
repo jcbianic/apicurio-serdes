@@ -268,3 +268,15 @@ class TestLifecycleContextManager:
         assert client._http_client.is_closed is False
         await client.aclose()
         assert client._http_client.is_closed is True
+
+
+class TestPackageExport:
+    """FR-011: Top-level import of AsyncApicurioRegistryClient."""
+
+    def test_import_from_top_level_package(self) -> None:
+        from apicurio_serdes import AsyncApicurioRegistryClient
+        from apicurio_serdes._async_client import (
+            AsyncApicurioRegistryClient as DirectClass,
+        )
+
+        assert AsyncApicurioRegistryClient is DirectClass

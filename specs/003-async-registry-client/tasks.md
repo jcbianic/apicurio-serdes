@@ -90,11 +90,11 @@
 
 ### Tests (RED first)
 
-- [ ] T013 Write failing test asserting `from apicurio_serdes import AsyncApicurioRegistryClient` succeeds and the imported name is the correct class in tests/test_async_client.py [FR-011]
+- [x] T013 Write failing test asserting `from apicurio_serdes import AsyncApicurioRegistryClient` succeeds and the imported name is the correct class in tests/test_async_client.py [FR-011]
 
 ### Implementation (GREEN)
 
-- [ ] T014 Update src/apicurio_serdes/__init__.py: add `from apicurio_serdes._async_client import AsyncApicurioRegistryClient` and include `"AsyncApicurioRegistryClient"` in `__all__` [FR-011]
+- [x] T014 Update src/apicurio_serdes/__init__.py: add `from apicurio_serdes._async_client import AsyncApicurioRegistryClient` and include `"AsyncApicurioRegistryClient"` in `__all__` [FR-011]
 
 **Checkpoint**: Top-level import test GREEN — AsyncApicurioRegistryClient publicly accessible alongside ApicurioRegistryClient.
 
