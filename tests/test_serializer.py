@@ -17,7 +17,12 @@ from apicurio_serdes._errors import (
     SerializationError,
 )
 from apicurio_serdes.avro import AvroSerializer
-from apicurio_serdes.serialization import MessageField, SerializationContext
+from apicurio_serdes.serialization import (
+    MessageField,
+    SerializationContext,
+    SerializedMessage,
+    WireFormat,
+)
 from tests.conftest import (
     GLOBAL_ID,
     GROUP_ID,
@@ -485,3 +490,82 @@ def test_strict_mode_valid_data_passes(mock_registry: respx.MockRouter) -> None:
     result = serializer(VALID_USER_EVENT, ctx)
     assert result[0:1] == b"\x00"
     assert len(result) > 5
+
+
+# ── T005: wire_format parameter and serialize() CONFLUENT_PAYLOAD path ──
+
+
+def test_serialize_confluent_payload_returns_serialized_message(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """serialize() with CONFLUENT_PAYLOAD returns a SerializedMessage whose payload
+    starts with magic byte 0x00 and whose headers dict is empty."""
+    _schema_route(mock_registry, "UserEvent")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    serializer = AvroSerializer(
+        registry_client=client,
+        artifact_id="UserEvent",
+        wire_format=WireFormat.CONFLUENT_PAYLOAD,
+    )
+    ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+    result = serializer.serialize(VALID_USER_EVENT, ctx)
+    assert isinstance(result, SerializedMessage)
+    assert result.payload[0:1] == b"\x00"
+    assert result.headers == {}
+
+
+def test_serialize_default_wire_format_is_confluent_payload(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """AvroSerializer created without wire_format defaults to CONFLUENT_PAYLOAD."""
+    _schema_route(mock_registry, "UserEvent")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    serializer = AvroSerializer(
+        registry_client=client,
+        artifact_id="UserEvent",
+    )
+    assert serializer.wire_format == WireFormat.CONFLUENT_PAYLOAD
+
+
+def test_serialize_confluent_payload_matches_call(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """serialize().payload and __call__() return identical bytes."""
+    _schema_route(mock_registry, "UserEvent")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    serializer = AvroSerializer(
+        registry_client=client,
+        artifact_id="UserEvent",
+    )
+    ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+    serialized_msg = serializer.serialize(VALID_USER_EVENT, ctx)
+    call_bytes = serializer(VALID_USER_EVENT, ctx)
+    assert serialized_msg.payload == call_bytes
+
+
+def test_wire_format_param_stored_on_instance(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """wire_format=KAFKA_HEADERS is stored on the serializer instance."""
+    _schema_route(mock_registry, "UserEvent")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    serializer = AvroSerializer(
+        registry_client=client,
+        artifact_id="UserEvent",
+        wire_format=WireFormat.KAFKA_HEADERS,
+    )
+    assert serializer.wire_format == WireFormat.KAFKA_HEADERS
+
+
+def test_invalid_wire_format_raises_value_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """Passing an invalid wire_format value raises ValueError."""
+    _schema_route(mock_registry, "UserEvent")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(ValueError):
+        AvroSerializer(
+            registry_client=client,
+            artifact_id="UserEvent",
+            wire_format="not_valid",  # type: ignore[arg-type]
+        )
