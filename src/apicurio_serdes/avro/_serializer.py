@@ -1,4 +1,4 @@
-"""Avro serializer with Confluent wire format framing."""
+"""Avro serializer with configurable wire format framing."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 import fastavro
 
 from apicurio_serdes._errors import SerializationError
+from apicurio_serdes.serialization import SerializedMessage, WireFormat
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -19,7 +20,7 @@ if TYPE_CHECKING:
 
 
 class AvroSerializer:
-    """Serializes Python data to Confluent-framed Avro bytes.
+    """Serializes Python data to Avro bytes with configurable wire format framing.
 
     Fetches the Avro schema from the registry on first call and
     caches it via the underlying ApicurioRegistryClient.
@@ -29,9 +30,16 @@ class AvroSerializer:
         artifact_id: The artifact identifier for the target schema.
         to_dict: Optional callable that converts input data to a dict
                  before Avro encoding. Signature: (data, ctx) -> dict.
-                 When None, input is passed directly to the encoder (FR-007).
-        use_id: Which registry ID to embed in the wire format header.
+                 When None, input is passed directly to the encoder.
+        use_id: Which registry-assigned identifier to use as the schema ID.
+                "globalId" (default) or "contentId". Applies to both wire
+                format modes.
         strict: When True, reject extra fields not in the schema.
+        wire_format: The wire format framing mode. Defaults to
+                     WireFormat.CONFLUENT_PAYLOAD (FR-003).
+
+    Raises:
+        ValueError: If wire_format is not a WireFormat enum member.
     """
 
     def __init__(
@@ -41,22 +49,28 @@ class AvroSerializer:
         to_dict: Callable[[Any, SerializationContext], dict[str, Any]] | None = None,
         use_id: Literal["globalId", "contentId"] = "globalId",
         strict: bool = False,
+        wire_format: WireFormat = WireFormat.CONFLUENT_PAYLOAD,
     ) -> None:
+        if not isinstance(wire_format, WireFormat):
+            raise ValueError(
+                f"wire_format must be a WireFormat enum member, got {wire_format!r}"
+            )
         self.registry_client = registry_client
         self.artifact_id = artifact_id
         self.to_dict = to_dict
         self.use_id = use_id
         self.strict = strict
+        self.wire_format = wire_format
         self._schema: CachedSchema | None = None
         self._parsed_schema: str | list[Any] | dict[Any, Any] | None = None
 
-    def __call__(self, data: Any, ctx: SerializationContext) -> bytes:
-        """Serialize data to Confluent-framed Avro bytes.
+    def serialize(self, data: Any, ctx: SerializationContext) -> SerializedMessage:
+        """Serialize data and return payload bytes plus any Kafka headers.
 
-        Output format (FR-003):
-          Byte 0:    Magic byte 0x00
-          Bytes 1-4: schema identifier as 4-byte big-endian unsigned int
-          Bytes 5+:  Avro binary payload (schemaless encoding)
+        For CONFLUENT_PAYLOAD: returns framed bytes (unchanged from __call__)
+        with an empty headers dict.
+        For KAFKA_HEADERS: returns raw Avro binary as payload and a one-entry
+        headers dict with the schema ID encoded per Apicurio's native convention.
 
         Args:
             data: The data to serialize. Must be a dict (or convertible
@@ -64,10 +78,10 @@ class AvroSerializer:
             ctx: Serialization context with topic and field metadata.
 
         Returns:
-            Confluent wire format bytes.
+            SerializedMessage with payload bytes and headers dict.
 
         Raises:
-            SchemaNotFoundError: If the artifact_id does not exist.
+            SchemaNotFoundError: If artifact_id does not exist in the registry.
             RegistryConnectionError: If the registry is unreachable.
             SerializationError: If the to_dict callable raises an exception.
             ValueError: If data does not conform to the Avro schema.
@@ -78,14 +92,14 @@ class AvroSerializer:
             self._schema = cached
             self._parsed_schema = fastavro.parse_schema(cached.schema)
 
-        # Apply to_dict hook if provided (FR-007, FR-013)
+        # Apply to_dict hook if provided
         if self.to_dict is not None:
             try:
                 data = self.to_dict(data, ctx)
             except Exception as exc:
                 raise SerializationError(exc) from exc
 
-        # Strict mode validation (FR-012)
+        # Strict mode validation
         if self.strict:
             schema_fields = {f["name"] for f in self._schema.schema["fields"]}
             extra = set(data.keys()) - schema_fields
@@ -94,7 +108,7 @@ class AvroSerializer:
                     f"Extra fields not in schema: {', '.join(sorted(extra))}"
                 )
 
-        # Select wire format ID (FR-010)
+        # Select schema ID based on use_id
         if self.use_id == "contentId":
             schema_id = self._schema.content_id
         else:
@@ -104,7 +118,39 @@ class AvroSerializer:
         buffer = io.BytesIO()
         assert self._parsed_schema is not None
         fastavro.schemaless_writer(buffer, self._parsed_schema, data)
+        avro_bytes = buffer.getvalue()
 
-        # Confluent wire format: 0x00 + 4-byte ID + Avro payload
-        header = b"\x00" + struct.pack(">I", schema_id)
-        return header + buffer.getvalue()
+        if self.wire_format == WireFormat.KAFKA_HEADERS:
+            # KAFKA_HEADERS: raw Avro payload, schema ID in headers
+            header_name = (
+                f"apicurio.{ctx.field.value}.{self.use_id}"
+            )
+            header_value = struct.pack(">q", schema_id)
+            return SerializedMessage(
+                payload=avro_bytes,
+                headers={header_name: header_value},
+            )
+
+        # CONFLUENT_PAYLOAD: 0x00 + 4-byte ID + Avro payload
+        framed = b"\x00" + struct.pack(">I", schema_id) + avro_bytes
+        return SerializedMessage(payload=framed, headers={})
+
+    def __call__(self, data: Any, ctx: SerializationContext) -> bytes:
+        """Serialize data to bytes. Delegates to serialize() and returns payload.
+
+        For CONFLUENT_PAYLOAD: returns framed bytes — identical to pre-feature
+        behavior. For KAFKA_HEADERS: returns raw Avro binary bytes only;
+        headers are discarded. Use serialize() when headers are needed.
+
+        Args:
+            data: The data to serialize.
+            ctx: Serialization context.
+
+        Returns:
+            Serialized bytes (payload only).
+
+        Raises:
+            SchemaNotFoundError, RegistryConnectionError, SerializationError,
+            ValueError — same conditions as serialize().
+        """
+        return self.serialize(data, ctx).payload
