@@ -143,14 +143,17 @@ class AvroSerializer:
         headers are discarded. Use serialize() when headers are needed.
 
         Args:
-            data: The data to serialize.
-            ctx: Serialization context.
+            data: The data to serialize. Must be a dict (or convertible
+                  via to_dict) conforming to the Avro schema.
+            ctx: Serialization context with topic and field metadata.
 
         Returns:
-            Serialized bytes (payload only).
+            Serialized bytes (payload only). Headers are discarded.
 
         Raises:
-            SchemaNotFoundError, RegistryConnectionError, SerializationError,
-            ValueError — same conditions as serialize().
+            SchemaNotFoundError: If artifact_id does not exist in the registry.
+            RegistryConnectionError: If the registry is unreachable.
+            SerializationError: If the to_dict callable raises an exception.
+            ValueError: If data does not conform to the Avro schema.
         """
         return self.serialize(data, ctx).payload
