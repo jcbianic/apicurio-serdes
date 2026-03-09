@@ -54,10 +54,10 @@
 **Goal**: CI enforces tests, coverage, type checking, and docs build as merge-blocking status checks
 **Independent Test**: Open a PR with a test failure, verify merge is blocked
 
-- [ ] T007 [US5] Add `typecheck` job to `.github/workflows/ci.yml`: setup-uv, `uv sync --group dev`, `uv run mypy`; condition: non-draft or push [TS-025]
-- [ ] T008 [US5] Add `test` job to `.github/workflows/ci.yml`: setup-uv, `uv sync --group dev`, `uv run pytest`; condition: non-draft or push [TS-025]
-- [ ] T009 [US5] Add `docs-build` job to `.github/workflows/ci.yml`: setup-uv, `uv sync --group docs`, `uv run mkdocs build --strict`; condition: non-draft or push [TS-016, TS-025]
-- [ ] T010 [US5] Document branch protection configuration (required status checks: lint, typecheck, test, docs-build) in `docs/setup/ci-cd-secrets.md` [TS-022, TS-023, TS-024, TS-026]
+- [x] T007 [US5] Add `typecheck` job to `.github/workflows/ci.yml`: setup-uv, `uv sync --group dev`, `uv run mypy`; condition: non-draft or push [TS-025]
+- [x] T008 [US5] Add `test` job to `.github/workflows/ci.yml`: setup-uv, `uv sync --group dev`, `uv run pytest`; condition: non-draft or push [TS-025]
+- [x] T009 [US5] Add `docs-build` job to `.github/workflows/ci.yml`: setup-uv, `uv sync --group docs`, `uv run mkdocs build --strict`; condition: non-draft or push [TS-016, TS-025]
+- [x] T010 [US5] Document branch protection configuration (required status checks: lint, typecheck, test, docs-build) in `docs/setup/ci-cd-secrets.md` [TS-022, TS-023, TS-024, TS-026]
 
 **Checkpoint**: US5 complete — all four quality gate jobs defined in CI [TS-022, TS-023, TS-024, TS-025, TS-026]
 
