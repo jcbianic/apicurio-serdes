@@ -73,12 +73,9 @@ WireFormat.CONFLUENT_PAYLOAD
 WireFormat.KAFKA_HEADERS
 ```
 
-## Releasing a new version
+## Contributing
 
-1. Update `version` in `pyproject.toml`.
-2. Commit: `git commit -m "chore: bump version to X.Y.Z"`.
-3. Push, then create a GitHub Release with tag `vX.Y.Z`.
-4. The publish workflow publishes to TestPyPI then PyPI automatically.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup, coding standards, and how to submit a pull request.
 
 ## License
 
