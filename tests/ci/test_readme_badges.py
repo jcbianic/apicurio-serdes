@@ -15,7 +15,7 @@ class TestReadmeBadges:
         )
 
     def test_codecov_badge_present(self, readme_content: str) -> None:
-        assert "codecov.io" in readme_content, (
+        assert "[![codecov]" in readme_content, (
             "README must contain a Codecov coverage badge"
         )
 
