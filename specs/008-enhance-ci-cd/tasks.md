@@ -80,8 +80,8 @@
 **Goal**: Every non-draft PR automatically publishes a pre-release to TestPyPI
 **Independent Test**: Open PR, verify TestPyPI package with rcN version is published and installable
 
-- [ ] T013 [US2] Add `publish-testpypi` job to `.github/workflows/ci.yml`: needs [lint, typecheck, test], condition: PR + non-draft, version override via sed to `X.Y.ZrcN`, `uv build`, pypa/gh-action-pypi-publish@release/v1 with TESTPYPI_API_TOKEN [TS-006, TS-008, TS-009, TS-010, TS-011]
-- [ ] T014 [US2] Verify published package version follows PEP 440 `X.Y.ZrcN` format using github.run_number [TS-009, TS-011]
+- [x] T013 [US2] Add `publish-testpypi` job to `.github/workflows/ci.yml`: needs [lint, typecheck, test], condition: PR + non-draft, version override via sed to `X.Y.ZrcN`, `uv build`, pypa/gh-action-pypi-publish@release/v1 with TESTPYPI_API_TOKEN [TS-006, TS-008, TS-009, TS-010, TS-011]
+- [x] T014 [US2] Verify published package version follows PEP 440 `X.Y.ZrcN` format using github.run_number [TS-009, TS-011]
 
 **Checkpoint**: US2 complete — TestPyPI publishing verified [TS-006, TS-007, TS-008, TS-009, TS-010, TS-011]
 
