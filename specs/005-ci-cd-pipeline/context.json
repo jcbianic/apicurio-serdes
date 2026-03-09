@@ -1,7 +1,7 @@
 {
   "testify": {
     "assertion_hash": "38f901f74e86804a01b69839db2f1dcf8e50a998df2f2a0a0c0b9a2b3d4699f0",
-    "generated_at": "2026-03-09T12:06:44Z",
+    "generated_at": "2026-03-09T12:29:18Z",
     "features_dir": "specs/005-ci-cd-pipeline/tests/features",
     "file_count": 6
   }
