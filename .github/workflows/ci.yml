@@ -1,13 +1,12 @@
 name: CI
 
 on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   lint:
@@ -18,11 +17,10 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065  # v5
         with:
           python-version: "3.13"
-      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86  # v5
-      - run: uv sync --group dev
-      - run: uv run ruff check .
+      - uses: pre-commit/action@v3.0.1
 
   typecheck:
+    if: github.event.pull_request.draft == false || github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -35,6 +33,7 @@ jobs:
       - run: uv run mypy
 
   test:
+    if: github.event.pull_request.draft == false || github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -59,7 +58,8 @@ jobs:
           files: coverage.xml
           fail_ci_if_error: false
 
-  docs:
+  docs-build:
+    if: github.event.pull_request.draft == false || github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -70,3 +70,42 @@ jobs:
       - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86  # v5
       - run: uv sync --group docs
       - run: uv run mkdocs build --strict
+
+  publish-testpypi:
+    needs: [lint, typecheck, test, docs-build]
+    if: >-
+      github.event_name == 'pull_request'
+      && github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4
+      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86  # v5
+
+      - name: Check for TestPyPI token
+        env:
+          TESTPYPI_TOKEN: ${{ secrets.TESTPYPI_API_TOKEN }}
+        run: |
+          if [ -z "$TESTPYPI_TOKEN" ]; then
+            echo "::error::TESTPYPI_API_TOKEN secret is not configured."
+            echo "::error::Add it in GitHub repo Settings > Secrets and variables > Actions."
+            echo "::error::Obtain a token from https://test.pypi.org/manage/account/token/"
+            exit 1
+          fi
+
+      - name: Set pre-release version
+        run: |
+          VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+          NEW_VERSION="${VERSION}rc${{ github.run_number }}"
+          sed -i "s/version = \"${VERSION}\"/version = \"${NEW_VERSION}\"/" pyproject.toml
+          grep -q "version = \"${NEW_VERSION}\"" pyproject.toml || { echo "::error::Version substitution failed"; exit 1; }
+          echo "Publishing version: ${NEW_VERSION}"
+
+      - name: Build package
+        run: uv build
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@v1.12.4
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          password: ${{ secrets.TESTPYPI_API_TOKEN }}

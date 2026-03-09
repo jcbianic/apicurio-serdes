@@ -138,9 +138,7 @@ class AvroSerializer:
         if self.strict:
             fields = self._schema.schema.get("fields")
             if fields is None:
-                raise ValueError(
-                    "strict mode requires a record schema with 'fields'"
-                )
+                raise ValueError("strict mode requires a record schema with 'fields'")
             schema_fields = {f["name"] for f in fields}
             extra = set(data.keys()) - schema_fields
             if extra:
@@ -163,9 +161,7 @@ class AvroSerializer:
 
         if self.wire_format == WireFormat.KAFKA_HEADERS:
             # KAFKA_HEADERS: raw Avro payload, schema ID in headers
-            header_name = (
-                f"apicurio.{ctx.field.value}.{self.use_id}"
-            )
+            header_name = f"apicurio.{ctx.field.value}.{self.use_id}"
             header_value = struct.pack(">q", schema_id)
             return SerializedMessage(
                 payload=avro_bytes,

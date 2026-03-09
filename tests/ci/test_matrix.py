@@ -13,9 +13,7 @@ EXPECTED_PYTHON_VERSIONS = ["3.10", "3.11", "3.12", "3.13"]
 class TestPythonMatrix:
     """TS-025, TS-026: Tests execute on all declared Python versions."""
 
-    def test_test_job_has_matrix_strategy(
-        self, ci_workflow: dict[str, Any]
-    ) -> None:
+    def test_test_job_has_matrix_strategy(self, ci_workflow: dict[str, Any]) -> None:
         test_job = ci_workflow["jobs"]["test"]
         assert "strategy" in test_job, "Test job must define a strategy"
         assert "matrix" in test_job["strategy"], "Strategy must include a matrix"

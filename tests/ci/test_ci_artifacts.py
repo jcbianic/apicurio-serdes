@@ -36,9 +36,9 @@ class TestCoverageArtifactUpload:
             for s in upload_steps
             if "coverage" in s.get("with", {}).get("name", "").lower()
         ]
-        assert (
-            len(coverage_uploads) >= 1
-        ), "Must upload a coverage artifact with 'coverage' in the name"
+        assert len(coverage_uploads) >= 1, (
+            "Must upload a coverage artifact with 'coverage' in the name"
+        )
 
     def test_coverage_artifact_name_includes_python_version(
         self, ci_workflow: dict[str, Any]
@@ -56,6 +56,6 @@ class TestCoverageArtifactUpload:
         ]
         assert len(coverage_uploads) >= 1, "Prerequisite: coverage upload must exist"
         name = coverage_uploads[0]["with"]["name"]
-        assert (
-            "python-version" in name or "matrix" in name
-        ), f"Coverage artifact name must include python version for matrix distinction, got: {name}"
+        assert "python-version" in name or "matrix" in name, (
+            f"Coverage artifact name must include python version for matrix distinction, got: {name}"
+        )

@@ -11,11 +11,9 @@ from pytest_bdd import given, parsers, scenario, then, when
 from apicurio_serdes import ApicurioRegistryClient
 from apicurio_serdes.avro import AvroDeserializer
 from apicurio_serdes.serialization import MessageField, SerializationContext
-
 from tests.conftest import (
-    REGISTRY_URL,
     GROUP_ID,
-    USER_EVENT_SCHEMA_JSON,
+    REGISTRY_URL,
     VALID_USER_EVENT,
     _id_schema_route,
     _schema_route,
@@ -167,9 +165,7 @@ def when_call_as_callable(
 # ── Then steps ──
 
 
-@then(
-    parsers.cfparse("the registry is queried for contentId {content_id:d}")
-)
+@then(parsers.cfparse("the registry is queried for contentId {content_id:d}"))
 def then_registry_queried_content_id_wf(
     mock_registry: respx.MockRouter, content_id: int
 ) -> None:
@@ -181,9 +177,7 @@ def then_registry_queried_content_id_wf(
     assert called, f"Registry was not queried for contentId {content_id}"
 
 
-@then(
-    parsers.cfparse("the registry is queried for globalId {global_id:d}")
-)
+@then(parsers.cfparse("the registry is queried for globalId {global_id:d}"))
 def then_registry_queried_global_id_wf(
     mock_registry: respx.MockRouter, global_id: int
 ) -> None:

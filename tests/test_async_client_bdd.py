@@ -15,7 +15,6 @@ from pytest_bdd import given, parsers, scenario, then, when
 from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 from apicurio_serdes._client import CachedSchema
 from apicurio_serdes._errors import RegistryConnectionError, SchemaNotFoundError
-
 from tests.conftest import (
     CONTENT_ID,
     GLOBAL_ID,
@@ -31,27 +30,42 @@ FEATURE_DIR = "../specs/003-async-registry-client/tests/features"
 # ═══════════════════════════════════════════════════════════════
 
 
-@scenario(f"{FEATURE_DIR}/schema_retrieval.feature", "Successful async schema retrieval returns CachedSchema")
+@scenario(
+    f"{FEATURE_DIR}/schema_retrieval.feature",
+    "Successful async schema retrieval returns CachedSchema",
+)
 def test_ts001_successful_retrieval() -> None:
     """TS-001."""
 
 
-@scenario(f"{FEATURE_DIR}/schema_retrieval.feature", "Artifact not found raises SchemaNotFoundError")
+@scenario(
+    f"{FEATURE_DIR}/schema_retrieval.feature",
+    "Artifact not found raises SchemaNotFoundError",
+)
 def test_ts002_not_found() -> None:
     """TS-002."""
 
 
-@scenario(f"{FEATURE_DIR}/schema_retrieval.feature", "Registry unreachable raises RegistryConnectionError")
+@scenario(
+    f"{FEATURE_DIR}/schema_retrieval.feature",
+    "Registry unreachable raises RegistryConnectionError",
+)
 def test_ts003_unreachable() -> None:
     """TS-003."""
 
 
-@scenario(f"{FEATURE_DIR}/schema_retrieval.feature", "group_id is applied to every schema lookup")
+@scenario(
+    f"{FEATURE_DIR}/schema_retrieval.feature",
+    "group_id is applied to every schema lookup",
+)
 def test_ts004_group_id_applied() -> None:
     """TS-004."""
 
 
-@scenario(f"{FEATURE_DIR}/schema_retrieval.feature", "get_schema returns the shared CachedSchema type")
+@scenario(
+    f"{FEATURE_DIR}/schema_retrieval.feature",
+    "get_schema returns the shared CachedSchema type",
+)
 def test_ts005_shared_type() -> None:
     """TS-005."""
 
@@ -61,17 +75,26 @@ def test_ts005_shared_type() -> None:
 # ═══════════════════════════════════════════════════════════════
 
 
-@scenario(f"{FEATURE_DIR}/schema_caching.feature", "Same artifact fetched twice contacts the registry exactly once")
+@scenario(
+    f"{FEATURE_DIR}/schema_caching.feature",
+    "Same artifact fetched twice contacts the registry exactly once",
+)
 def test_ts011_cache_single() -> None:
     """TS-011."""
 
 
-@scenario(f"{FEATURE_DIR}/schema_caching.feature", "Fetching a different artifact does not re-fetch a cached schema")
+@scenario(
+    f"{FEATURE_DIR}/schema_caching.feature",
+    "Fetching a different artifact does not re-fetch a cached schema",
+)
 def test_ts012_cache_different() -> None:
     """TS-012."""
 
 
-@scenario(f"{FEATURE_DIR}/schema_caching.feature", "Concurrent coroutines fetching the same uncached schema result in one HTTP request")
+@scenario(
+    f"{FEATURE_DIR}/schema_caching.feature",
+    "Concurrent coroutines fetching the same uncached schema result in one HTTP request",
+)
 def test_ts013_stampede() -> None:
     """TS-013."""
 
@@ -81,22 +104,34 @@ def test_ts013_stampede() -> None:
 # ═══════════════════════════════════════════════════════════════
 
 
-@scenario(f"{FEATURE_DIR}/interface_compatibility.feature", "AsyncApicurioRegistryClient accepts the same constructor parameters as the sync client")
+@scenario(
+    f"{FEATURE_DIR}/interface_compatibility.feature",
+    "AsyncApicurioRegistryClient accepts the same constructor parameters as the sync client",
+)
 def test_ts021_same_params() -> None:
     """TS-021."""
 
 
-@scenario(f"{FEATURE_DIR}/interface_compatibility.feature", "get_schema is the method name on the async client")
+@scenario(
+    f"{FEATURE_DIR}/interface_compatibility.feature",
+    "get_schema is the method name on the async client",
+)
 def test_ts022_method_name() -> None:
     """TS-022."""
 
 
-@scenario(f"{FEATURE_DIR}/interface_compatibility.feature", "Async client raises the same error types as the sync client")
+@scenario(
+    f"{FEATURE_DIR}/interface_compatibility.feature",
+    "Async client raises the same error types as the sync client",
+)
 def test_ts023_same_errors() -> None:
     """TS-023."""
 
 
-@scenario(f"{FEATURE_DIR}/interface_compatibility.feature", "AsyncApicurioRegistryClient is importable from the top-level package")
+@scenario(
+    f"{FEATURE_DIR}/interface_compatibility.feature",
+    "AsyncApicurioRegistryClient is importable from the top-level package",
+)
 def test_ts024_importable() -> None:
     """TS-024."""
 
@@ -106,17 +141,26 @@ def test_ts024_importable() -> None:
 # ═══════════════════════════════════════════════════════════════
 
 
-@scenario(f"{FEATURE_DIR}/lifecycle_management.feature", "async with block closes the HTTP connection pool on exit")
+@scenario(
+    f"{FEATURE_DIR}/lifecycle_management.feature",
+    "async with block closes the HTTP connection pool on exit",
+)
 def test_ts031_context_manager_close() -> None:
     """TS-031."""
 
 
-@scenario(f"{FEATURE_DIR}/lifecycle_management.feature", "async with block closes the HTTP connection pool when an exception is raised")
+@scenario(
+    f"{FEATURE_DIR}/lifecycle_management.feature",
+    "async with block closes the HTTP connection pool when an exception is raised",
+)
 def test_ts032_context_manager_exception() -> None:
     """TS-032."""
 
 
-@scenario(f"{FEATURE_DIR}/lifecycle_management.feature", "aclose() closes the HTTP connection pool explicitly")
+@scenario(
+    f"{FEATURE_DIR}/lifecycle_management.feature",
+    "aclose() closes the HTTP connection pool explicitly",
+)
 def test_ts033_explicit_aclose() -> None:
     """TS-033."""
 
@@ -126,7 +170,9 @@ def test_ts033_explicit_aclose() -> None:
 # ═══════════════════════════════════════════════════════════════
 
 
-@scenario(f"{FEATURE_DIR}/validation.feature", "Empty constructor parameters raise ValueError")
+@scenario(
+    f"{FEATURE_DIR}/validation.feature", "Empty constructor parameters raise ValueError"
+)
 def test_ts041_validation() -> None:
     """TS-041."""
 
@@ -136,8 +182,13 @@ def test_ts041_validation() -> None:
 # ═══════════════════════════════════════════════════════════════
 
 
-@given("a configured AsyncApicurioRegistryClient pointing at a stubbed registry", target_fixture="async_client_and_registry")
-def given_async_client_with_stubbed_registry(mock_registry: respx.MockRouter) -> tuple[AsyncApicurioRegistryClient, respx.MockRouter]:
+@given(
+    "a configured AsyncApicurioRegistryClient pointing at a stubbed registry",
+    target_fixture="async_client_and_registry",
+)
+def given_async_client_with_stubbed_registry(
+    mock_registry: respx.MockRouter,
+) -> tuple[AsyncApicurioRegistryClient, respx.MockRouter]:
     client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
     return client, mock_registry
 
@@ -148,7 +199,9 @@ def given_async_client_with_stubbed_registry(mock_registry: respx.MockRouter) ->
 
 
 @given(
-    parsers.cfparse('the registry holds a known Avro schema for artifact "{artifact_id}" with global_id {global_id:d} and content_id {content_id:d}'),
+    parsers.cfparse(
+        'the registry holds a known Avro schema for artifact "{artifact_id}" with global_id {global_id:d} and content_id {content_id:d}'
+    ),
     target_fixture="schema_route",
 )
 def given_schema_for_artifact(
@@ -205,7 +258,9 @@ def given_client_with_group_id(
 
 
 @given(
-    parsers.cfparse('the registry holds a schema for artifact "{artifact_id}" in group "{group_id}"'),
+    parsers.cfparse(
+        'the registry holds a schema for artifact "{artifact_id}" in group "{group_id}"'
+    ),
     target_fixture="tracked_route",
 )
 def given_schema_in_group(
@@ -237,7 +292,9 @@ def when_get_schema(
 ) -> CachedSchema | SchemaNotFoundError | RegistryConnectionError:
     client, _ = async_client_and_registry
     try:
-        return asyncio.get_event_loop().run_until_complete(client.get_schema(artifact_id))
+        return asyncio.get_event_loop().run_until_complete(
+            client.get_schema(artifact_id)
+        )
     except (SchemaNotFoundError, RegistryConnectionError) as exc:
         return exc
 
@@ -263,8 +320,14 @@ def then_schema_not_found(get_schema_result: SchemaNotFoundError) -> None:
     assert isinstance(get_schema_result, SchemaNotFoundError)
 
 
-@then(parsers.cfparse('the error identifies artifact "{artifact_id}" and the configured group_id'))
-def then_error_identifies_artifact(get_schema_result: SchemaNotFoundError, artifact_id: str) -> None:
+@then(
+    parsers.cfparse(
+        'the error identifies artifact "{artifact_id}" and the configured group_id'
+    )
+)
+def then_error_identifies_artifact(
+    get_schema_result: SchemaNotFoundError, artifact_id: str
+) -> None:
     assert get_schema_result.artifact_id == artifact_id
     assert get_schema_result.group_id == GROUP_ID
 
@@ -284,7 +347,11 @@ def then_error_includes_url(get_schema_result: RegistryConnectionError) -> None:
     assert get_schema_result.url == REGISTRY_URL
 
 
-@then(parsers.cfparse('the HTTP request targets the endpoint for group "{group_id}" and artifact "{artifact_id}"'))
+@then(
+    parsers.cfparse(
+        'the HTTP request targets the endpoint for group "{group_id}" and artifact "{artifact_id}"'
+    )
+)
 def then_request_targets_endpoint(
     tracked_route: respx.Route,
     group_id: str,
@@ -343,8 +410,12 @@ def given_two_schemas(
     art_b: str,
 ) -> dict[str, respx.Route]:
     _, router = async_client_and_registry
-    url_a = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/{art_a}/versions/latest/content"
-    url_b = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/{art_b}/versions/latest/content"
+    url_a = (
+        f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/{art_a}/versions/latest/content"
+    )
+    url_b = (
+        f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/{art_b}/versions/latest/content"
+    )
     route_a = router.get(url_a).mock(
         return_value=Response(
             200,
@@ -374,7 +445,11 @@ def when_get_schema_second(
     return asyncio.get_event_loop().run_until_complete(client.get_schema(artifact_id))
 
 
-@then(parsers.cfparse('the registry received exactly {count:d} HTTP request for "{artifact_id}"'))
+@then(
+    parsers.cfparse(
+        'the registry received exactly {count:d} HTTP request for "{artifact_id}"'
+    )
+)
 def then_request_count(
     async_client_and_registry: tuple[AsyncApicurioRegistryClient, respx.MockRouter],
     count: int,
@@ -399,7 +474,9 @@ def then_same_cached_schema(
 
 
 @when(
-    parsers.cfparse("{n:d} coroutines concurrently call await client.get_schema(\"{artifact_id}\") for the first time"),
+    parsers.cfparse(
+        '{n:d} coroutines concurrently call await client.get_schema("{artifact_id}") for the first time'
+    ),
     target_fixture="concurrent_results",
 )
 def when_concurrent_get_schema(
@@ -410,9 +487,9 @@ def when_concurrent_get_schema(
     client, _ = async_client_and_registry
 
     async def gather_results() -> list[CachedSchema]:
-        return list(await asyncio.gather(
-            *[client.get_schema(artifact_id) for _ in range(n)]
-        ))
+        return list(
+            await asyncio.gather(*[client.get_schema(artifact_id) for _ in range(n)])
+        )
 
     return asyncio.get_event_loop().run_until_complete(gather_results())
 
@@ -428,26 +505,37 @@ def then_all_identical(concurrent_results: list[CachedSchema]) -> None:
 
 
 @given(
-    parsers.cfparse('the sync client is constructed with AsyncApicurioRegistryClient(url="{url}", group_id="{group_id}")'),
+    parsers.cfparse(
+        'the sync client is constructed with AsyncApicurioRegistryClient(url="{url}", group_id="{group_id}")'
+    ),
     target_fixture="constructor_params",
 )
 def given_sync_constructor_params(url: str, group_id: str) -> dict[str, str]:
     return {"url": url, "group_id": group_id}
 
 
-@when("AsyncApicurioRegistryClient is constructed with the same url and group_id", target_fixture="async_instance")
-def when_async_constructed(constructor_params: dict[str, str]) -> AsyncApicurioRegistryClient:
+@when(
+    "AsyncApicurioRegistryClient is constructed with the same url and group_id",
+    target_fixture="async_instance",
+)
+def when_async_constructed(
+    constructor_params: dict[str, str],
+) -> AsyncApicurioRegistryClient:
     return AsyncApicurioRegistryClient(**constructor_params)
 
 
 @then("the async client is initialised successfully with those parameters")
-def then_async_initialised(async_instance: AsyncApicurioRegistryClient, constructor_params: dict[str, str]) -> None:
+def then_async_initialised(
+    async_instance: AsyncApicurioRegistryClient, constructor_params: dict[str, str]
+) -> None:
     assert async_instance.url == constructor_params["url"]
     assert async_instance.group_id == constructor_params["group_id"]
 
 
 @given("an AsyncApicurioRegistryClient instance", target_fixture="async_instance")
-def given_async_instance(mock_registry: respx.MockRouter) -> AsyncApicurioRegistryClient:
+def given_async_instance(
+    mock_registry: respx.MockRouter,
+) -> AsyncApicurioRegistryClient:
     return AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
 
@@ -464,20 +552,31 @@ def when_async_get_schema_called(
         return_value=Response(
             200,
             content=json.dumps(USER_EVENT_SCHEMA_JSON),
-            headers={"X-Registry-GlobalId": str(GLOBAL_ID), "X-Registry-ContentId": str(CONTENT_ID)},
+            headers={
+                "X-Registry-GlobalId": str(GLOBAL_ID),
+                "X-Registry-ContentId": str(CONTENT_ID),
+            },
         )
     )
-    return asyncio.get_event_loop().run_until_complete(async_instance.get_schema("TestArtifact"))
+    return asyncio.get_event_loop().run_until_complete(
+        async_instance.get_schema("TestArtifact")
+    )
 
 
-@then("the async client responds with the same CachedSchema return type as the sync client")
+@then(
+    "the async client responds with the same CachedSchema return type as the sync client"
+)
 def then_same_return_type(async_method_result: CachedSchema) -> None:
     assert type(async_method_result) is CachedSchema
 
 
 @given("a configured AsyncApicurioRegistryClient", target_fixture="async_error_client")
-def given_configured_async_client(mock_registry: respx.MockRouter) -> tuple[AsyncApicurioRegistryClient, respx.MockRouter]:
-    return AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID), mock_registry
+def given_configured_async_client(
+    mock_registry: respx.MockRouter,
+) -> tuple[AsyncApicurioRegistryClient, respx.MockRouter]:
+    return AsyncApicurioRegistryClient(
+        url=REGISTRY_URL, group_id=GROUP_ID
+    ), mock_registry
 
 
 @when(
@@ -503,7 +602,11 @@ def when_error_condition(
     raise AssertionError("Expected an exception")
 
 
-@then(parsers.cfparse("a {error_type} is raised with the same attributes as the sync client equivalent"))
+@then(
+    parsers.cfparse(
+        "a {error_type} is raised with the same attributes as the sync client equivalent"
+    )
+)
 def then_error_type_matches(error_result: Exception, error_type: str) -> None:
     if error_type == "SchemaNotFoundError":
         assert isinstance(error_result, SchemaNotFoundError)
@@ -529,7 +632,9 @@ def then_import_succeeds(import_result: type) -> None:
     assert import_result is not None
 
 
-@then("AsyncApicurioRegistryClient is the same class as apicurio_serdes._async_client.AsyncApicurioRegistryClient")
+@then(
+    "AsyncApicurioRegistryClient is the same class as apicurio_serdes._async_client.AsyncApicurioRegistryClient"
+)
 def then_same_class(import_result: type) -> None:
     assert import_result is AsyncApicurioRegistryClient
 
@@ -565,7 +670,9 @@ def then_http_client_closed(closed_client: AsyncApicurioRegistryClient) -> None:
     assert closed_client._http_client.is_closed is True
 
 
-@when("an exception is raised inside the async with block", target_fixture="closed_client")
+@when(
+    "an exception is raised inside the async with block", target_fixture="closed_client"
+)
 def when_exception_in_block(
     context_client: AsyncApicurioRegistryClient,
 ) -> AsyncApicurioRegistryClient:
@@ -586,7 +693,10 @@ def then_closed_before_propagation(closed_client: AsyncApicurioRegistryClient) -
     assert closed_client._http_client.is_closed is True
 
 
-@given("an AsyncApicurioRegistryClient instance created without a context manager", target_fixture="standalone_client")
+@given(
+    "an AsyncApicurioRegistryClient instance created without a context manager",
+    target_fixture="standalone_client",
+)
 def given_standalone_client() -> AsyncApicurioRegistryClient:
     return AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
@@ -605,7 +715,9 @@ def when_aclose_called(
 
 
 @when(
-    parsers.re(r'AsyncApicurioRegistryClient is constructed with url="(?P<url>.*)" and group_id="(?P<group_id>.*)"'),
+    parsers.re(
+        r'AsyncApicurioRegistryClient is constructed with url="(?P<url>.*)" and group_id="(?P<group_id>.*)"'
+    ),
     target_fixture="validation_error",
 )
 def when_constructed_with_invalid_params(url: str, group_id: str) -> ValueError:

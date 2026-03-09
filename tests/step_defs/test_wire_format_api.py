@@ -13,16 +13,15 @@ import pytest
 import respx
 from pytest_bdd import given, parsers, scenario, then, when
 
+# Imports that will fail until production code is written (RED phase).
+# WireFormat does not yet exist in apicurio_serdes or apicurio_serdes.serialization.
+from apicurio_serdes import ApicurioRegistryClient, WireFormat
+from apicurio_serdes.avro import AvroSerializer
 from tests.conftest import (
     GROUP_ID,
     REGISTRY_URL,
     _schema_route,
 )
-
-# Imports that will fail until production code is written (RED phase).
-# WireFormat does not yet exist in apicurio_serdes or apicurio_serdes.serialization.
-from apicurio_serdes import ApicurioRegistryClient, WireFormat
-from apicurio_serdes.avro import AvroSerializer
 
 FEATURES_BASE = "../../specs/004-kafka-headers-wire-format/tests/features"
 FEATURE = f"{FEATURES_BASE}/wire_format_api.feature"

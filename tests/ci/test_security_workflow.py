@@ -11,9 +11,7 @@ from typing import Any
 class TestSecurityTriggers:
     """TS-021, TS-022: Security workflow triggers on push, PRs, and weekly schedule."""
 
-    def test_triggers_on_push_to_main(
-        self, security_workflow: dict[str, Any]
-    ) -> None:
+    def test_triggers_on_push_to_main(self, security_workflow: dict[str, Any]) -> None:
         triggers = security_workflow[True]
         assert "push" in triggers
         assert triggers["push"]["branches"] == ["main"]
@@ -31,9 +29,9 @@ class TestSecurityTriggers:
         triggers = security_workflow[True]
         assert "schedule" in triggers
         crons = [entry["cron"] for entry in triggers["schedule"]]
-        assert any(
-            "0 6 * * 1" in cron for cron in crons
-        ), "Must schedule Monday 06:00 UTC"
+        assert any("0 6 * * 1" in cron for cron in crons), (
+            "Must schedule Monday 06:00 UTC"
+        )
 
 
 class TestDependencyAuditJob:
@@ -77,9 +75,9 @@ class TestCodeQLJob:
         job = security_workflow["jobs"]["codeql"]
         uses = [s.get("uses", "") for s in job["steps"]]
         assert any("codeql-action/init" in u for u in uses), "Must use codeql init"
-        assert any(
-            "codeql-action/analyze" in u for u in uses
-        ), "Must use codeql analyze"
+        assert any("codeql-action/analyze" in u for u in uses), (
+            "Must use codeql analyze"
+        )
 
     def test_codeql_configures_python_language(
         self, security_workflow: dict[str, Any]

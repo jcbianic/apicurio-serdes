@@ -16,7 +16,6 @@ from tests.conftest import (
     REGISTRY_URL,
     USER_EVENT_SCHEMA_JSON,
     VALID_USER_EVENT,
-    _id_not_found_route,
     _id_schema_route,
     make_confluent_bytes,
 )
@@ -154,9 +153,7 @@ def when_deserialize_many_sequence(
     ),
     target_fixture="new_result",
 )
-def when_deserialize_new_schema(
-    deserializer: AvroDeserializer, content_id: int
-) -> Any:
+def when_deserialize_new_schema(deserializer: AvroDeserializer, content_id: int) -> Any:
     ctx = SerializationContext(topic="events", field=MessageField.VALUE)
     msg = make_confluent_bytes(content_id, {"id": "test-123"}, schema=SCHEMA_B_JSON)
     return deserializer(msg, ctx)
@@ -181,7 +178,9 @@ def when_deserialize_concurrent(deserializer: AvroDeserializer) -> list[Any]:
 
 
 @then(
-    parsers.cfparse("the registry is contacted exactly once for contentId {content_id:d}")
+    parsers.cfparse(
+        "the registry is contacted exactly once for contentId {content_id:d}"
+    )
 )
 def then_contacted_once_for_content_id(
     mock_registry: respx.MockRouter, content_id: int
@@ -191,7 +190,9 @@ def then_contacted_once_for_content_id(
         for r in mock_registry.routes
         if f"contentIds/{content_id}" in str(getattr(r, "pattern", ""))
     )
-    assert route_calls == 1, f"Expected 1 call for contentId {content_id}, got {route_calls}"
+    assert route_calls == 1, (
+        f"Expected 1 call for contentId {content_id}, got {route_calls}"
+    )
 
 
 @then(

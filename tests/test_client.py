@@ -5,6 +5,7 @@ from __future__ import annotations
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
+import httpx
 import pytest
 import respx
 from pytest_bdd import given, parsers, scenario, then, when
@@ -12,8 +13,6 @@ from pytest_bdd import given, parsers, scenario, then, when
 from apicurio_serdes import ApicurioRegistryClient
 from apicurio_serdes.avro import AvroSerializer
 from apicurio_serdes.serialization import MessageField, SerializationContext
-import httpx
-
 from tests.conftest import (
     GROUP_ID,
     REGISTRY_URL,
@@ -272,8 +271,9 @@ def test_get_schema_500_raises_registry_connection_error(
     mock_registry: respx.MockRouter,
 ) -> None:
     """Unexpected HTTP status in get_schema raises RegistryConnectionError [FR-013]."""
-    from apicurio_serdes._errors import RegistryConnectionError
     from httpx import Response
+
+    from apicurio_serdes._errors import RegistryConnectionError
 
     url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/Broken/versions/latest/content"
     mock_registry.get(url).mock(return_value=Response(500))
@@ -286,8 +286,9 @@ def test_get_schema_by_global_id_500_raises_registry_connection_error(
     mock_registry: respx.MockRouter,
 ) -> None:
     """Unexpected HTTP status in _get_schema_by_id raises RegistryConnectionError [FR-013]."""
-    from apicurio_serdes._errors import RegistryConnectionError
     from httpx import Response
+
+    from apicurio_serdes._errors import RegistryConnectionError
 
     mock_registry.get(url__startswith=f"{REGISTRY_URL}/ids/globalIds/").mock(
         return_value=Response(500)
@@ -335,9 +336,9 @@ def test_get_schema_by_global_id_network_error(mock_registry: respx.MockRouter) 
     """Network failure raises RegistryConnectionError [FR-012]."""
     from apicurio_serdes._errors import RegistryConnectionError
 
-    mock_registry.get(
-        url__startswith=f"{REGISTRY_URL}/ids/globalIds/"
-    ).mock(side_effect=httpx.ConnectError("refused"))
+    mock_registry.get(url__startswith=f"{REGISTRY_URL}/ids/globalIds/").mock(
+        side_effect=httpx.ConnectError("refused")
+    )
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
     with pytest.raises(RegistryConnectionError):
         client.get_schema_by_global_id(7)
@@ -383,9 +384,9 @@ def test_get_schema_by_content_id_network_error(
     """Network failure raises RegistryConnectionError [FR-012]."""
     from apicurio_serdes._errors import RegistryConnectionError
 
-    mock_registry.get(
-        url__startswith=f"{REGISTRY_URL}/ids/contentIds/"
-    ).mock(side_effect=httpx.ConnectError("refused"))
+    mock_registry.get(url__startswith=f"{REGISTRY_URL}/ids/contentIds/").mock(
+        side_effect=httpx.ConnectError("refused")
+    )
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
     with pytest.raises(RegistryConnectionError):
         client.get_schema_by_content_id(42)

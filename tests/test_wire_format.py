@@ -10,8 +10,15 @@ from pytest_bdd import given, parsers, scenario, then, when
 
 from apicurio_serdes import ApicurioRegistryClient
 from apicurio_serdes.avro import AvroSerializer
-from apicurio_serdes.serialization import MessageField, SerializationContext
+from apicurio_serdes.serialization import (
+    MessageField,
+    SerializationContext,
+    SerializedMessage,
+    WireFormat,
+)
 from tests.conftest import (
+    CONTENT_ID,
+    GLOBAL_ID,
     GROUP_ID,
     REGISTRY_URL,
     VALID_USER_EVENT,
@@ -42,7 +49,6 @@ def test_ts017_content_id_wire_format() -> None:
 )
 def test_ts018_callable_interface() -> None:
     """TS-018."""
-
 
 
 @given(
@@ -144,9 +150,6 @@ def then_begins_with_magic(result_bytes: bytes) -> None:
 
 
 # ── KAFKA_HEADERS byte-level unit tests ──
-
-from apicurio_serdes.serialization import SerializedMessage, WireFormat
-from tests.conftest import CONTENT_ID, GLOBAL_ID
 
 
 def _serialize_kafka_headers(
