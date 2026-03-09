@@ -8,10 +8,13 @@ labels: bug
 
 <!-- A clear and concise description of the bug. -->
 
-## Steps to reproduce
+## Minimal reproducer
+
+**A complete, runnable script that demonstrates the issue.** Assume Apicurio Registry is
+running — include any relevant setup (e.g. "using the Docker quickstart from the README").
 
 ```python
-# Minimal code snippet that reproduces the problem
+# Paste a complete, minimal script here
 ```
 
 ## Expected behaviour
@@ -20,11 +23,19 @@ labels: bug
 
 ## Actual behaviour
 
-<!-- What actually happened. Include the full error message and traceback if applicable. -->
+<!-- What actually happened. -->
+
+## Full traceback
+
+```
+# Paste the complete error output here
+```
 
 ## Environment
 
 - `apicurio-serdes` version:
 - Python version:
 - Apicurio Registry version:
-- Wire format used (`CONFLUENT_PAYLOAD` / `KAFKA_HEADERS`):
+- Client: `ApicurioRegistryClient` / `AsyncApicurioRegistryClient`
+- Wire format: `CONFLUENT_PAYLOAD` / `KAFKA_HEADERS`
+- Fresh schema fetch or previously cached:

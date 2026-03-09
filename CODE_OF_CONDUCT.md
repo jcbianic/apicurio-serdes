@@ -24,7 +24,9 @@ Examples of unacceptable behavior:
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by opening a [GitHub Security Advisory](https://github.com/jcbianic/apicurio-serdes/security/advisories/new) or contacting the maintainer directly. All complaints will be reviewed and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behavior should be reported directly to the project maintainer at **jcbianic@libon.com**. All complaints will be reviewed and investigated promptly and fairly. The reporter and respondent will be notified of the outcome.
+
+Consequences for violations may include removal of contributions, temporary suspension, or a permanent ban from community spaces, depending on severity.
 
 ## Attribution
 

@@ -1,14 +1,34 @@
 ## Summary
 
-<!-- What does this PR do and why? -->
+<!-- What does this PR do and why? Reference the related issue if applicable. -->
+<!-- Example: "Fixes #123 — schema caching fails when registry returns 304" -->
 
-## Related issue
+## Type of change
 
-<!-- Closes #<issue-number> -->
+- [ ] Bug fix
+- [ ] New feature
+- [ ] Documentation improvement
+- [ ] Refactor (no behaviour change)
+- [ ] Breaking change (requires major version bump)
 
-## Test plan
+## Testing
 
 - [ ] All existing tests pass (`uv run pytest`)
 - [ ] New behaviour is covered by tests
 - [ ] Coverage remains at 100%
-- [ ] Docs updated if behaviour changed (`uv run mkdocs build --strict`)
+- [ ] Both sync and async clients tested (if applicable)
+
+## Code quality
+
+- [ ] Linting passes (`uv run pre-commit run --all-files`)
+- [ ] Type checking passes (`uv run mypy`)
+
+## Documentation
+
+- [ ] Docs build passes (`uv run mkdocs build --strict`)
+- [ ] Docstrings added for any new public API
+- [ ] README updated if this is a user-facing change
+
+## Commits
+
+- [ ] Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/) (`feat:`, `fix:`, `docs:`, `refactor:`)
