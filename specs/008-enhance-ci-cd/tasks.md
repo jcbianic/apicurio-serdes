@@ -116,8 +116,8 @@
 **Goal**: Clear documentation for configuring GitHub secrets and CI/CD pipeline
 **Independent Test**: Follow docs to configure secrets on a test repo; all CI workflows pass
 
-- [ ] T019 [DOCS] [US7] Create `docs/setup/ci-cd-secrets.md` with: required secrets table (name, source, scope), step-by-step instructions for obtaining TESTPYPI_API_TOKEN, ReadTheDocs connection steps, branch protection configuration, troubleshooting guide for missing/expired secrets [TS-033, TS-034, TS-035, TS-036, TS-037]
-- [ ] T020 [DOCS] [US7] Add draft PR creation guidance to `docs/setup/ci-cd-secrets.md` explaining how to create PRs as draft and the CI behavior difference [TS-027]
+- [x] T019 [DOCS] [US7] Create `docs/setup/ci-cd-secrets.md` with: required secrets table (name, source, scope), step-by-step instructions for obtaining TESTPYPI_API_TOKEN, ReadTheDocs connection steps, branch protection configuration, troubleshooting guide for missing/expired secrets [TS-033, TS-034, TS-035, TS-036, TS-037]
+- [x] T020 [DOCS] [US7] Add draft PR creation guidance to `docs/setup/ci-cd-secrets.md` explaining how to create PRs as draft and the CI behavior difference [TS-027]
 
 **Checkpoint**: US7 complete — setup documentation verified [TS-033, TS-034, TS-035, TS-036, TS-037]
 
