@@ -25,6 +25,7 @@ class TestPublishJobChain:
     EXPECTED_JOBS = [
         "validate-version",
         "build",
+        "sign-release",
         "publish-testpypi",
         "validate-testpypi",
         "publish-pypi",
@@ -43,6 +44,29 @@ class TestPublishJobChain:
         if isinstance(needs, str):
             needs = [needs]
         assert "validate-version" in needs
+
+    def test_sign_release_needs_build(self, publish_workflow: dict[str, Any]) -> None:
+        job = publish_workflow["jobs"]["sign-release"]
+        needs = job.get("needs", [])
+        if isinstance(needs, str):
+            needs = [needs]
+        assert "build" in needs
+
+    def test_sign_release_has_id_token_write(
+        self, publish_workflow: dict[str, Any]
+    ) -> None:
+        job = publish_workflow["jobs"]["sign-release"]
+        permissions = job.get("permissions", {})
+        assert permissions.get("id-token") == "write"
+
+    def test_sign_release_uses_sigstore_action(
+        self, publish_workflow: dict[str, Any]
+    ) -> None:
+        job = publish_workflow["jobs"]["sign-release"]
+        action_steps = [
+            s for s in job["steps"] if "sigstore/gh-action-sigstore-python" in s.get("uses", "")
+        ]
+        assert len(action_steps) >= 1
 
     def test_publish_testpypi_needs_build(
         self, publish_workflow: dict[str, Any]
