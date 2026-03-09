@@ -68,8 +68,8 @@
 **Goal**: Draft PRs run only lint; full suite runs on ready_for_review
 **Independent Test**: Open draft PR, verify only lint runs; mark ready, verify full suite triggers
 
-- [ ] T011 [US6] Add draft-skip condition (`github.event.pull_request.draft == false || github.event_name == 'push'`) to typecheck, test, docs-build jobs in `.github/workflows/ci.yml` [TS-028, TS-029, TS-030, TS-031, TS-032]
-- [ ] T012 [US6] Verify `ready_for_review` is included in pull_request event types in `.github/workflows/ci.yml` [TS-031]
+- [x] T011 [US6] Add draft-skip condition (`github.event.pull_request.draft == false || github.event_name == 'push'`) to typecheck, test, docs-build jobs in `.github/workflows/ci.yml` [TS-028, TS-029, TS-030, TS-031, TS-032]
+- [x] T012 [US6] Verify `ready_for_review` is included in pull_request event types in `.github/workflows/ci.yml` [TS-031]
 
 **Checkpoint**: US6 complete — conditional CI execution verified [TS-027, TS-028, TS-029, TS-030, TS-031, TS-032]
 
