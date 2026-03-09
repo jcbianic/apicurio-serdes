@@ -24,3 +24,29 @@ Enable **Require status checks to pass before merging** and add:
 
 - **Require branches to be up to date before merging**: Yes
 - **Do not allow bypassing the above settings**: Yes
+
+## ReadTheDocs Integration
+
+ReadTheDocs builds documentation automatically via webhook (no GitHub secret
+required).
+
+### Initial Setup
+
+1. Log in to [readthedocs.org](https://readthedocs.org)
+2. Click **Import a Project**
+3. Connect your GitHub account and select `apicurio-serdes`
+4. ReadTheDocs will auto-configure a webhook on your GitHub repository
+
+### Enable PR Preview Builds
+
+1. Go to the project on ReadTheDocs
+2. Navigate to **Admin > Advanced Settings**
+3. Enable **Build pull requests for this project**
+4. Save
+
+Once enabled, ReadTheDocs will:
+
+- Build documentation on every push to `main`
+- Build preview documentation for every PR and add a status check with a
+  preview link
+- Build versioned documentation for release tags

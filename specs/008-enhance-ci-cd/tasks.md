@@ -92,8 +92,8 @@
 **Goal**: Docs auto-build on PR (preview link) and on release (primary site)
 **Independent Test**: Open PR, verify RTD preview link appears as status check
 
-- [ ] T015 [US3] Create `.readthedocs.yaml` with version 2, build OS ubuntu-24.04, Python 3.10, mkdocs configuration reference, uv-based build commands [TS-012, TS-015]
-- [ ] T016 [US3] Document ReadTheDocs dashboard configuration steps (connect repo, enable PR builds) in `docs/setup/ci-cd-secrets.md` [TS-013, TS-014, TS-015]
+- [x] T015 [US3] Create `.readthedocs.yaml` with version 2, build OS ubuntu-24.04, Python 3.10, mkdocs configuration reference, uv-based build commands [TS-012, TS-015]
+- [x] T016 [US3] Document ReadTheDocs dashboard configuration steps (connect repo, enable PR builds) in `docs/setup/ci-cd-secrets.md` [TS-013, TS-014, TS-015]
 
 **Checkpoint**: US3 complete — ReadTheDocs integration configured [TS-012, TS-013, TS-014, TS-015, TS-016]
 
