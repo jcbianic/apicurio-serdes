@@ -146,9 +146,7 @@ class TestTrustedPublisherAuth:
             "publish-testpypi must not use a password (use OIDC instead)"
         )
 
-    def test_publish_pypi_no_password(
-        self, publish_workflow: dict[str, Any]
-    ) -> None:
+    def test_publish_pypi_no_password(self, publish_workflow: dict[str, Any]) -> None:
         job = publish_workflow["jobs"]["publish-pypi"]
         publish_steps = [
             s
