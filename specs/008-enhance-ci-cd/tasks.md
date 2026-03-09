@@ -30,9 +30,9 @@
 
 **CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T004 Create `.pre-commit-config.yaml` with ruff-pre-commit pinned to v0.15.5, hooks: ruff (lint with --fix) and ruff-format [TS-001, TS-004, TS-005]
-- [ ] T005 Create `.github/workflows/ci.yml` with workflow triggers (pull_request: opened, synchronize, reopened, ready_for_review; push: main) and lint job using pre-commit/action@v3.0.1 [TS-002, TS-003]
-- [ ] T006 Verify pre-commit runs locally with `pre-commit run --all-files` and produces identical results to CI lint job [TS-001, TS-002, TS-003]
+- [x] T004 Create `.pre-commit-config.yaml` with ruff-pre-commit pinned to v0.15.5, hooks: ruff (lint with --fix) and ruff-format [TS-001, TS-004, TS-005]
+- [x] T005 Create `.github/workflows/ci.yml` with workflow triggers (pull_request: opened, synchronize, reopened, ready_for_review; push: main) and lint job using pre-commit/action@v3.0.1 [TS-002, TS-003]
+- [x] T006 Verify pre-commit runs locally with `pre-commit run --all-files` and produces identical results to CI lint job [TS-001, TS-002, TS-003]
 
 **Checkpoint**: Pre-commit + CI lint alignment verified (US1 complete). All subsequent phases can begin.
 

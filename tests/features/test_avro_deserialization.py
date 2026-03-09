@@ -6,7 +6,6 @@ import struct
 from typing import Any
 
 import httpx
-import pytest
 import respx
 from pytest_bdd import given, parsers, scenario, then, when
 
@@ -24,7 +23,9 @@ from tests.conftest import (
     make_confluent_bytes,
 )
 
-FEATURE = "../../specs/002-avro-deserializer/tests/features/avro_deserialization.feature"
+FEATURE = (
+    "../../specs/002-avro-deserializer/tests/features/avro_deserialization.feature"
+)
 
 CONTENT_ID_42 = 42
 GLOBAL_ID_42 = 42
@@ -115,7 +116,9 @@ def test_ts009_round_trip() -> None:
 def given_client_with_content_id(
     mock_registry: respx.MockRouter, artifact_id: str
 ) -> ApicurioRegistryClient:
-    _schema_route(mock_registry, artifact_id, global_id=GLOBAL_ID_42, content_id=CONTENT_ID_42)
+    _schema_route(
+        mock_registry, artifact_id, global_id=GLOBAL_ID_42, content_id=CONTENT_ID_42
+    )
     _id_schema_route(mock_registry, "contentId", CONTENT_ID_42)
     _id_schema_route(mock_registry, "globalId", GLOBAL_ID_42)
     return ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
@@ -196,7 +199,9 @@ def given_short_bytes() -> bytes:
 
 
 @given(
-    parsers.cfparse("valid Confluent framing with magic byte and contentId {content_id:d}"),
+    parsers.cfparse(
+        "valid Confluent framing with magic byte and contentId {content_id:d}"
+    ),
     target_fixture="input_bytes",
 )
 def given_valid_framing_prefix(content_id: int) -> bytes:
@@ -322,9 +327,7 @@ def then_matches_original(deser_result: dict[str, Any]) -> None:
     assert deser_result == VALID_USER_EVENT
 
 
-@then(
-    parsers.cfparse("the registry is queried for contentId {content_id:d}")
-)
+@then(parsers.cfparse("the registry is queried for contentId {content_id:d}"))
 def then_registry_queried_for_content_id(
     mock_registry: respx.MockRouter, content_id: int
 ) -> None:
@@ -369,7 +372,9 @@ def then_descriptive_error(deser_result: Any) -> None:
 
 
 @then(
-    parsers.cfparse("the error message identifies the unresolved identifier {id_value:d}")
+    parsers.cfparse(
+        "the error message identifies the unresolved identifier {id_value:d}"
+    )
 )
 def then_error_message_has_id(deser_result: Any, id_value: int) -> None:
     assert str(id_value) in str(deser_result)

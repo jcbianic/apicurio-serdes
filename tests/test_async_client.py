@@ -119,9 +119,9 @@ class TestRegistryConnectionError:
         from apicurio_serdes._async_client import AsyncApicurioRegistryClient
         from apicurio_serdes._errors import RegistryConnectionError
 
-        mock_registry.get(
-            url__startswith=f"{REGISTRY_URL}/groups/"
-        ).mock(side_effect=httpx.ConnectError("Connection refused"))
+        mock_registry.get(url__startswith=f"{REGISTRY_URL}/groups/").mock(
+            side_effect=httpx.ConnectError("Connection refused")
+        )
         client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
         with pytest.raises(RegistryConnectionError) as exc_info:
@@ -291,7 +291,9 @@ class TestUnexpectedHttpStatus:
         from apicurio_serdes._async_client import AsyncApicurioRegistryClient
         from apicurio_serdes._errors import RegistryConnectionError
 
-        url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/Broken/versions/latest/content"
+        url = (
+            f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/Broken/versions/latest/content"
+        )
         mock_registry.get(url).mock(return_value=Response(500))
         client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 

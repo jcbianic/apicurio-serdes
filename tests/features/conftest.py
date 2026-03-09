@@ -14,9 +14,8 @@ from pytest_bdd import given, parsers
 from apicurio_serdes import ApicurioRegistryClient
 from apicurio_serdes.serialization import MessageField, SerializationContext
 from tests.conftest import (
-    REGISTRY_URL,
     GROUP_ID,
-    USER_EVENT_SCHEMA_JSON,
+    REGISTRY_URL,
     VALID_USER_EVENT,
     _id_schema_route,
     _schema_route,
@@ -45,7 +44,7 @@ SCHEMA_B_JSON: dict[str, Any] = {
 
 @given(
     parsers.cfparse(
-        'a configured ApicurioRegistryClient pointing at a registry that holds'
+        "a configured ApicurioRegistryClient pointing at a registry that holds"
         ' a known Avro schema with contentId {content_id:d} for artifact "{artifact_id}"'
     ),
     target_fixture="registry_client",
@@ -62,9 +61,7 @@ def given_client_with_content_id(
 
 
 @given(
-    parsers.cfparse(
-        'a SerializationContext for topic "{topic}" and field {field}'
-    ),
+    parsers.cfparse('a SerializationContext for topic "{topic}" and field {field}'),
     target_fixture="ctx",
 )
 def given_ctx(topic: str, field: str) -> SerializationContext:

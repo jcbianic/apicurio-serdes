@@ -50,7 +50,7 @@ line-length = 88
 select = ["E", "F", "I", "N", "W", "UP", "B", "SIM", "TCH"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["E501", "TCH"]
+"tests/**" = ["E501", "N815", "TCH"]
 
 [tool.coverage.run]
 source = ["src/apicurio_serdes"]

@@ -5,17 +5,13 @@ from __future__ import annotations
 import struct
 from typing import Any
 
-import respx
 from pytest_bdd import given, parsers, scenario, then, when
 
 from apicurio_serdes import ApicurioRegistryClient
 from apicurio_serdes.avro import AvroSerializer
 from apicurio_serdes.serialization import MessageField, SerializationContext
 from tests.conftest import (
-    GROUP_ID,
-    REGISTRY_URL,
     VALID_USER_EVENT,
-    _schema_route,
 )
 
 FEATURE = "../specs/001-avro-serializer/tests/features/wire_format.feature"
@@ -42,7 +38,6 @@ def test_ts017_content_id_wire_format() -> None:
 )
 def test_ts018_callable_interface() -> None:
     """TS-018."""
-
 
 
 @given(

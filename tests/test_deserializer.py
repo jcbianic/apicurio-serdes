@@ -132,9 +132,9 @@ def test_call_network_error(mock_registry: respx.MockRouter) -> None:
     """Network failure during schema lookup raises RegistryConnectionError [FR-012]."""
     import httpx
 
-    mock_registry.get(
-        url__startswith=f"{REGISTRY_URL}/ids/"
-    ).mock(side_effect=httpx.ConnectError("refused"))
+    mock_registry.get(url__startswith=f"{REGISTRY_URL}/ids/").mock(
+        side_effect=httpx.ConnectError("refused")
+    )
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
     deser = AvroDeserializer(registry_client=client)
     data = make_confluent_bytes(CONTENT_ID, VALID_USER_EVENT)

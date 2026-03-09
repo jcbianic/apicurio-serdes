@@ -13,8 +13,8 @@ from apicurio_serdes._errors import DeserializationError
 from apicurio_serdes.avro import AvroDeserializer
 from apicurio_serdes.serialization import MessageField, SerializationContext
 from tests.conftest import (
-    REGISTRY_URL,
     GROUP_ID,
+    REGISTRY_URL,
     VALID_USER_EVENT,
     _id_schema_route,
     make_confluent_bytes,
@@ -98,9 +98,7 @@ def given_deserializer_with_from_dict(
     def from_dict(d: dict[str, Any], ctx: SerializationContext) -> UserEvent:
         return UserEvent(**d)
 
-    return AvroDeserializer(
-        registry_client=registry_client, from_dict=from_dict
-    )
+    return AvroDeserializer(registry_client=registry_client, from_dict=from_dict)
 
 
 @given(
@@ -174,9 +172,7 @@ def given_deserializer_with_failing_from_dict(
     def bad_from_dict(d: dict[str, Any], ctx: SerializationContext) -> Any:
         raise RuntimeError("conversion failed")
 
-    return AvroDeserializer(
-        registry_client=registry_client, from_dict=bad_from_dict
-    )
+    return AvroDeserializer(registry_client=registry_client, from_dict=bad_from_dict)
 
 
 @then("a DeserializationError is raised")
@@ -192,4 +188,7 @@ def then_has_cause(deser_result: Any) -> None:
 
 @then("the error message identifies the failed conversion")
 def then_error_msg_conversion(deser_result: Any) -> None:
-    assert "from_dict" in str(deser_result).lower() or "conversion" in str(deser_result).lower()
+    assert (
+        "from_dict" in str(deser_result).lower()
+        or "conversion" in str(deser_result).lower()
+    )

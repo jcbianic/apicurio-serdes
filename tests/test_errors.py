@@ -6,7 +6,6 @@ import pytest
 
 from apicurio_serdes._errors import DeserializationError, SchemaNotFoundError
 
-
 # ── T002: DeserializationError ──
 
 
