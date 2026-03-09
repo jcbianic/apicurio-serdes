@@ -193,3 +193,24 @@ class ApicurioRegistryClient:
             schema: dict[str, Any] = json.loads(response.content)
             self._id_cache[cache_key] = schema
             return schema
+
+    def close(self) -> None:
+        """Close the underlying HTTP connection pool.
+
+        Call this when the client is no longer needed and you are not
+        using it as a context manager. Safe to call multiple times.
+        """
+        self._http_client.close()
+
+    def __enter__(self) -> ApicurioRegistryClient:
+        """Enter the context manager. Returns self."""
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: object,
+    ) -> None:
+        """Exit the context manager. Calls close()."""
+        self.close()

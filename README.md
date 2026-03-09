@@ -13,6 +13,17 @@ Python serialization library for [Apicurio Registry](https://www.apicur.io/regis
 
 Provides Avro serializers that fetch and cache schemas from an Apicurio Registry v3 instance, with support for both sync and async usage. Two wire formats are supported: the Confluent-compatible payload framing and Apicurio's Kafka-headers mode.
 
+## Feature status
+
+| Feature | Status |
+|---|---|
+| Sync registry client (`ApicurioRegistryClient`) | Shipped |
+| Async registry client (`AsyncApicurioRegistryClient`) | Shipped |
+| Avro serializer (`AvroSerializer`) | Shipped |
+| Avro deserializer (`AvroDeserializer`) | Shipped |
+| Confluent wire format (magic byte + globalId) | Shipped |
+| Kafka-headers wire format | Shipped |
+
 ## Installation
 
 ```bash
