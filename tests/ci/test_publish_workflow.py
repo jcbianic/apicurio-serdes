@@ -111,25 +111,37 @@ class TestVersionValidation:
         )
 
 
-class TestOIDCTrustedPublishing:
-    """TS-016: Publication uses OIDC trusted publishing."""
+class TestTokenBasedPublishing:
+    """TS-016: Publication uses token-based auth via API secrets."""
 
-    def test_publish_testpypi_has_id_token_write(
+    def test_publish_testpypi_uses_token_auth(
         self, publish_workflow: dict[str, Any]
     ) -> None:
         job = publish_workflow["jobs"]["publish-testpypi"]
-        perms = job.get("permissions", {})
-        assert perms.get("id-token") == "write", (
-            "publish-testpypi must have id-token: write for OIDC"
+        publish_steps = [
+            s
+            for s in job["steps"]
+            if "pypa/gh-action-pypi-publish" in s.get("uses", "")
+        ]
+        assert publish_steps, "publish-testpypi must use pypa/gh-action-pypi-publish"
+        password = publish_steps[0].get("with", {}).get("password", "")
+        assert "TESTPYPI_API_TOKEN" in password, (
+            "publish-testpypi must use TESTPYPI_API_TOKEN secret for token-based auth"
         )
 
-    def test_publish_pypi_has_id_token_write(
+    def test_publish_pypi_uses_token_auth(
         self, publish_workflow: dict[str, Any]
     ) -> None:
         job = publish_workflow["jobs"]["publish-pypi"]
-        perms = job.get("permissions", {})
-        assert perms.get("id-token") == "write", (
-            "publish-pypi must have id-token: write for OIDC"
+        publish_steps = [
+            s
+            for s in job["steps"]
+            if "pypa/gh-action-pypi-publish" in s.get("uses", "")
+        ]
+        assert publish_steps, "publish-pypi must use pypa/gh-action-pypi-publish"
+        password = publish_steps[0].get("with", {}).get("password", "")
+        assert "PYPI_API_TOKEN" in password, (
+            "publish-pypi must use PYPI_API_TOKEN secret for token-based auth"
         )
 
     def test_publish_testpypi_uses_pypi_publish_action(
