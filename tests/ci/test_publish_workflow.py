@@ -64,7 +64,9 @@ class TestPublishJobChain:
     ) -> None:
         job = publish_workflow["jobs"]["sign-release"]
         action_steps = [
-            s for s in job["steps"] if "sigstore/gh-action-sigstore-python" in s.get("uses", "")
+            s
+            for s in job["steps"]
+            if "sigstore/gh-action-sigstore-python" in s.get("uses", "")
         ]
         assert len(action_steps) >= 1
 

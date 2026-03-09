@@ -96,7 +96,14 @@ class TestCIAllJobsPresent:
 
     def test_all_jobs_present(self, ci_workflow: dict[str, Any]) -> None:
         jobs = ci_workflow["jobs"]
-        for job_name in ("lint", "typecheck", "test", "docs-build", "codeql", "publish-testpypi"):
+        for job_name in (
+            "lint",
+            "typecheck",
+            "test",
+            "docs-build",
+            "codeql",
+            "publish-testpypi",
+        ):
             assert job_name in jobs, f"Missing job: {job_name}"
 
     def test_workflow_has_exactly_six_jobs(self, ci_workflow: dict[str, Any]) -> None:
