@@ -16,9 +16,9 @@
 
 **Purpose**: Create directory structure and foundational config that all stories depend on
 
-- [ ] T001 Create `.github/workflows/` directory structure
-- [ ] T002 [P] Create `mkdocs.yml` with material theme, mkdocstrings plugin, and nav referencing existing `docs/user-guide/` pages
-- [ ] T003 [P] Create `docs/index.md` as minimal documentation home page (required for mkdocs build to succeed)
+- [x] T001 Create `.github/workflows/` directory structure
+- [x] T002 [P] Create `mkdocs.yml` with material theme, mkdocstrings plugin, and nav referencing existing `docs/user-guide/` pages
+- [x] T003 [P] Create `docs/index.md` as minimal documentation home page (required for mkdocs build to succeed)
 
 **Checkpoint**: Directory structure and docs scaffolding ready
 
