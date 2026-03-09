@@ -455,6 +455,17 @@ def test_global_id_outside_int64_raises_value_error(
         client.get_schema("OverflowTest")
 
 
+def test_context_manager_closes_client(mock_registry: respx.MockRouter) -> None:
+    """Context manager __enter__ returns self and __exit__ closes the HTTP client."""
+    _schema_route(mock_registry, "UserEvent")
+    with ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID) as client:
+        assert isinstance(client, ApicurioRegistryClient)
+        result = client.get_schema("UserEvent")
+        assert result.schema == USER_EVENT_SCHEMA_JSON
+    # After the with-block, the underlying httpx.Client should be closed.
+    assert client._http_client.is_closed
+
+
 def test_content_id_outside_int64_raises_value_error(
     mock_registry: respx.MockRouter,
 ) -> None:
