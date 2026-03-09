@@ -6,11 +6,19 @@ build-backend = "hatchling.build"
 name = "apicurio-serdes"
 version = "0.1.0"
 description = "Python serialization library for Apicurio Registry"
+readme = "README.md"
+license = "MIT"
+authors = [{ name = "Jean-Christophe Bianic", email = "jcbianic@libon.com" }]
 requires-python = ">=3.10"
 dependencies = [
     "fastavro>=1.9.0",
     "httpx>=0.27.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/jcbianic/apicurio-serdes"
+Repository = "https://github.com/jcbianic/apicurio-serdes"
+Issues = "https://github.com/jcbianic/apicurio-serdes/issues"
 
 [dependency-groups]
 docs = [
