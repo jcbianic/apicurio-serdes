@@ -45,7 +45,7 @@ jobs:
       - name: Upload signatures to GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.ref_name }}" dist/*.sigstore
+        run: gh release upload "${{ github.ref_name }}" dist/*.sigstore.json
 
   publish-testpypi:
     needs: build
