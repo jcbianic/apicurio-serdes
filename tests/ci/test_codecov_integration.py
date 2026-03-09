@@ -35,9 +35,7 @@ class TestCodecovUpload:
             f"Codecov action must be pinned to a commit SHA, got: {uses}"
         )
 
-    def test_codecov_uploads_coverage_xml(
-        self, ci_workflow: dict[str, Any]
-    ) -> None:
+    def test_codecov_uploads_coverage_xml(self, ci_workflow: dict[str, Any]) -> None:
         test_job = ci_workflow["jobs"]["test"]
         codecov_steps = [
             s
@@ -67,9 +65,7 @@ class TestCodecovNonBlocking:
 class TestUploadArtifactBeforeCodecov:
     """TS-006 supplement: upload-artifact step precedes codecov step."""
 
-    def test_upload_artifact_before_codecov(
-        self, ci_workflow: dict[str, Any]
-    ) -> None:
+    def test_upload_artifact_before_codecov(self, ci_workflow: dict[str, Any]) -> None:
         test_job = ci_workflow["jobs"]["test"]
         steps = test_job["steps"]
         upload_idx = next(

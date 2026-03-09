@@ -2,9 +2,17 @@
 
 from __future__ import annotations
 
+import enum
+
+import pytest
 from pytest_bdd import given, parsers, scenario, then
 
-from apicurio_serdes.serialization import MessageField, SerializationContext
+from apicurio_serdes.serialization import (
+    MessageField,
+    SerializationContext,
+    SerializedMessage,
+    WireFormat,
+)
 
 
 @scenario(
@@ -38,13 +46,6 @@ def then_context_exposes_field(ctx: SerializationContext, field: str) -> None:
 # ---------------------------------------------------------------------------
 # T003 — Failing unit tests for WireFormat enum and SerializedMessage dataclass
 # ---------------------------------------------------------------------------
-
-import enum
-
-import pytest
-
-from apicurio_serdes.serialization import SerializedMessage, WireFormat  # noqa: E402
-
 
 # ---- WireFormat enum tests ------------------------------------------------
 

@@ -17,7 +17,15 @@ from pytest_bdd import given, scenario, then, when
 
 from apicurio_serdes import ApicurioRegistryClient
 from apicurio_serdes.avro import AvroSerializer
-from apicurio_serdes.serialization import MessageField, SerializationContext
+
+# Imports that will fail until production code is written (RED phase).
+# WireFormat and SerializedMessage do not yet exist in apicurio_serdes.serialization.
+from apicurio_serdes.serialization import (
+    MessageField,
+    SerializationContext,
+    SerializedMessage,
+    WireFormat,
+)
 from tests.conftest import (
     GLOBAL_ID,
     GROUP_ID,
@@ -25,10 +33,6 @@ from tests.conftest import (
     VALID_USER_EVENT,
     _schema_route,
 )
-
-# Imports that will fail until production code is written (RED phase).
-# WireFormat and SerializedMessage do not yet exist in apicurio_serdes.serialization.
-from apicurio_serdes.serialization import SerializedMessage, WireFormat
 
 FEATURES_BASE = "../../specs/004-kafka-headers-wire-format/tests/features"
 FEATURE = f"{FEATURES_BASE}/confluent_payload_compatibility.feature"
@@ -180,9 +184,7 @@ def then_magic_byte(result_bytes: bytes) -> None:
     assert result_bytes[0:1] == b"\x00"
 
 
-@then(
-    "the returned bytes contain a 4-byte big-endian schema identifier at offset 1"
-)
+@then("the returned bytes contain a 4-byte big-endian schema identifier at offset 1")
 def then_4byte_be_schema_id(result_bytes: bytes) -> None:
     schema_id = struct.unpack(">I", result_bytes[1:5])[0]
     assert schema_id == GLOBAL_ID

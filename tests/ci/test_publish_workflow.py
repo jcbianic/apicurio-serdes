@@ -164,9 +164,7 @@ class TestPublishEnvironments:
         job = publish_workflow["jobs"]["publish-testpypi"]
         assert job.get("environment") == "testpypi"
 
-    def test_publish_pypi_environment(
-        self, publish_workflow: dict[str, Any]
-    ) -> None:
+    def test_publish_pypi_environment(self, publish_workflow: dict[str, Any]) -> None:
         job = publish_workflow["jobs"]["publish-pypi"]
         assert job.get("environment") == "pypi"
 
@@ -174,9 +172,7 @@ class TestPublishEnvironments:
 class TestBuildJob:
     """TS-012: Build produces distribution artifacts."""
 
-    def test_build_uses_uv_build(
-        self, publish_workflow: dict[str, Any]
-    ) -> None:
+    def test_build_uses_uv_build(self, publish_workflow: dict[str, Any]) -> None:
         job = publish_workflow["jobs"]["build"]
         run_steps = [s.get("run", "") for s in job["steps"]]
         assert any("uv build" in step for step in run_steps)

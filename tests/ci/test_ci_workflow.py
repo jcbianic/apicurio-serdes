@@ -16,12 +16,11 @@ class TestCITriggers:
         assert "push" in triggers
         assert triggers["push"]["branches"] == ["main"]
 
-    def test_triggers_on_pull_request_to_main(
-        self, ci_workflow: dict[str, Any]
-    ) -> None:
+    def test_triggers_on_pull_request(self, ci_workflow: dict[str, Any]) -> None:
         triggers = ci_workflow[True]
         assert "pull_request" in triggers
-        assert triggers["pull_request"]["branches"] == ["main"]
+        assert "opened" in triggers["pull_request"]["types"]
+        assert "ready_for_review" in triggers["pull_request"]["types"]
 
 
 class TestCILintJob:
@@ -37,15 +36,17 @@ class TestCILintJob:
     def test_lint_uses_python_313(self, ci_workflow: dict[str, Any]) -> None:
         lint = ci_workflow["jobs"]["lint"]
         setup_python_steps = [
-            s for s in lint["steps"] if s.get("uses", "").startswith("actions/setup-python")
+            s
+            for s in lint["steps"]
+            if s.get("uses", "").startswith("actions/setup-python")
         ]
         assert len(setup_python_steps) == 1
         assert setup_python_steps[0]["with"]["python-version"] == "3.13"
 
-    def test_lint_runs_ruff_check(self, ci_workflow: dict[str, Any]) -> None:
+    def test_lint_uses_pre_commit(self, ci_workflow: dict[str, Any]) -> None:
         lint = ci_workflow["jobs"]["lint"]
-        run_steps = [s.get("run", "") for s in lint["steps"]]
-        assert any("uv run ruff check" in step for step in run_steps)
+        uses_steps = [s.get("uses", "") for s in lint["steps"]]
+        assert any("pre-commit/action" in step for step in uses_steps)
 
 
 class TestCITypecheckJob:
@@ -95,22 +96,18 @@ class TestCIAllJobsPresent:
 
     def test_all_jobs_present(self, ci_workflow: dict[str, Any]) -> None:
         jobs = ci_workflow["jobs"]
-        for job_name in ("lint", "typecheck", "test", "docs"):
+        for job_name in ("lint", "typecheck", "test", "docs-build", "publish-testpypi"):
             assert job_name in jobs, f"Missing job: {job_name}"
 
-    def test_workflow_has_exactly_four_jobs(
-        self, ci_workflow: dict[str, Any]
-    ) -> None:
-        assert len(ci_workflow["jobs"]) == 4
+    def test_workflow_has_exactly_five_jobs(self, ci_workflow: dict[str, Any]) -> None:
+        assert len(ci_workflow["jobs"]) == 5
 
 
 class TestCIStatusBlocking:
     """TS-002: All jobs report status (implicit via GitHub Actions)."""
 
-    def test_no_job_has_continue_on_error(
-        self, ci_workflow: dict[str, Any]
-    ) -> None:
+    def test_no_job_has_continue_on_error(self, ci_workflow: dict[str, Any]) -> None:
         for name, job in ci_workflow["jobs"].items():
-            assert not job.get(
-                "continue-on-error", False
-            ), f"Job '{name}' must not continue on error"
+            assert not job.get("continue-on-error", False), (
+                f"Job '{name}' must not continue on error"
+            )
