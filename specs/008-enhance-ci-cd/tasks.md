@@ -104,8 +104,8 @@
 **Goal**: Only TESTPYPI_API_TOKEN required; no hardcoded config in workflows
 **Independent Test**: Verify workflow uses only `${{ secrets.TESTPYPI_API_TOKEN }}`; no other hardcoded values
 
-- [ ] T017 [US4] Audit `.github/workflows/ci.yml` to ensure no hardcoded configuration values; only `${{ secrets.TESTPYPI_API_TOKEN }}` as secret reference [TS-017, TS-020, TS-021]
-- [ ] T018 [US4] Add error handling for missing TESTPYPI_API_TOKEN in publish-testpypi job with clear error message [TS-018, TS-019]
+- [x] T017 [US4] Audit `.github/workflows/ci.yml` to ensure no hardcoded configuration values; only `${{ secrets.TESTPYPI_API_TOKEN }}` as secret reference [TS-017, TS-020, TS-021]
+- [x] T018 [US4] Add error handling for missing TESTPYPI_API_TOKEN in publish-testpypi job with clear error message [TS-018, TS-019]
 
 **Checkpoint**: US4 complete — minimal secrets configuration verified [TS-017, TS-018, TS-019, TS-020, TS-021]
 
