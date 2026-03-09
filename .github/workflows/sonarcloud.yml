@@ -30,7 +30,7 @@ jobs:
           uv sync --group dev
           uv run pytest --cov-report=xml:coverage.xml
 
-      - uses: SonarSource/sonarqube-scan-action@aa494459d7c39c106cc77b166de8edea56f7a0f1  # v5.0.0
+      - uses: SonarSource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
