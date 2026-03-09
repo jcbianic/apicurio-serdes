@@ -1,10 +1,10 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
 name = "apicurio-serdes"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Python serialization library for Apicurio Registry"
 readme = "README.md"
 license = "MIT"
@@ -82,3 +82,7 @@ branch = true
 [tool.coverage.report]
 fail_under = 100
 show_missing = true
+
+[tool.hatch.version]
+source = "vcs"
+raw-options = { local_scheme = "no-local-version" }
