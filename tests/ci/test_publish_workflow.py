@@ -98,9 +98,7 @@ class TestPublishJobChain:
 class TestVersionValidation:
     """TS-013: Version derived from git tag via hatch-vcs."""
 
-    def test_build_fetches_full_history(
-        self, publish_workflow: dict[str, Any]
-    ) -> None:
+    def test_build_fetches_full_history(self, publish_workflow: dict[str, Any]) -> None:
         job = publish_workflow["jobs"]["build"]
         checkout_steps = [
             s for s in job["steps"] if "actions/checkout" in s.get("uses", "")
