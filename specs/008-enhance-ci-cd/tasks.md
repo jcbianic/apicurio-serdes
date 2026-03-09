@@ -127,10 +127,10 @@
 
 **Purpose**: Final validation and cleanup
 
-- [ ] T021 Run `pre-commit run --all-files` to verify all existing code passes linting
-- [ ] T022 Run `uv run mkdocs build --strict` to verify documentation builds without warnings
-- [ ] T023 Verify all CI workflow YAML syntax with `actionlint` or manual review
-- [ ] T024 Run quickstart.md end-to-end validation checklist
+- [x] T021 Run `pre-commit run --all-files` to verify all existing code passes linting
+- [x] T022 Run `uv run mkdocs build --strict` to verify documentation builds without warnings
+- [x] T023 Verify all CI workflow YAML syntax with `actionlint` or manual review
+- [x] T024 Run quickstart.md end-to-end validation checklist
 
 ---
 
