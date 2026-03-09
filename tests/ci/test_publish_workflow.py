@@ -23,7 +23,6 @@ class TestPublishJobChain:
     """TS-017: Sequential job chain with hard gates."""
 
     EXPECTED_JOBS = [
-        "validate-version",
         "build",
         "sign-release",
         "publish-testpypi",
@@ -36,14 +35,12 @@ class TestPublishJobChain:
         for job_name in self.EXPECTED_JOBS:
             assert job_name in jobs, f"Missing job: {job_name}"
 
-    def test_build_needs_validate_version(
+    def test_validate_version_job_removed(
         self, publish_workflow: dict[str, Any]
     ) -> None:
-        build = publish_workflow["jobs"]["build"]
-        needs = build.get("needs", [])
-        if isinstance(needs, str):
-            needs = [needs]
-        assert "validate-version" in needs
+        assert "validate-version" not in publish_workflow["jobs"], (
+            "validate-version job must be removed — hatch-vcs derives version from git tag"
+        )
 
     def test_sign_release_needs_build(self, publish_workflow: dict[str, Any]) -> None:
         job = publish_workflow["jobs"]["sign-release"]
@@ -88,17 +85,6 @@ class TestPublishJobChain:
             needs = [needs]
         assert "publish-testpypi" in needs
 
-    def test_validate_testpypi_needs_validate_version(
-        self, publish_workflow: dict[str, Any]
-    ) -> None:
-        job = publish_workflow["jobs"]["validate-testpypi"]
-        needs = job.get("needs", [])
-        if isinstance(needs, str):
-            needs = [needs]
-        assert "validate-version" in needs, (
-            "validate-testpypi must depend on validate-version for version output"
-        )
-
     def test_publish_pypi_needs_validate_testpypi(
         self, publish_workflow: dict[str, Any]
     ) -> None:
@@ -110,30 +96,29 @@ class TestPublishJobChain:
 
 
 class TestVersionValidation:
-    """TS-013: Pipeline fails when version does not match release tag."""
+    """TS-013: Version derived from git tag via hatch-vcs."""
 
-    def test_validate_version_job_exists(
+    def test_build_fetches_full_history(
         self, publish_workflow: dict[str, Any]
     ) -> None:
-        assert "validate-version" in publish_workflow["jobs"]
-
-    def test_validate_version_reads_pyproject_toml(
-        self, publish_workflow: dict[str, Any]
-    ) -> None:
-        job = publish_workflow["jobs"]["validate-version"]
-        run_steps = [s.get("run", "") for s in job["steps"]]
-        combined = " ".join(run_steps)
-        assert "pyproject.toml" in combined and "tomllib" in combined, (
-            "Version validation must parse pyproject.toml using tomllib"
+        job = publish_workflow["jobs"]["build"]
+        checkout_steps = [
+            s for s in job["steps"] if "actions/checkout" in s.get("uses", "")
+        ]
+        assert checkout_steps, "build must have a checkout step"
+        fetch_depth = checkout_steps[0].get("with", {}).get("fetch-depth")
+        assert fetch_depth == 0, (
+            "build checkout must use fetch-depth: 0 so hatch-vcs can read git tags"
         )
 
-    def test_validate_version_exposes_output(
+    def test_validate_testpypi_derives_version_from_tag(
         self, publish_workflow: dict[str, Any]
     ) -> None:
-        job = publish_workflow["jobs"]["validate-version"]
-        outputs = job.get("outputs", {})
-        assert "version" in outputs, (
-            "validate-version must expose a 'version' output for downstream jobs"
+        job = publish_workflow["jobs"]["validate-testpypi"]
+        run_steps = [s.get("run", "") for s in job["steps"]]
+        combined = " ".join(run_steps)
+        assert "GITHUB_REF_NAME" in combined, (
+            "validate-testpypi must derive version from the git tag via GITHUB_REF_NAME"
         )
 
 
