@@ -7,38 +7,13 @@ on:
 permissions: {}
 
 jobs:
-  validate-version:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    outputs:
-      version: ${{ steps.pkg.outputs.version }}
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
-      - name: Extract version from pyproject.toml
-        id: pkg
-        run: |
-          PKG_VERSION=$(python -c "
-          import tomllib, pathlib
-          data = tomllib.loads(pathlib.Path('pyproject.toml').read_text())
-          print(data['project']['version'])
-          ")
-          echo "version=$PKG_VERSION" >> "$GITHUB_OUTPUT"
-      - name: Compare with release tag
-        env:
-          PKG: ${{ steps.pkg.outputs.version }}
-        run: |
-          TAG="${GITHUB_REF_NAME#v}"
-          if [ "$TAG" != "$PKG" ]; then
-            echo "::error::Version mismatch: pyproject.toml has $PKG but release tag is $GITHUB_REF_NAME"
-            exit 1
-          fi
-
   build:
-    needs: validate-version
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
           python-version: "3.13"
@@ -92,14 +67,13 @@ jobs:
           skip-existing: true
 
   validate-testpypi:
-    needs: [publish-testpypi, validate-version]
+    needs: [publish-testpypi]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - name: Install from TestPyPI with retry
-        env:
-          PKG_VERSION: ${{ needs.validate-version.outputs.version }}
         run: |
+          PKG_VERSION="${GITHUB_REF_NAME#v}"
           for attempt in 1 2 3 4 5; do
             echo "Attempt $attempt: installing apicurio-serdes==${PKG_VERSION} from TestPyPI..."
             if pip install \
