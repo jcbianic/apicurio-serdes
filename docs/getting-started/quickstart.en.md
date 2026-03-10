@@ -34,7 +34,7 @@ curl -X POST "http://localhost:8080/apis/registry/v3/groups/com.example.schemas/
 ## Step 1 — Install the Library
 
 ```bash
-pip install apicurio-serdes
+uv add apicurio-serdes
 ```
 
 Verify the installation:
@@ -57,7 +57,7 @@ client = ApicurioRegistryClient(
 )
 ```
 
-The client connects to the Apicurio v3 API and caches schemas after the first fetch — you only pay the HTTP cost once per artifact.
+The client connects to the Apicurio v3 API and caches schemas after the first fetch. You only pay the HTTP cost once per artifact.
 
 `group_id` tells the client which schema group to use for every lookup. In Apicurio, schemas are organized under groups (similar to namespaces). See [Addressing Model](../concepts/addressing-model.md) for details.
 
@@ -131,72 +131,9 @@ print(f"Magic byte: 0x{payload[0]:02x}")
 print(f"Schema ID:  {int.from_bytes(payload[1:5], 'big')}")
 ```
 
-## Troubleshooting
-
-### Wrong Registry URL
-
-**Error**: `RegistryConnectionError: Unable to connect to registry at http://wrong-host:8080/...: ...`
-
-**Cause**: The `url` parameter does not point to a running Apicurio Registry.
-
-**Fix**: Verify the registry is running and the URL includes the full v3 API path:
-
-```python
-# Correct — includes /apis/registry/v3
-client = ApicurioRegistryClient(
-    url="http://localhost:8080/apis/registry/v3",
-    group_id="com.example.schemas",
-)
-
-# Wrong — missing API path
-client = ApicurioRegistryClient(
-    url="http://localhost:8080",  # Will fail!
-    group_id="com.example.schemas",
-)
-```
-
-### Non-existent Artifact
-
-**Error**: `SchemaNotFoundError: Schema not found: artifact 'MySchema' in group 'default'`
-
-**Cause**: The `artifact_id` does not exist in the specified group, or the `group_id` is wrong.
-
-**Fix**: Check that the schema exists in the registry under the correct group:
-
-```bash
-# List artifacts in a group
-curl "http://localhost:8080/apis/registry/v3/groups/com.example.schemas/artifacts"
-```
-
-Common mistakes:
-
-- The schema is in a different group than the one you specified
-- The artifact ID is case-sensitive — `UserEvent` is not the same as `userevent`
-- The schema was registered in the `default` group but you are looking in a named group
-
-### Invalid Input Data
-
-**Error**: `ValueError: ... is not a valid ...` (from fastavro)
-
-**Cause**: The data dictionary does not match the Avro schema — a required field is missing, a field has the wrong type, or the data structure does not match the schema's expected shape.
-
-**Fix**: Verify that your data matches the schema exactly:
-
-```python
-# Schema expects: {"userId": string, "country": string}
-
-# Correct
-serializer({"userId": "abc", "country": "FR"}, ctx)
-
-# Wrong — missing required field "country"
-serializer({"userId": "abc"}, ctx)
-
-# Wrong — "userId" should be a string, not an int
-serializer({"userId": 123, "country": "FR"}, ctx)
-```
-
 ## Next Steps
 
-- [Avro Serializer Guide](../user-guide/avro-serializer.md) — custom `to_dict` hooks, wire format options, strict mode
+- [Avro Serializer](../user-guide/avro-serializer.md) — parameters, `to_dict` hooks, wire format options, strict mode
+- [Error Handling](../how-to/error-handling.md) — what to do when things go wrong
 - [Migration from confluent-kafka](../migration/from-confluent-kafka.md) — side-by-side API comparison
 - [API Reference](../api-reference/index.md) — full class and method documentation

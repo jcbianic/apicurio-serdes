@@ -1,6 +1,6 @@
 # Schema Caching
 
-`apicurio-serdes` caches schemas after the first fetch so that subsequent serialization calls do not make HTTP requests. This page explains when the cache is populated, how long it lasts, and what guarantees it provides.
+`apicurio-serdes` caches schemas after the first fetch so that subsequent serialization calls do not make HTTP requests. This page explains how schema caching works and what to expect from its behaviour.
 
 ## How the Cache Works
 

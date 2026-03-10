@@ -13,7 +13,7 @@ Si vos schemas se trouvent dans un groupe personnalisé — et dans tout déploi
 
 ## La solution
 
-`apicurio-serdes` communique directement avec l'API v3 d'Apicurio, en contournant entièrement la couche de compatibilité. La bibliothèque offre une interface inspirée de `confluent-kafka`, ce qui réduit la courbe d'apprentissage au minimum :
+`apicurio-serdes` communique directement avec l'API v3 d'Apicurio, en contournant entièrement la couche de compatibilité. L'API est conçue pour correspondre aux conventions de `confluent-kafka` :
 
 ```python
 from apicurio_serdes import ApicurioRegistryClient
@@ -31,7 +31,7 @@ ctx = SerializationContext(topic="user-events", field=MessageField.VALUE)
 payload: bytes = serializer({"userId": "abc", "country": "FR"}, ctx)
 ```
 
-C'est tout. `group_id` est un paramètre de premier ordre, les références de schema se résolvent nativement, et la sortie est un wire format Confluent standard que tout consommateur en aval peut décoder.
+C'est tout. `group_id` est un paramètre de premier ordre. Les références de schema se résolvent nativement contre le registry, et la sortie est compatible octet par octet avec tout consommateur au format Confluent.
 
 ## À qui s'adresse cette bibliothèque ?
 
@@ -46,9 +46,9 @@ Ingénieurs data et développeurs backend Python qui :
 
 | Fonctionnalité | Description |
 |----------------|-------------|
-| **API native v3** | Appels directs à l'API REST d'Apicurio — aucun contournement ccompat |
+| **API native v3** | Appels directs à l'API REST d'Apicurio, sans contournement ccompat |
 | **`group_id` comme citoyen de premier ordre** | Chaque recherche de schema passe par le bon groupe |
-| **API compatible confluent-kafka** | Mêmes noms de classes et conventions d'appel que vous connaissez déjà |
+| **API compatible confluent-kafka** | Mêmes noms de classes et conventions d'appel que `confluent-kafka` |
 | **Mise en cache des schemas** | Un seul appel HTTP par artefact, pas par message |
 | **Choix du wire format** | `globalId` (par défaut) ou `contentId` dans l'en-tête Confluent |
 | **hook `to_dict` personnalisés** | Sérialisez des dataclass, des modèles Pydantic ou tout autre objet |
@@ -65,8 +65,8 @@ Vous utilisez déjà `confluent-kafka` ? Consultez le [Guide de migration](migra
 |-----------|--------|
 | `ApicurioRegistryClient` | Disponible |
 | `AvroSerializer` | Disponible |
-| `AvroDeserializer` | En cours |
-| Client registry asynchrone | Planifié |
-| Wire format via en-têtes Kafka | Planifié |
+| `AvroDeserializer` | Disponible |
+| Client registry asynchrone | Disponible |
+| Wire format via en-têtes Kafka | Disponible |
 | Support Protobuf | Feuille de route |
 | Support JSON Schema | Feuille de route |

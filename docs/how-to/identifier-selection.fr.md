@@ -49,9 +49,9 @@ Utilisez `contentId` lorsque :
 - Vous voulez que des **schemas identiques** enregistrés dans des groupes différents ou en tant qu'artefacts différents partagent le même identifiant dans le wire format
 - Vous utilisez les fonctionnalités de déduplication par contenu d'Apicurio
 
-## Important : producteur et consommateur doivent s'accorder
+## Producteur et consommateur doivent s'accorder
 
-Le type d'identifiant **n'est pas encodé dans le wire format** — `globalId` et `contentId` occupent tous deux les mêmes 4 octets dans l'en-tête du message. Le consommateur doit savoir quel type attendre.
+Le type d'identifiant **n'est pas encodé dans le wire format**. `globalId` et `contentId` occupent tous deux les mêmes 4 octets dans l'en-tête du message. Le consommateur doit savoir quel type attendre.
 
 Si le producteur intègre un `contentId` mais que le consommateur l'interprète comme un `globalId` (ou inversement), le consommateur récupérera le mauvais schema ou ne parviendra pas à en trouver un.
 

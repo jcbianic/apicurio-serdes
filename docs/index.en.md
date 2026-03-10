@@ -13,7 +13,7 @@ If your schemas live in a custom group — and in any non-trivial Apicurio deplo
 
 ## The Solution
 
-`apicurio-serdes` talks directly to the Apicurio v3 API, bypassing the compatibility layer entirely. It provides an interface modelled after `confluent-kafka` so the learning curve is minimal:
+`apicurio-serdes` talks directly to the Apicurio v3 API, bypassing the compatibility layer entirely. The API matches `confluent-kafka`'s calling conventions:
 
 ```python
 from apicurio_serdes import ApicurioRegistryClient
@@ -31,7 +31,7 @@ ctx = SerializationContext(topic="user-events", field=MessageField.VALUE)
 payload: bytes = serializer({"userId": "abc", "country": "FR"}, ctx)
 ```
 
-That's it. `group_id` is a first-class parameter, schema references resolve natively, and the output is standard Confluent wire format bytes that any downstream consumer can decode.
+That's it. `group_id` is a first-class parameter. Schema references resolve against the registry natively, and the output is byte-compatible with any Confluent-format consumer.
 
 ## Who Is This For?
 
@@ -46,9 +46,9 @@ Python data engineers and backend developers who:
 
 | Feature | Description |
 |---------|-------------|
-| **Native v3 API** | Direct calls to Apicurio REST API — no ccompat workarounds |
+| **Native v3 API** | Direct calls to Apicurio REST API, no ccompat workarounds |
 | **`group_id` as first-class citizen** | Every schema lookup routes through the correct group |
-| **confluent-kafka-compatible API** | Same class names and calling conventions you already know |
+| **confluent-kafka-compatible API** | Same class names and calling conventions as `confluent-kafka` |
 | **Schema caching** | One HTTP call per artifact, not per message |
 | **Wire format choice** | `globalId` (default) or `contentId` in the Confluent header |
 | **Custom `to_dict` hooks** | Serialize dataclasses, Pydantic models, or any object |
@@ -65,8 +65,8 @@ Already using `confluent-kafka`? Read the [Migration Guide](migration/from-confl
 |-----------|--------|
 | `ApicurioRegistryClient` | Available |
 | `AvroSerializer` | Available |
-| `AvroDeserializer` | In progress |
-| Async registry client | Planned |
-| Kafka headers wire format | Planned |
+| `AvroDeserializer` | Available |
+| Async registry client | Available |
+| Kafka headers wire format | Available |
 | Protobuf support | Roadmap |
 | JSON Schema support | Roadmap |

@@ -1,6 +1,6 @@
 # Addressing Model
 
-Apicurio Registry organizes schemas in a three-level hierarchy: **group**, **artifact**, and **version**. This page explains what each level means, why `group_id` is required in `apicurio-serdes`, and how this maps to Confluent Schema Registry's flat namespace.
+Apicurio Registry organizes schemas in a three-level hierarchy: **group**, **artifact**, and **version**. This page explains Apicurio's three-level schema hierarchy and how it differs from Confluent Schema Registry's flat namespace.
 
 ## The Hierarchy
 
@@ -16,7 +16,7 @@ Registry
 
 ### Group
 
-A logical namespace for a set of related schemas. Groups are similar to packages in Java or modules in Python — they prevent name collisions and provide organizational structure.
+A logical namespace for a set of related schemas. Groups are similar to packages in Java or modules in Python: they prevent name collisions and provide organisational structure.
 
 Examples:
 
@@ -77,7 +77,7 @@ Common mapping patterns:
 | `order-events-value` | `com.example.schemas` | `OrderEvent` |
 | `user-events-key` | `com.example.schemas` | `UserEventKey` |
 
-The key insight: **the Confluent subject name encodes both the schema identity and the topic binding in one string.** In Apicurio, these are separate concepts — the artifact ID is the schema identity, and the topic binding happens at the application level.
+In Confluent, the subject name encodes both the schema identity and the topic binding in one string. In Apicurio, these are separate concepts: the artifact ID is the schema identity, and the topic binding happens at the application level.
 
 ## How `apicurio-serdes` Uses the Hierarchy
 

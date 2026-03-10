@@ -34,7 +34,7 @@ curl -X POST "http://localhost:8080/apis/registry/v3/groups/com.example.schemas/
 ## Étape 1 — Installer la bibliothèque
 
 ```bash
-pip install apicurio-serdes
+uv add apicurio-serdes
 ```
 
 Vérifiez l'installation :
@@ -57,7 +57,7 @@ client = ApicurioRegistryClient(
 )
 ```
 
-Le client se connecte à l'API Apicurio v3 et met en cache les schemas après la première récupération — le coût HTTP n'est payé qu'une seule fois par artifact.
+Le client se connecte à l'API Apicurio v3 et met en cache les schemas après la première récupération. Le coût HTTP n'est payé qu'une seule fois par artifact.
 
 `group_id` indique au client quel groupe de schemas utiliser pour chaque recherche. Dans Apicurio, les schemas sont organisés en groupes (similaires à des espaces de noms). Consultez [Modèle d'adressage](../concepts/addressing-model.md) pour plus de détails.
 
@@ -131,72 +131,9 @@ print(f"Magic byte: 0x{payload[0]:02x}")
 print(f"Schema ID:  {int.from_bytes(payload[1:5], 'big')}")
 ```
 
-## Dépannage
-
-### URL du registry incorrecte
-
-**Erreur** : `RegistryConnectionError: Unable to connect to registry at http://wrong-host:8080/...: ...`
-
-**Cause** : Le paramètre `url` ne pointe pas vers un Apicurio Registry en cours d'exécution.
-
-**Correction** : Vérifiez que le registry est en cours d'exécution et que l'URL inclut le chemin complet de l'API v3 :
-
-```python
-# Correct — includes /apis/registry/v3
-client = ApicurioRegistryClient(
-    url="http://localhost:8080/apis/registry/v3",
-    group_id="com.example.schemas",
-)
-
-# Wrong — missing API path
-client = ApicurioRegistryClient(
-    url="http://localhost:8080",  # Will fail!
-    group_id="com.example.schemas",
-)
-```
-
-### Artifact inexistant
-
-**Erreur** : `SchemaNotFoundError: Schema not found: artifact 'MySchema' in group 'default'`
-
-**Cause** : L'`artifact_id` n'existe pas dans le groupe spécifié, ou le `group_id` est incorrect.
-
-**Correction** : Vérifiez que le schema existe dans le registry sous le bon groupe :
-
-```bash
-# List artifacts in a group
-curl "http://localhost:8080/apis/registry/v3/groups/com.example.schemas/artifacts"
-```
-
-Erreurs courantes :
-
-- Le schema se trouve dans un groupe différent de celui que vous avez spécifié
-- L'artifact ID est sensible à la casse — `UserEvent` n'est pas identique à `userevent`
-- Le schema a été enregistré dans le groupe `default` mais vous le cherchez dans un groupe nommé
-
-### Données d'entrée invalides
-
-**Erreur** : `ValueError: ... is not a valid ...` (provenant de fastavro)
-
-**Cause** : Le dictionnaire de données ne correspond pas au schema Avro — un champ obligatoire est manquant, un champ a le mauvais type, ou la structure des données ne correspond pas à la forme attendue par le schema.
-
-**Correction** : Vérifiez que vos données correspondent exactement au schema :
-
-```python
-# Schema expects: {"userId": string, "country": string}
-
-# Correct
-serializer({"userId": "abc", "country": "FR"}, ctx)
-
-# Wrong — missing required field "country"
-serializer({"userId": "abc"}, ctx)
-
-# Wrong — "userId" should be a string, not an int
-serializer({"userId": 123, "country": "FR"}, ctx)
-```
-
 ## Prochaines étapes
 
-- [Guide du Avro Serializer](../user-guide/avro-serializer.md) — hooks `to_dict` personnalisés, options de wire format, mode strict
+- [Avro Serializer](../user-guide/avro-serializer.md) — paramètres, hooks `to_dict`, options de wire format, mode strict
+- [Gestion des erreurs](../how-to/error-handling.md) — que faire en cas de problème
 - [Migration depuis confluent-kafka](../migration/from-confluent-kafka.md) — comparaison d'API côte à côte
 - [Référence API](../api-reference/index.md) — documentation complète des classes et méthodes

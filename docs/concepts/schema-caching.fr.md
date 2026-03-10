@@ -1,6 +1,6 @@
 # Mise en cache des schemas
 
-`apicurio-serdes` met en cache les schemas après la première récupération afin que les appels de sérialisation suivants n'effectuent pas de requêtes HTTP. Cette page explique quand le cache est alimenté, combien de temps il persiste et quelles garanties il offre.
+`apicurio-serdes` met en cache les schemas après la première récupération afin que les appels de sérialisation suivants n'effectuent pas de requêtes HTTP. Cette page explique le fonctionnement de la mise en cache des schemas et ce qu'il faut en attendre.
 
 ## Fonctionnement du cache
 

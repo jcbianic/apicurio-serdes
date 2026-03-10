@@ -29,23 +29,7 @@ The ID can be one of two types, depending on configuration:
 | **globalId** | A unique, auto-incremented ID assigned to each artifact version when it is created. Globally unique across the entire registry. | Default. Use this unless you have a specific reason not to. |
 | **contentId** | A content-addressed ID derived from the schema bytes. Two identical schemas always share the same `contentId`, even if they are registered as different artifacts. | Use when consumers resolve schemas by content hash rather than by version history. |
 
-In `apicurio-serdes`, you choose the identifier with the `use_id` parameter:
-
-```python
-# Default: embed the globalId
-serializer = AvroSerializer(
-    registry_client=client,
-    artifact_id="UserEvent",
-    use_id="globalId",
-)
-
-# Alternative: embed the contentId
-serializer = AvroSerializer(
-    registry_client=client,
-    artifact_id="UserEvent",
-    use_id="contentId",
-)
-```
+To configure which identifier `AvroSerializer` embeds, see [Choosing Between globalId and contentId](../how-to/identifier-selection.md).
 
 ### Avro Binary Payload (Bytes 5+)
 
@@ -61,7 +45,7 @@ By embedding a compact schema ID in the message header, the consumer can:
 2. Fetch the schema from the registry (typically cached after the first fetch)
 3. Decode the Avro payload using that schema
 
-This keeps messages small while preserving full schema awareness.
+This keeps messages small.
 
 ## Compatibility
 
