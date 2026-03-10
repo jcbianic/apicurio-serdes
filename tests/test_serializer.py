@@ -600,10 +600,10 @@ def test_strict_mode_non_record_schema_raises_value_error(
         serializer("hello", ctx)
 
 
-def test_parsed_schema_none_raises_assertion_error(
+def test_parsed_schema_none_raises_runtime_error(
     mock_registry: respx.MockRouter,
 ) -> None:
-    """Defensive guard: _parsed_schema=None raises AssertionError."""
+    """Defensive guard: _parsed_schema=None raises RuntimeError."""
     _schema_route(mock_registry, "UserEvent")
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
     serializer = AvroSerializer(registry_client=client, artifact_id="UserEvent")
@@ -611,7 +611,7 @@ def test_parsed_schema_none_raises_assertion_error(
     # Force schema fetch then corrupt internal state
     serializer(VALID_USER_EVENT, ctx)
     serializer._parsed_schema = None
-    with pytest.raises(AssertionError):
+    with pytest.raises(RuntimeError, match="_parsed_schema unexpectedly None"):
         serializer.serialize(VALID_USER_EVENT, ctx)
 
 

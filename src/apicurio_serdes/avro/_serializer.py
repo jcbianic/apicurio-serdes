@@ -154,7 +154,8 @@ class AvroSerializer:
 
         # Encode to Avro binary
         buffer = io.BytesIO()
-        assert self._parsed_schema is not None  # set together with _schema above
+        if self._parsed_schema is None:  # pragma: no cover
+            raise RuntimeError("_parsed_schema unexpectedly None after _ensure_schema()")
         fastavro.schemaless_writer(buffer, self._parsed_schema, data)
         avro_bytes = buffer.getvalue()
 
