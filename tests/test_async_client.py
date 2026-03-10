@@ -486,6 +486,50 @@ class TestGetSchemaByContentId:
             await client.get_schema_by_content_id(42)
 
 
+class TestInt64Validation:
+    """Async client validates that globalId/contentId fit in signed 64-bit range."""
+
+    async def test_global_id_outside_int64_raises_value_error(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+
+        url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/OverflowTest/versions/latest/content"
+        mock_registry.get(url).mock(
+            return_value=Response(
+                200,
+                content=json.dumps(USER_EVENT_SCHEMA_JSON),
+                headers={
+                    "X-Registry-GlobalId": str(2**63),
+                    "X-Registry-ContentId": "1",
+                },
+            )
+        )
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        with pytest.raises(ValueError, match="globalId"):
+            await client.get_schema("OverflowTest")
+
+    async def test_content_id_outside_int64_raises_value_error(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+
+        url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/OverflowTest2/versions/latest/content"
+        mock_registry.get(url).mock(
+            return_value=Response(
+                200,
+                content=json.dumps(USER_EVENT_SCHEMA_JSON),
+                headers={
+                    "X-Registry-GlobalId": "1",
+                    "X-Registry-ContentId": str(2**63),
+                },
+            )
+        )
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        with pytest.raises(ValueError, match="contentId"):
+            await client.get_schema("OverflowTest2")
+
+
 class TestClosedClientGuardIdMethods:
     """get_schema_by_X on a closed client raises RuntimeError."""
 
