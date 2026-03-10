@@ -24,9 +24,11 @@ CONTENT_ID = 42
 
 def _make_async_client(mock_registry: respx.MockRouter) -> AsyncApicurioRegistryClient:
     url = f"{REGISTRY_URL}/ids/contentIds/{CONTENT_ID}"
-    from tests.conftest import USER_EVENT_SCHEMA_JSON
     import json
+
     import httpx
+
+    from tests.conftest import USER_EVENT_SCHEMA_JSON
 
     mock_registry.get(url).mock(
         return_value=httpx.Response(200, content=json.dumps(USER_EVENT_SCHEMA_JSON))
@@ -208,8 +210,9 @@ async def test_schema_cached_after_first_call(
     mock_registry: respx.MockRouter,
 ) -> None:
     """Schema is fetched once and cached for subsequent calls."""
-    import httpx
     import json
+
+    import httpx
 
     from tests.conftest import USER_EVENT_SCHEMA_JSON
 
@@ -232,8 +235,9 @@ async def test_schema_cached_after_first_call(
 
 async def test_call_with_global_id_mode(mock_registry: respx.MockRouter) -> None:
     """Deserializer with use_id='globalId' resolves via globalId endpoint."""
-    import httpx
     import json
+
+    import httpx
 
     from tests.conftest import USER_EVENT_SCHEMA_JSON
 
