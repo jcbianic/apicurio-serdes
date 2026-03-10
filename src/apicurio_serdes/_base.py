@@ -14,7 +14,7 @@ from apicurio_serdes._errors import (
 )
 
 
-@dataclass
+@dataclass(frozen=True)
 class CachedSchema:
     """Internal value object holding a resolved schema and registry metadata.
 
