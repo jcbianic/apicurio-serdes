@@ -492,6 +492,34 @@ def test_content_id_outside_int64_raises_value_error(
         client.get_schema("OverflowTest2")
 
 
+def test_get_schema_read_timeout_raises_registry_connection_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """httpx.ReadTimeout (not ConnectError) raises RegistryConnectionError [TD-001]."""
+    from apicurio_serdes._errors import RegistryConnectionError
+
+    mock_registry.get(
+        url__startswith=f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/"
+    ).mock(side_effect=httpx.ReadTimeout("timed out"))
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(RegistryConnectionError):
+        client.get_schema("Slow")
+
+
+def test_get_schema_by_global_id_read_timeout_raises_registry_connection_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """httpx.ReadTimeout in _get_schema_by_id raises RegistryConnectionError [TD-001]."""
+    from apicurio_serdes._errors import RegistryConnectionError
+
+    mock_registry.get(url__startswith=f"{REGISTRY_URL}/ids/globalIds/").mock(
+        side_effect=httpx.ReadTimeout("timed out")
+    )
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(RegistryConnectionError):
+        client.get_schema_by_global_id(7)
+
+
 def test_id_cache_double_check_locking(mock_registry: respx.MockRouter) -> None:
     """Exercise the double-checked locking return path for _id_cache (line 156).
 

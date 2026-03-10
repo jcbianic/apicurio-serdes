@@ -101,7 +101,7 @@ class ApicurioRegistryClient:
             )
             try:
                 response = self._http_client.get(endpoint)
-            except httpx.ConnectError as exc:
+            except httpx.TransportError as exc:
                 raise RegistryConnectionError(self.url, exc) from exc
 
             if response.status_code == 404:
@@ -180,7 +180,7 @@ class ApicurioRegistryClient:
             endpoint = f"/ids/{id_type}s/{id_value}"
             try:
                 response = self._http_client.get(endpoint)
-            except httpx.ConnectError as exc:
+            except httpx.TransportError as exc:
                 raise RegistryConnectionError(self.url, exc) from exc
 
             if response.status_code == 404:

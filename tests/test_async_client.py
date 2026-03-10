@@ -327,6 +327,204 @@ class TestClosedClientGuard:
             await client.get_schema("UserEvent")
 
 
+class TestTransportErrors:
+    """TD-001: TransportErrors beyond ConnectError raise RegistryConnectionError."""
+
+    async def test_get_schema_read_timeout_raises_registry_connection_error(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+        from apicurio_serdes._errors import RegistryConnectionError
+
+        mock_registry.get(url__startswith=f"{REGISTRY_URL}/groups/").mock(
+            side_effect=httpx.ReadTimeout("timed out")
+        )
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        with pytest.raises(RegistryConnectionError):
+            await client.get_schema("Slow")
+
+
+class TestGetSchemaByGlobalId:
+    """Async get_schema_by_global_id mirrors sync interface."""
+
+    async def test_cache_miss_returns_schema(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+
+        mock_registry.get(f"{REGISTRY_URL}/ids/globalIds/7").mock(
+            return_value=httpx.Response(200, content=json.dumps(USER_EVENT_SCHEMA_JSON))
+        )
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        result = await client.get_schema_by_global_id(7)
+        assert result == USER_EVENT_SCHEMA_JSON
+
+    async def test_cache_hit_no_second_request(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+
+        route = mock_registry.get(f"{REGISTRY_URL}/ids/globalIds/7").mock(
+            return_value=httpx.Response(200, content=json.dumps(USER_EVENT_SCHEMA_JSON))
+        )
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        r1 = await client.get_schema_by_global_id(7)
+        r2 = await client.get_schema_by_global_id(7)
+        assert r1 == r2
+        assert route.call_count == 1
+
+    async def test_not_found_raises_schema_not_found_error(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+        from apicurio_serdes._errors import SchemaNotFoundError
+
+        mock_registry.get(f"{REGISTRY_URL}/ids/globalIds/999").mock(
+            return_value=httpx.Response(404)
+        )
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        with pytest.raises(SchemaNotFoundError) as exc_info:
+            await client.get_schema_by_global_id(999)
+        assert exc_info.value.id_type == "globalId"
+        assert exc_info.value.id_value == 999
+
+    async def test_network_error_raises_registry_connection_error(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+        from apicurio_serdes._errors import RegistryConnectionError
+
+        mock_registry.get(url__startswith=f"{REGISTRY_URL}/ids/globalIds/").mock(
+            side_effect=httpx.ConnectError("refused")
+        )
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        with pytest.raises(RegistryConnectionError):
+            await client.get_schema_by_global_id(7)
+
+    async def test_read_timeout_raises_registry_connection_error(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+        from apicurio_serdes._errors import RegistryConnectionError
+
+        mock_registry.get(url__startswith=f"{REGISTRY_URL}/ids/globalIds/").mock(
+            side_effect=httpx.ReadTimeout("timed out")
+        )
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        with pytest.raises(RegistryConnectionError):
+            await client.get_schema_by_global_id(7)
+
+    async def test_unexpected_status_raises_registry_connection_error(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+        from apicurio_serdes._errors import RegistryConnectionError
+
+        mock_registry.get(f"{REGISTRY_URL}/ids/globalIds/7").mock(
+            return_value=httpx.Response(500)
+        )
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        with pytest.raises(RegistryConnectionError):
+            await client.get_schema_by_global_id(7)
+
+
+class TestGetSchemaByContentId:
+    """Async get_schema_by_content_id mirrors sync interface."""
+
+    async def test_cache_miss_returns_schema(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+
+        mock_registry.get(f"{REGISTRY_URL}/ids/contentIds/42").mock(
+            return_value=httpx.Response(200, content=json.dumps(USER_EVENT_SCHEMA_JSON))
+        )
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        result = await client.get_schema_by_content_id(42)
+        assert result == USER_EVENT_SCHEMA_JSON
+
+    async def test_cache_hit_no_second_request(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+
+        route = mock_registry.get(f"{REGISTRY_URL}/ids/contentIds/42").mock(
+            return_value=httpx.Response(200, content=json.dumps(USER_EVENT_SCHEMA_JSON))
+        )
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        r1 = await client.get_schema_by_content_id(42)
+        r2 = await client.get_schema_by_content_id(42)
+        assert r1 == r2
+        assert route.call_count == 1
+
+    async def test_not_found_raises_schema_not_found_error(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+        from apicurio_serdes._errors import SchemaNotFoundError
+
+        mock_registry.get(f"{REGISTRY_URL}/ids/contentIds/9999").mock(
+            return_value=httpx.Response(404)
+        )
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        with pytest.raises(SchemaNotFoundError) as exc_info:
+            await client.get_schema_by_content_id(9999)
+        assert exc_info.value.id_type == "contentId"
+        assert exc_info.value.id_value == 9999
+
+    async def test_network_error_raises_registry_connection_error(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+        from apicurio_serdes._errors import RegistryConnectionError
+
+        mock_registry.get(url__startswith=f"{REGISTRY_URL}/ids/contentIds/").mock(
+            side_effect=httpx.ConnectError("refused")
+        )
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        with pytest.raises(RegistryConnectionError):
+            await client.get_schema_by_content_id(42)
+
+
+class TestClosedClientGuardIdMethods:
+    """get_schema_by_X on a closed client raises RuntimeError."""
+
+    async def test_get_schema_by_global_id_after_aclose_raises(self) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        await client.aclose()
+        with pytest.raises(RuntimeError):
+            await client.get_schema_by_global_id(7)
+
+
+class TestIdCacheDoubleCheckLocking:
+    """Coverage: inner cache-check return path for _id_cache."""
+
+    async def test_inner_id_cache_check_returns_cached_value(self) -> None:
+        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+
+        cached_schema: dict[str, Any] = {"type": "record", "name": "X", "fields": []}
+        cache_key = ("contentId", 42)
+        check_count: dict[str, int] = {"n": 0}
+
+        class _RaceDict(dict[tuple[str, int], Any]):
+            def __contains__(self, key: object) -> bool:
+                if key == cache_key:
+                    check_count["n"] += 1
+                    if check_count["n"] == 1:
+                        return False
+                    self[cache_key] = cached_schema  # type: ignore[index]
+                    return True
+                return super().__contains__(key)
+
+        client._id_cache = _RaceDict()  # type: ignore[assignment]
+        result = await client.get_schema_by_content_id(42)
+        assert result is cached_schema
+
+
 class TestDoubleCheckLocking:
     """Coverage: exercise the inner cache-check return path (line 70)."""
 

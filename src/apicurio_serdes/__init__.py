@@ -4,6 +4,12 @@ from importlib.metadata import version
 
 from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 from apicurio_serdes._client import ApicurioRegistryClient
+from apicurio_serdes._errors import (
+    DeserializationError,
+    RegistryConnectionError,
+    SchemaNotFoundError,
+    SerializationError,
+)
 from apicurio_serdes.serialization import WireFormat
 
 __version__ = version("apicurio-serdes")
@@ -11,6 +17,10 @@ __version__ = version("apicurio-serdes")
 __all__ = [
     "ApicurioRegistryClient",
     "AsyncApicurioRegistryClient",
+    "DeserializationError",
+    "RegistryConnectionError",
+    "SchemaNotFoundError",
+    "SerializationError",
     "WireFormat",
     "__version__",
 ]

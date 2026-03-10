@@ -41,6 +41,7 @@ class AsyncApicurioRegistryClient:
         self.group_id = group_id
         self._http_client = httpx.AsyncClient(base_url=url)
         self._schema_cache: dict[tuple[str, str], CachedSchema] = {}
+        self._id_cache: dict[tuple[str, int], dict[str, Any]] = {}
         self._lock = asyncio.Lock()
         self._closed = False
 
@@ -81,7 +82,7 @@ class AsyncApicurioRegistryClient:
             )
             try:
                 response = await self._http_client.get(endpoint)
-            except httpx.ConnectError as exc:
+            except httpx.TransportError as exc:
                 raise RegistryConnectionError(self.url, exc) from exc
 
             if response.status_code == 404:
@@ -102,6 +103,71 @@ class AsyncApicurioRegistryClient:
             )
             self._schema_cache[cache_key] = cached
             return cached
+
+    async def get_schema_by_global_id(self, global_id: int) -> dict[str, Any]:
+        """Retrieve an Avro schema by its globalId (async).
+
+        Returns a cached result on subsequent calls for the same globalId.
+
+        Args:
+            global_id: The globalId from the wire format header.
+
+        Returns:
+            Parsed Avro schema as a Python dict.
+
+        Raises:
+            SchemaNotFoundError: If no schema exists for this globalId.
+            RegistryConnectionError: If the registry is unreachable.
+            RuntimeError: If the client has been closed.
+        """
+        return await self._get_schema_by_id("globalId", global_id)
+
+    async def get_schema_by_content_id(self, content_id: int) -> dict[str, Any]:
+        """Retrieve an Avro schema by its contentId (async).
+
+        Returns a cached result on subsequent calls for the same contentId.
+
+        Args:
+            content_id: The contentId from the wire format header.
+
+        Returns:
+            Parsed Avro schema as a Python dict.
+
+        Raises:
+            SchemaNotFoundError: If no schema exists for this contentId.
+            RegistryConnectionError: If the registry is unreachable.
+            RuntimeError: If the client has been closed.
+        """
+        return await self._get_schema_by_id("contentId", content_id)
+
+    async def _get_schema_by_id(self, id_type: str, id_value: int) -> dict[str, Any]:
+        """Shared implementation for async ID-based schema lookups."""
+        if self._closed:
+            raise RuntimeError("client is closed")
+        cache_key = (id_type, id_value)
+        if cache_key in self._id_cache:
+            return self._id_cache[cache_key]
+
+        async with self._lock:
+            if cache_key in self._id_cache:
+                return self._id_cache[cache_key]
+
+            endpoint = f"/ids/{id_type}s/{id_value}"
+            try:
+                response = await self._http_client.get(endpoint)
+            except httpx.TransportError as exc:
+                raise RegistryConnectionError(self.url, exc) from exc
+
+            if response.status_code == 404:
+                raise SchemaNotFoundError.from_id(id_type, id_value)
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                raise RegistryConnectionError(self.url, exc) from exc
+
+            schema: dict[str, Any] = json.loads(response.content)
+            self._id_cache[cache_key] = schema
+            return schema
 
     async def aclose(self) -> None:
         """Close the underlying HTTP connection pool.
