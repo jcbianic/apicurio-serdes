@@ -74,3 +74,38 @@ def test_schema_not_found_from_id_returns_correct_type() -> None:
     """from_id returns a SchemaNotFoundError instance."""
     err = SchemaNotFoundError.from_id("contentId", 9999)
     assert isinstance(err, SchemaNotFoundError)
+
+
+# ── TD-003: error classes exported from package root ──
+
+
+def test_schema_not_found_error_importable_from_package_root() -> None:
+    """SchemaNotFoundError is importable from apicurio_serdes [TD-003]."""
+    from apicurio_serdes import SchemaNotFoundError as Imported
+    from apicurio_serdes._errors import SchemaNotFoundError as Direct
+
+    assert Imported is Direct
+
+
+def test_deserialization_error_importable_from_package_root() -> None:
+    """DeserializationError is importable from apicurio_serdes [TD-003]."""
+    from apicurio_serdes import DeserializationError as Imported
+    from apicurio_serdes._errors import DeserializationError as Direct
+
+    assert Imported is Direct
+
+
+def test_serialization_error_importable_from_package_root() -> None:
+    """SerializationError is importable from apicurio_serdes [TD-003]."""
+    from apicurio_serdes import SerializationError as Imported
+    from apicurio_serdes._errors import SerializationError as Direct
+
+    assert Imported is Direct
+
+
+def test_registry_connection_error_importable_from_package_root() -> None:
+    """RegistryConnectionError is importable from apicurio_serdes [TD-003]."""
+    from apicurio_serdes import RegistryConnectionError as Imported
+    from apicurio_serdes._errors import RegistryConnectionError as Direct
+
+    assert Imported is Direct
