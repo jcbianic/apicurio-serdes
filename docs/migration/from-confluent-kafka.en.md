@@ -79,31 +79,16 @@ payload: bytes = serializer({"userId": "abc", "country": "FR"}, ctx)
 
 ## Understanding `group_id`
 
-This is the most important difference. In Apicurio Registry, schemas are organized in a hierarchy:
+`group_id` is the most important difference. Apicurio Registry organizes schemas in a three-level hierarchy (group → artifact → version), whereas Confluent Schema Registry uses a flat namespace with no group concept. See [Addressing Model](../concepts/addressing-model.md) for a full explanation.
 
-```text
-Registry
- └── Group (e.g., "com.example.schemas")
-      └── Artifact (e.g., "UserEvent")
-           └── Version (e.g., "1", "2", "latest")
-```
+When migrating, map your Confluent subjects to Apicurio groups and artifacts:
 
-`group_id` identifies which group contains your schemas. It is **required** because Apicurio's v3 API includes the group in every artifact URL.
+| Confluent subject | Apicurio group | Apicurio artifact |
+|-------------------|----------------|-------------------|
+| `user-events-value` | `com.example.schemas` | `UserEvent` |
+| `order-events-key` | `com.example.schemas` | `OrderKey` |
 
-### Why Confluent doesn't need it
-
-Confluent Schema Registry has a flat namespace — schemas are identified solely by a "subject" name (typically `<topic>-key` or `<topic>-value`). There is no group concept.
-
-### Mapping your Confluent subjects to Apicurio
-
-If you are migrating from Confluent Schema Registry to Apicurio Registry:
-
-| Confluent subject | Apicurio mapping |
-|-------------------|------------------|
-| `user-events-value` | Group: `com.example.schemas`, Artifact: `UserEvent` |
-| `order-events-key` | Group: `com.example.schemas`, Artifact: `OrderKey` |
-
-The group is a logical boundary you choose when registering schemas in Apicurio. A common pattern is to use your organization's reverse-domain name (e.g., `com.example.schemas`).
+A common convention for the group is your organisation's reverse-domain name (e.g., `com.example.schemas`).
 
 ## Behavioral Differences
 
@@ -162,7 +147,7 @@ producer.produce("user-events", value=serializer({"userId": "abc", "country": "F
 producer.flush()
 ```
 
-**What changed**: The import lines and client configuration. The `producer.produce()` call is identical — the output bytes are the same Confluent wire format.
+The import lines and client configuration changed. The `producer.produce()` call is identical: the output bytes are the same Confluent wire format.
 
 ## Next Steps
 

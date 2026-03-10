@@ -1,6 +1,6 @@
 # Modèle d'adressage
 
-Apicurio Registry organise les schemas selon une hiérarchie à trois niveaux : **group**, **artifact** et **version**. Cette page explique la signification de chaque niveau, pourquoi `group_id` est requis dans `apicurio-serdes`, et comment cela se transpose par rapport à l'espace de noms plat de Confluent Schema Registry.
+Apicurio Registry organise les schemas selon une hiérarchie à trois niveaux : **group**, **artifact** et **version**. Cette page explique la hiérarchie à trois niveaux d'Apicurio et comment elle diffère de l'espace de noms plat de Confluent Schema Registry.
 
 ## La hiérarchie
 
@@ -16,7 +16,7 @@ Registry
 
 ### Group
 
-Un espace de noms logique pour un ensemble de schemas apparentés. Les groups sont similaires aux packages en Java ou aux modules en Python — ils évitent les collisions de noms et fournissent une structure organisationnelle.
+Un espace de noms logique pour un ensemble de schemas apparentés. Les groups sont similaires aux packages en Java ou aux modules en Python : ils évitent les collisions de noms et fournissent une structure organisationnelle.
 
 Exemples :
 
@@ -77,7 +77,7 @@ Exemples courants de correspondance :
 | `order-events-value` | `com.example.schemas` | `OrderEvent` |
 | `user-events-key` | `com.example.schemas` | `UserEventKey` |
 
-Le point essentiel : **le nom du subject Confluent encode à la fois l'identité du schema et le lien avec le topic dans une seule chaîne.** Dans Apicurio, ce sont des concepts séparés — l'artifact ID est l'identité du schema, et le lien avec le topic se fait au niveau applicatif.
+Dans Confluent, le nom du subject encode à la fois l'identité du schema et le lien avec le topic dans une seule chaîne. Dans Apicurio, ce sont des concepts séparés : l'artifact ID est l'identité du schema, et le lien avec le topic se fait au niveau applicatif.
 
 ## Comment `apicurio-serdes` utilise la hiérarchie
 

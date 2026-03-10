@@ -79,31 +79,16 @@ payload: bytes = serializer({"userId": "abc", "country": "FR"}, ctx)
 
 ## Comprendre `group_id`
 
-C'est la différence la plus importante. Dans Apicurio Registry, les schemas sont organisés selon une hiérarchie :
+`group_id` est la différence la plus importante. Apicurio Registry organise les schemas selon une hiérarchie à trois niveaux (groupe → artifact → version), tandis que Confluent Schema Registry utilise un espace de nommage plat sans notion de groupe. Consultez le [Modèle d'adressage](../concepts/addressing-model.md) pour une explication complète.
 
-```text
-Registry
- └── Group (e.g., "com.example.schemas")
-      └── Artifact (e.g., "UserEvent")
-           └── Version (e.g., "1", "2", "latest")
-```
+Lors de la migration, faites correspondre vos subjects Confluent aux groupes et artifacts Apicurio :
 
-`group_id` identifie le groupe qui contient vos schemas. Il est **obligatoire** car l'API v3 d'Apicurio inclut le groupe dans chaque URL d'artifact.
+| Subject Confluent | Groupe Apicurio | Artifact Apicurio |
+|-------------------|-----------------|-------------------|
+| `user-events-value` | `com.example.schemas` | `UserEvent` |
+| `order-events-key` | `com.example.schemas` | `OrderKey` |
 
-### Pourquoi Confluent n'en a pas besoin
-
-Confluent Schema Registry utilise un espace de nommage plat — les schemas sont identifiés uniquement par un nom de « subject » (généralement `<topic>-key` ou `<topic>-value`). Il n'y a pas de notion de groupe.
-
-### Correspondance entre vos subjects Confluent et Apicurio
-
-Si vous migrez de Confluent Schema Registry vers Apicurio Registry :
-
-| Subject Confluent | Correspondance Apicurio |
-|-------------------|-------------------------|
-| `user-events-value` | Groupe : `com.example.schemas`, Artifact : `UserEvent` |
-| `order-events-key` | Groupe : `com.example.schemas`, Artifact : `OrderKey` |
-
-Le groupe est une frontière logique que vous choisissez lors de l'enregistrement des schemas dans Apicurio. Un usage courant consiste à utiliser le nom de domaine inversé de votre organisation (par ex., `com.example.schemas`).
+Une convention courante pour le groupe est le nom de domaine inversé de votre organisation (par ex., `com.example.schemas`).
 
 ## Différences de comportement
 
@@ -162,7 +147,7 @@ producer.produce("user-events", value=serializer({"userId": "abc", "country": "F
 producer.flush()
 ```
 
-**Ce qui a changé** : les lignes d'import et la configuration du client. L'appel `producer.produce()` est identique — les octets produits utilisent le même wire format Confluent.
+Les lignes d'import et la configuration du client ont changé. L'appel `producer.produce()` est identique : les octets produits utilisent le même wire format Confluent.
 
 ## Étapes suivantes
 

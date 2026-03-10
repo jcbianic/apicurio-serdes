@@ -29,23 +29,7 @@ L'identifiant peut être de deux types, selon la configuration :
 | **globalId** | Un identifiant unique, auto-incrémenté, attribué à chaque version d'artifact lors de sa création. Unique à l'échelle de l'ensemble du registry. | Par défaut. Utilisez-le sauf si vous avez une raison spécifique de ne pas le faire. |
 | **contentId** | Un identifiant adressé par contenu, dérivé des octets du schema. Deux schemas identiques partagent toujours le même `contentId`, même s'ils sont enregistrés comme des artifacts différents. | À utiliser lorsque les consommateurs résolvent les schemas par empreinte de contenu plutôt que par historique de version. |
 
-Dans `apicurio-serdes`, vous choisissez l'identifiant avec le paramètre `use_id` :
-
-```python
-# Default: embed the globalId
-serializer = AvroSerializer(
-    registry_client=client,
-    artifact_id="UserEvent",
-    use_id="globalId",
-)
-
-# Alternative: embed the contentId
-serializer = AvroSerializer(
-    registry_client=client,
-    artifact_id="UserEvent",
-    use_id="contentId",
-)
-```
+Pour configurer quel identifiant `AvroSerializer` intègre dans l'en-tête, consultez [Choisir entre globalId et contentId](../how-to/identifier-selection.md).
 
 ### Payload binaire Avro (octets 5+)
 
