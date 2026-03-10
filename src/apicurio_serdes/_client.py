@@ -68,6 +68,7 @@ class ApicurioRegistryClient:
         self._schema_cache: dict[tuple[str, str], CachedSchema] = {}
         self._id_cache: dict[tuple[str, int], dict[str, Any]] = {}
         self._lock = threading.RLock()
+        self._closed = False
 
     def get_schema(self, artifact_id: str) -> CachedSchema:
         """Retrieve an Avro schema by artifact ID.
@@ -85,6 +86,8 @@ class ApicurioRegistryClient:
             SchemaNotFoundError: If the artifact does not exist (HTTP 404).
             RegistryConnectionError: If the registry is unreachable.
         """
+        if self._closed:
+            raise RuntimeError("client is closed")
         cache_key = (self.group_id, artifact_id)
         if cache_key in self._schema_cache:
             return self._schema_cache[cache_key]
@@ -169,6 +172,8 @@ class ApicurioRegistryClient:
 
     def _get_schema_by_id(self, id_type: str, id_value: int) -> dict[str, Any]:
         """Shared implementation for ID-based schema lookups (D12)."""
+        if self._closed:
+            raise RuntimeError("client is closed")
         cache_key = (id_type, id_value)
         if cache_key in self._id_cache:
             return self._id_cache[cache_key]
@@ -200,6 +205,7 @@ class ApicurioRegistryClient:
         Call this when the client is no longer needed and you are not
         using it as a context manager. Safe to call multiple times.
         """
+        self._closed = True
         self._http_client.close()
 
     def __enter__(self) -> ApicurioRegistryClient:

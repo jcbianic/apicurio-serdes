@@ -492,6 +492,38 @@ def test_content_id_outside_int64_raises_value_error(
         client.get_schema("OverflowTest2")
 
 
+def test_get_schema_after_close_raises_runtime_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """get_schema on a closed client raises RuntimeError."""
+    _schema_route(mock_registry, "UserEvent")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    client.close()
+    with pytest.raises(RuntimeError, match="closed"):
+        client.get_schema("UserEvent")
+
+
+def test_get_schema_by_global_id_after_close_raises_runtime_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """get_schema_by_global_id on a closed client raises RuntimeError."""
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    client.close()
+    with pytest.raises(RuntimeError, match="closed"):
+        client.get_schema_by_global_id(7)
+
+
+def test_context_manager_prevents_use_after_exit(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """After exiting context manager, client raises RuntimeError."""
+    _schema_route(mock_registry, "UserEvent")
+    with ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID) as client:
+        client.get_schema("UserEvent")
+    with pytest.raises(RuntimeError, match="closed"):
+        client.get_schema("UserEvent")
+
+
 def test_get_schema_read_timeout_raises_registry_connection_error(
     mock_registry: respx.MockRouter,
 ) -> None:
