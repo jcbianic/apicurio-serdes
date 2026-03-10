@@ -88,7 +88,7 @@ def given_client_with_two_schemas(
 def given_deserializer_with_client(
     registry_client: ApicurioRegistryClient,
 ) -> AvroDeserializer:
-    return AvroDeserializer(registry_client=registry_client)
+    return AvroDeserializer(registry_client=registry_client, use_id="contentId")
 
 
 @given(
@@ -126,7 +126,7 @@ def given_client_with_single_schema(
 def given_deserializer_with_that_client(
     registry_client: ApicurioRegistryClient,
 ) -> AvroDeserializer:
-    return AvroDeserializer(registry_client=registry_client)
+    return AvroDeserializer(registry_client=registry_client, use_id="contentId")
 
 
 # ── When steps ──

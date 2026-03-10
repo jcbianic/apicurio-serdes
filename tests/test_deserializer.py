@@ -26,7 +26,7 @@ CONTENT_ID = 42
 
 
 def _make_client(mock_registry: respx.MockRouter) -> ApicurioRegistryClient:
-    _id_schema_route(mock_registry, "contentId", CONTENT_ID)
+    _id_schema_route(mock_registry, "globalId", CONTENT_ID)
     return ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
 
@@ -45,10 +45,10 @@ def test_init_stores_client(mock_registry: respx.MockRouter) -> None:
 
 
 def test_init_default_use_id(mock_registry: respx.MockRouter) -> None:
-    """Default use_id is 'contentId' [FR-006]."""
+    """Default use_id is 'globalId'."""
     client = _make_client(mock_registry)
     deser = AvroDeserializer(registry_client=client)
-    assert deser.use_id == "contentId"
+    assert deser.use_id == "globalId"
 
 
 def test_init_explicit_use_id_global(mock_registry: respx.MockRouter) -> None:
@@ -105,7 +105,7 @@ def test_call_unknown_schema_id(mock_registry: respx.MockRouter) -> None:
     """Unknown schema ID raises SchemaNotFoundError [FR-005, FR-010]."""
     from apicurio_serdes._errors import SchemaNotFoundError
 
-    _id_not_found_route(mock_registry, "contentId", 9999)
+    _id_not_found_route(mock_registry, "globalId", 9999)
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
     deser = AvroDeserializer(registry_client=client)
     bad_bytes = make_confluent_bytes(9999, VALID_USER_EVENT)
@@ -149,7 +149,7 @@ def test_concurrent_deserialization_single_http_call(
     mock_registry: respx.MockRouter,
 ) -> None:
     """Concurrent deserialization with same schema ID triggers exactly 1 HTTP call [TS-012, NFR-001]."""
-    route = _id_schema_route(mock_registry, "contentId", CONTENT_ID)
+    route = _id_schema_route(mock_registry, "globalId", CONTENT_ID)
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
     deser = AvroDeserializer(registry_client=client)
     data = make_confluent_bytes(CONTENT_ID, VALID_USER_EVENT)

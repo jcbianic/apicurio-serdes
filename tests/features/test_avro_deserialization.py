@@ -129,7 +129,7 @@ def given_client_with_content_id(
     target_fixture="deserializer",
 )
 def given_deserializer(registry_client: ApicurioRegistryClient) -> AvroDeserializer:
-    return AvroDeserializer(registry_client=registry_client)
+    return AvroDeserializer(registry_client=registry_client, use_id="contentId")
 
 
 # ── Given steps ──
@@ -235,7 +235,7 @@ def given_unreachable_client(mock_registry: respx.MockRouter) -> ApicurioRegistr
 def given_deserializer_unreachable(
     registry_client: ApicurioRegistryClient,
 ) -> AvroDeserializer:
-    return AvroDeserializer(registry_client=registry_client)
+    return AvroDeserializer(registry_client=registry_client, use_id="contentId")
 
 
 @given(

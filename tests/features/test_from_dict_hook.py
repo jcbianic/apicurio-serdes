@@ -98,7 +98,9 @@ def given_deserializer_with_from_dict(
     def from_dict(d: dict[str, Any], ctx: SerializationContext) -> UserEvent:
         return UserEvent(**d)
 
-    return AvroDeserializer(registry_client=registry_client, from_dict=from_dict)
+    return AvroDeserializer(
+        registry_client=registry_client, from_dict=from_dict, use_id="contentId"
+    )
 
 
 @given(
@@ -146,7 +148,7 @@ def then_is_user_event(deser_result: Any) -> None:
 def given_deserializer_no_from_dict(
     registry_client: ApicurioRegistryClient,
 ) -> AvroDeserializer:
-    return AvroDeserializer(registry_client=registry_client)
+    return AvroDeserializer(registry_client=registry_client, use_id="contentId")
 
 
 @then("the returned value is a plain Python dict")
@@ -172,7 +174,9 @@ def given_deserializer_with_failing_from_dict(
     def bad_from_dict(d: dict[str, Any], ctx: SerializationContext) -> Any:
         raise RuntimeError("conversion failed")
 
-    return AvroDeserializer(registry_client=registry_client, from_dict=bad_from_dict)
+    return AvroDeserializer(
+        registry_client=registry_client, from_dict=bad_from_dict, use_id="contentId"
+    )
 
 
 @then("a DeserializationError is raised")

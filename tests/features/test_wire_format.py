@@ -124,7 +124,7 @@ def given_with_avro_payload(input_bytes: bytes) -> bytes:
 def given_deserializer_instance(
     registry_client: ApicurioRegistryClient,
 ) -> AvroDeserializer:
-    return AvroDeserializer(registry_client=registry_client)
+    return AvroDeserializer(registry_client=registry_client, use_id="contentId")
 
 
 @given(
