@@ -100,7 +100,7 @@ except DeserializationError as e:
         print(f"Caused by: {e.__cause__}")
 except SchemaNotFoundError as e:
     # Schema ID from wire format not found in registry
-    print(f"Unknown schema: group={e.group_id}, id={e.artifact_id}")
+    print(f"Unknown schema: {e.id_type}={e.id_value}")
 except RegistryConnectionError as e:
     # Registry unreachable during schema resolution
     print(f"Registry at {e.url} is unreachable: {e}")
