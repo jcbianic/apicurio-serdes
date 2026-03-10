@@ -169,6 +169,13 @@ class AvroSerializer:
             )
 
         # CONFLUENT_PAYLOAD: 0x00 + 4-byte ID + Avro payload
+        uint32_max = 2**32 - 1
+        if not (0 <= schema_id <= uint32_max):
+            raise ValueError(
+                f"Schema ID {schema_id} exceeds the unsigned 32-bit limit "
+                f"({uint32_max}) required by CONFLUENT_PAYLOAD wire format. "
+                f"Use WireFormat.KAFKA_HEADERS for 64-bit ID support."
+            )
         framed = b"\x00" + struct.pack(">I", schema_id) + avro_bytes
         return SerializedMessage(payload=framed, headers={})
 
