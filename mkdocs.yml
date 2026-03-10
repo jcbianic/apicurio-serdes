@@ -76,6 +76,9 @@ nav:
       - Quickstart: getting-started/quickstart.md
   - User Guide:
       - Avro Serializer: user-guide/avro-serializer.md
+      - Avro Deserializer: user-guide/avro-deserializer.md
+      - Async Registry Client: user-guide/async-client.md
+      - Kafka Headers: user-guide/kafka-headers-wire-format.md
   - Concepts:
       - Wire Format: concepts/wire-format.md
       - Schema Caching: concepts/schema-caching.md

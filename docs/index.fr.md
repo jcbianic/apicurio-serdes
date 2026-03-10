@@ -65,8 +65,8 @@ Vous utilisez déjà `confluent-kafka` ? Consultez le [Guide de migration](migra
 |-----------|--------|
 | `ApicurioRegistryClient` | Disponible |
 | `AvroSerializer` | Disponible |
-| `AvroDeserializer` | En cours |
-| Client registry asynchrone | Planifié |
-| Wire format via en-têtes Kafka | Planifié |
+| `AvroDeserializer` | Disponible |
+| Client registry asynchrone | Disponible |
+| Wire format via en-têtes Kafka | Disponible |
 | Support Protobuf | Feuille de route |
 | Support JSON Schema | Feuille de route |
