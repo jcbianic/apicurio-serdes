@@ -110,4 +110,5 @@ class _RegistryClientBase:
         except httpx.HTTPStatusError as exc:
             raise RegistryConnectionError(self.url, exc) from exc
 
-        return json.loads(response.text)
+        schema: dict[str, Any] = json.loads(response.text)
+        return schema
