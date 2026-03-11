@@ -33,7 +33,8 @@ class _RegistryClientBase:
     """Shared logic for sync and async Apicurio Registry clients.
 
     Subclasses must set ``_http_client`` and ``_lock`` in their
-    ``__init__`` after calling ``super().__init__()``.
+    ``__init__`` after calling ``super().__init__()``, and set
+    ``self._closed = True`` inside their own ``close()`` / ``aclose()``.
     """
 
     def __init__(self, url: str, group_id: str) -> None:

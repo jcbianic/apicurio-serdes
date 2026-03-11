@@ -10,6 +10,7 @@ import pytest
 import respx
 from httpx import Response
 
+from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 from tests.conftest import (
     CONTENT_ID,
     GLOBAL_ID,
@@ -23,13 +24,11 @@ class TestConstructorValidation:
     """FR-008: Empty url or group_id raises ValueError."""
 
     def test_empty_url_raises_value_error(self) -> None:
-        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 
         with pytest.raises(ValueError, match="url must not be empty"):
             AsyncApicurioRegistryClient(url="", group_id="my-group")
 
     def test_empty_group_id_raises_value_error(self) -> None:
-        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 
         with pytest.raises(ValueError, match="group_id must not be empty"):
             AsyncApicurioRegistryClient(
@@ -144,7 +143,6 @@ class TestSchemaCaching:
     async def test_same_artifact_called_twice_contacts_registry_once(
         self, mock_registry: respx.MockRouter
     ) -> None:
-        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 
         route = _async_schema_route(mock_registry, "UserEvent")
         client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
@@ -158,7 +156,6 @@ class TestSchemaCaching:
     async def test_different_artifacts_fetched_independently(
         self, mock_registry: respx.MockRouter
     ) -> None:
-        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 
         route_a = _async_schema_route(
             mock_registry, "SchemaA", global_id=10, content_id=1
@@ -185,7 +182,6 @@ class TestConcurrentStampedePrevention:
     ) -> None:
         import asyncio
 
-        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 
         route = _async_schema_route(mock_registry, "UserEvent")
         client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
@@ -233,7 +229,6 @@ class TestLifecycleContextManager:
     """FR-009, FR-010: async with and explicit aclose()."""
 
     async def test_async_with_closes_http_client(self) -> None:
-        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 
         async with AsyncApicurioRegistryClient(
             url=REGISTRY_URL, group_id=GROUP_ID
@@ -243,7 +238,6 @@ class TestLifecycleContextManager:
         assert client._http_client.is_closed is True
 
     async def test_async_with_returns_self(self) -> None:
-        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 
         instance = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
         async with instance as client:
@@ -251,7 +245,6 @@ class TestLifecycleContextManager:
         await instance.aclose()
 
     async def test_async_with_closes_on_exception(self) -> None:
-        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 
         with pytest.raises(RuntimeError, match="test error"):
             async with AsyncApicurioRegistryClient(
@@ -262,7 +255,6 @@ class TestLifecycleContextManager:
         assert client._http_client.is_closed is True
 
     async def test_explicit_aclose(self) -> None:
-        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 
         client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
         assert client._http_client.is_closed is False
@@ -305,7 +297,6 @@ class TestClosedClientGuard:
     """T021: get_schema on a closed client raises RuntimeError."""
 
     async def test_get_schema_after_aclose_raises(self) -> None:
-        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 
         client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
         await client.aclose()
@@ -316,7 +307,6 @@ class TestClosedClientGuard:
     async def test_get_schema_after_async_with_raises(
         self, mock_registry: respx.MockRouter
     ) -> None:
-        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 
         async with AsyncApicurioRegistryClient(
             url=REGISTRY_URL, group_id=GROUP_ID
@@ -350,7 +340,6 @@ class TestGetSchemaByGlobalId:
     async def test_cache_miss_returns_schema(
         self, mock_registry: respx.MockRouter
     ) -> None:
-        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 
         mock_registry.get(f"{REGISTRY_URL}/ids/globalIds/7").mock(
             return_value=httpx.Response(200, content=json.dumps(USER_EVENT_SCHEMA_JSON))
@@ -362,7 +351,6 @@ class TestGetSchemaByGlobalId:
     async def test_cache_hit_no_second_request(
         self, mock_registry: respx.MockRouter
     ) -> None:
-        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 
         route = mock_registry.get(f"{REGISTRY_URL}/ids/globalIds/7").mock(
             return_value=httpx.Response(200, content=json.dumps(USER_EVENT_SCHEMA_JSON))
@@ -434,7 +422,6 @@ class TestGetSchemaByContentId:
     async def test_cache_miss_returns_schema(
         self, mock_registry: respx.MockRouter
     ) -> None:
-        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 
         mock_registry.get(f"{REGISTRY_URL}/ids/contentIds/42").mock(
             return_value=httpx.Response(200, content=json.dumps(USER_EVENT_SCHEMA_JSON))
@@ -446,7 +433,6 @@ class TestGetSchemaByContentId:
     async def test_cache_hit_no_second_request(
         self, mock_registry: respx.MockRouter
     ) -> None:
-        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 
         route = mock_registry.get(f"{REGISTRY_URL}/ids/contentIds/42").mock(
             return_value=httpx.Response(200, content=json.dumps(USER_EVENT_SCHEMA_JSON))
@@ -492,7 +478,6 @@ class TestInt64Validation:
     async def test_global_id_outside_int64_raises_value_error(
         self, mock_registry: respx.MockRouter
     ) -> None:
-        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 
         url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/OverflowTest/versions/latest/content"
         mock_registry.get(url).mock(
@@ -512,7 +497,6 @@ class TestInt64Validation:
     async def test_content_id_outside_int64_raises_value_error(
         self, mock_registry: respx.MockRouter
     ) -> None:
-        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 
         url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/OverflowTest2/versions/latest/content"
         mock_registry.get(url).mock(
@@ -534,7 +518,6 @@ class TestClosedClientGuardIdMethods:
     """get_schema_by_X on a closed client raises RuntimeError."""
 
     async def test_get_schema_by_global_id_after_aclose_raises(self) -> None:
-        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 
         client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
         await client.aclose()
@@ -546,7 +529,6 @@ class TestIdCacheDoubleCheckLocking:
     """Coverage: inner cache-check return path for _id_cache."""
 
     async def test_inner_id_cache_check_returns_cached_value(self) -> None:
-        from apicurio_serdes._async_client import AsyncApicurioRegistryClient
 
         client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
