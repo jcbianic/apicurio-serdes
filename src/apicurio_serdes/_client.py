@@ -61,6 +61,7 @@ class ApicurioRegistryClient(_RegistryClientBase):
         Raises:
             SchemaNotFoundError: If the artifact does not exist (HTTP 404).
             RegistryConnectionError: If the registry is unreachable.
+            RuntimeError: If the client has been closed.
         """
         self._check_closed()
         cache_key = (self.group_id, artifact_id)
@@ -96,6 +97,7 @@ class ApicurioRegistryClient(_RegistryClientBase):
         Raises:
             SchemaNotFoundError: If no schema exists for this globalId (FR-010).
             RegistryConnectionError: If the registry is unreachable (FR-012).
+            RuntimeError: If the client has been closed.
         """
         return self._get_schema_by_id("globalId", global_id)
 
@@ -114,6 +116,7 @@ class ApicurioRegistryClient(_RegistryClientBase):
         Raises:
             SchemaNotFoundError: If no schema exists for this contentId (FR-010).
             RegistryConnectionError: If the registry is unreachable (FR-012).
+            RuntimeError: If the client has been closed.
         """
         return self._get_schema_by_id("contentId", content_id)
 
