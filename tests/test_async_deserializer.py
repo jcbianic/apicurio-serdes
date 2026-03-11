@@ -23,7 +23,7 @@ CONTENT_ID = 42
 
 
 def _make_async_client(mock_registry: respx.MockRouter) -> AsyncApicurioRegistryClient:
-    url = f"{REGISTRY_URL}/ids/contentIds/{CONTENT_ID}"
+    url = f"{REGISTRY_URL}/ids/globalIds/{CONTENT_ID}"
     import json
 
     import httpx
@@ -51,10 +51,10 @@ async def test_init_stores_client(mock_registry: respx.MockRouter) -> None:
 
 
 async def test_init_default_use_id(mock_registry: respx.MockRouter) -> None:
-    """Default use_id is 'contentId'."""
+    """Default use_id is 'globalId'."""
     client = _make_async_client(mock_registry)
     deser = AsyncAvroDeserializer(registry_client=client)
-    assert deser.use_id == "contentId"
+    assert deser.use_id == "globalId"
 
 
 async def test_init_explicit_use_id_global(mock_registry: respx.MockRouter) -> None:
@@ -116,7 +116,7 @@ async def test_call_unknown_schema_id(mock_registry: respx.MockRouter) -> None:
 
     from apicurio_serdes._errors import SchemaNotFoundError
 
-    mock_registry.get(f"{REGISTRY_URL}/ids/contentIds/9999").mock(
+    mock_registry.get(f"{REGISTRY_URL}/ids/globalIds/9999").mock(
         return_value=httpx.Response(404)
     )
     client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
@@ -216,7 +216,7 @@ async def test_schema_cached_after_first_call(
 
     from tests.conftest import USER_EVENT_SCHEMA_JSON
 
-    url = f"{REGISTRY_URL}/ids/contentIds/{CONTENT_ID}"
+    url = f"{REGISTRY_URL}/ids/globalIds/{CONTENT_ID}"
     route = mock_registry.get(url).mock(
         return_value=httpx.Response(200, content=json.dumps(USER_EVENT_SCHEMA_JSON))
     )
@@ -231,6 +231,25 @@ async def test_schema_cached_after_first_call(
 
 
 # ── globalId mode ──
+
+
+async def test_call_with_content_id_mode(mock_registry: respx.MockRouter) -> None:
+    """Deserializer with use_id='contentId' resolves via contentId endpoint."""
+    import json
+
+    import httpx
+
+    from tests.conftest import USER_EVENT_SCHEMA_JSON
+
+    content_id = 7
+    mock_registry.get(f"{REGISTRY_URL}/ids/contentIds/{content_id}").mock(
+        return_value=httpx.Response(200, content=json.dumps(USER_EVENT_SCHEMA_JSON))
+    )
+    client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    deser = AsyncAvroDeserializer(registry_client=client, use_id="contentId")
+    data = make_confluent_bytes(content_id, VALID_USER_EVENT)
+    result = await deser(data, _ctx())
+    assert result == VALID_USER_EVENT
 
 
 async def test_call_with_global_id_mode(mock_registry: respx.MockRouter) -> None:

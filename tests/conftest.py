@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import io
 import json
 import struct
@@ -125,7 +126,7 @@ def make_confluent_bytes(
     """Build Confluent wire format bytes: 0x00 + 4-byte ID + Avro payload."""
     if schema is None:
         schema = USER_EVENT_SCHEMA_JSON
-    parsed = fastavro.parse_schema(json.loads(json.dumps(schema)))
+    parsed = fastavro.parse_schema(copy.deepcopy(schema))
     buf = io.BytesIO()
     fastavro.schemaless_writer(buf, parsed, data)
     return b"\x00" + struct.pack(">I", schema_id) + buf.getvalue()

@@ -611,5 +611,33 @@ def test_parsed_schema_none_raises_runtime_error(
     # Force schema fetch then corrupt internal state
     serializer(VALID_USER_EVENT, ctx)
     serializer._parsed_schema = None
-    with pytest.raises(RuntimeError, match="schema not parsed"):
+    with pytest.raises(RuntimeError, match="_parsed_schema unexpectedly None"):
+        serializer.serialize(VALID_USER_EVENT, ctx)
+
+
+def test_confluent_payload_schema_id_exceeds_uint32_raises_value_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """Schema ID > 2^32-1 in CONFLUENT_PAYLOAD mode raises ValueError."""
+    from apicurio_serdes._client import CachedSchema
+
+    _schema_route(mock_registry, "UserEvent")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    serializer = AvroSerializer(
+        registry_client=client,
+        artifact_id="UserEvent",
+        wire_format=WireFormat.CONFLUENT_PAYLOAD,
+    )
+    ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+    # Trigger schema fetch so _schema is populated
+    serializer(VALID_USER_EVENT, ctx)
+    # Inject an overflowing global_id via a new CachedSchema
+    original = serializer._schema
+    assert original is not None
+    serializer._schema = CachedSchema(
+        schema=original.schema,
+        global_id=2**32,
+        content_id=original.content_id,
+    )
+    with pytest.raises(ValueError, match="unsigned 32-bit limit"):
         serializer.serialize(VALID_USER_EVENT, ctx)

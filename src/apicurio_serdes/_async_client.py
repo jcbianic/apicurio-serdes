@@ -3,19 +3,15 @@
 from __future__ import annotations
 
 import asyncio
-import json
 from typing import Any
 
 import httpx
 
-from apicurio_serdes._client import CachedSchema
-from apicurio_serdes._errors import (
-    RegistryConnectionError,
-    SchemaNotFoundError,
-)
+from apicurio_serdes._base import CachedSchema, _RegistryClientBase
+from apicurio_serdes._errors import RegistryConnectionError
 
 
-class AsyncApicurioRegistryClient:
+class AsyncApicurioRegistryClient(_RegistryClientBase):
     """Async HTTP client for the Apicurio Registry v3 native API.
 
     Non-blocking counterpart to ApicurioRegistryClient. Uses
@@ -33,17 +29,9 @@ class AsyncApicurioRegistryClient:
     """
 
     def __init__(self, url: str, group_id: str) -> None:
-        if not url:
-            raise ValueError("url must not be empty")
-        if not group_id:
-            raise ValueError("group_id must not be empty")
-        self.url = url
-        self.group_id = group_id
+        super().__init__(url, group_id)
         self._http_client = httpx.AsyncClient(base_url=url)
-        self._schema_cache: dict[tuple[str, str], CachedSchema] = {}
-        self._id_cache: dict[tuple[str, int], dict[str, Any]] = {}
         self._lock = asyncio.Lock()
-        self._closed = False
 
     async def get_schema(self, artifact_id: str) -> CachedSchema:
         """Retrieve an Avro schema by artifact ID (async).
@@ -65,8 +53,7 @@ class AsyncApicurioRegistryClient:
                 an unexpected HTTP status code.
             RuntimeError: If the client has been closed.
         """
-        if self._closed:
-            raise RuntimeError("client is closed")
+        self._check_closed()
         cache_key = (self.group_id, artifact_id)
         if cache_key in self._schema_cache:
             return self._schema_cache[cache_key]
@@ -75,32 +62,14 @@ class AsyncApicurioRegistryClient:
             if cache_key in self._schema_cache:
                 return self._schema_cache[cache_key]
 
-            endpoint = (
-                f"/groups/{self.group_id}"
-                f"/artifacts/{artifact_id}"
-                "/versions/latest/content"
-            )
             try:
-                response = await self._http_client.get(endpoint)
+                response = await self._http_client.get(
+                    self._schema_endpoint(artifact_id)
+                )
             except httpx.TransportError as exc:
                 raise RegistryConnectionError(self.url, exc) from exc
 
-            if response.status_code == 404:
-                raise SchemaNotFoundError(self.group_id, artifact_id)
-            try:
-                response.raise_for_status()
-            except httpx.HTTPStatusError as exc:
-                raise RegistryConnectionError(self.url, exc) from exc
-
-            schema: dict[str, Any] = json.loads(response.text)
-            global_id = int(response.headers["X-Registry-GlobalId"])
-            content_id = int(response.headers["X-Registry-ContentId"])
-
-            cached = CachedSchema(
-                schema=schema,
-                global_id=global_id,
-                content_id=content_id,
-            )
+            cached = self._process_schema_response(response, artifact_id)
             self._schema_cache[cache_key] = cached
             return cached
 
@@ -142,8 +111,7 @@ class AsyncApicurioRegistryClient:
 
     async def _get_schema_by_id(self, id_type: str, id_value: int) -> dict[str, Any]:
         """Shared implementation for async ID-based schema lookups."""
-        if self._closed:
-            raise RuntimeError("client is closed")
+        self._check_closed()
         cache_key = (id_type, id_value)
         if cache_key in self._id_cache:
             return self._id_cache[cache_key]
@@ -152,20 +120,14 @@ class AsyncApicurioRegistryClient:
             if cache_key in self._id_cache:
                 return self._id_cache[cache_key]
 
-            endpoint = f"/ids/{id_type}s/{id_value}"
             try:
-                response = await self._http_client.get(endpoint)
+                response = await self._http_client.get(
+                    self._id_endpoint(id_type, id_value)
+                )
             except httpx.TransportError as exc:
                 raise RegistryConnectionError(self.url, exc) from exc
 
-            if response.status_code == 404:
-                raise SchemaNotFoundError.from_id(id_type, id_value)
-            try:
-                response.raise_for_status()
-            except httpx.HTTPStatusError as exc:
-                raise RegistryConnectionError(self.url, exc) from exc
-
-            schema: dict[str, Any] = json.loads(response.content)
+            schema = self._process_id_response(response, id_type, id_value)
             self._id_cache[cache_key] = schema
             return schema
 

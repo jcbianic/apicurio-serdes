@@ -2,35 +2,19 @@
 
 from __future__ import annotations
 
-import json
 import threading
-from dataclasses import dataclass
 from typing import Any
 
 import httpx
 
-from apicurio_serdes._errors import (
-    RegistryConnectionError,
-    SchemaNotFoundError,
-)
+from apicurio_serdes._base import CachedSchema, _RegistryClientBase
+from apicurio_serdes._errors import RegistryConnectionError
+
+# Re-export so ``from apicurio_serdes._client import CachedSchema`` keeps working.
+__all__ = ["ApicurioRegistryClient", "CachedSchema"]
 
 
-@dataclass
-class CachedSchema:
-    """Internal value object holding a resolved schema and registry metadata.
-
-    Attributes:
-        schema: Parsed Avro schema (Python dict, fastavro-ready).
-        global_id: Apicurio globalId from X-Registry-GlobalId header.
-        content_id: Apicurio contentId from X-Registry-ContentId header.
-    """
-
-    schema: dict[str, Any]
-    global_id: int
-    content_id: int
-
-
-class ApicurioRegistryClient:
+class ApicurioRegistryClient(_RegistryClientBase):
     """HTTP client for the Apicurio Registry v3 native API.
 
     Handles schema retrieval by group_id / artifact_id with
@@ -58,15 +42,8 @@ class ApicurioRegistryClient:
     """
 
     def __init__(self, url: str, group_id: str) -> None:
-        if not url:
-            raise ValueError("url must not be empty")
-        if not group_id:
-            raise ValueError("group_id must not be empty")
-        self.url = url
-        self.group_id = group_id
+        super().__init__(url, group_id)
         self._http_client = httpx.Client(base_url=url)
-        self._schema_cache: dict[tuple[str, str], CachedSchema] = {}
-        self._id_cache: dict[tuple[str, int], dict[str, Any]] = {}
         self._lock = threading.RLock()
 
     def get_schema(self, artifact_id: str) -> CachedSchema:
@@ -84,7 +61,9 @@ class ApicurioRegistryClient:
         Raises:
             SchemaNotFoundError: If the artifact does not exist (HTTP 404).
             RegistryConnectionError: If the registry is unreachable.
+            RuntimeError: If the client has been closed.
         """
+        self._check_closed()
         cache_key = (self.group_id, artifact_id)
         if cache_key in self._schema_cache:
             return self._schema_cache[cache_key]
@@ -94,40 +73,12 @@ class ApicurioRegistryClient:
             if cache_key in self._schema_cache:
                 return self._schema_cache[cache_key]
 
-            endpoint = (
-                f"/groups/{self.group_id}"
-                f"/artifacts/{artifact_id}"
-                "/versions/latest/content"
-            )
             try:
-                response = self._http_client.get(endpoint)
+                response = self._http_client.get(self._schema_endpoint(artifact_id))
             except httpx.TransportError as exc:
                 raise RegistryConnectionError(self.url, exc) from exc
 
-            if response.status_code == 404:
-                raise SchemaNotFoundError(self.group_id, artifact_id)
-            try:
-                response.raise_for_status()
-            except httpx.HTTPStatusError as exc:
-                raise RegistryConnectionError(self.url, exc) from exc
-
-            schema = json.loads(response.text)
-            global_id = int(response.headers["X-Registry-GlobalId"])
-            content_id = int(response.headers["X-Registry-ContentId"])
-
-            int64_min, int64_max = -(2**63), 2**63 - 1
-            if not (int64_min <= global_id <= int64_max):
-                raise ValueError(f"globalId {global_id} is outside signed 64-bit range")
-            if not (int64_min <= content_id <= int64_max):
-                raise ValueError(
-                    f"contentId {content_id} is outside signed 64-bit range"
-                )
-
-            cached = CachedSchema(
-                schema=schema,
-                global_id=global_id,
-                content_id=content_id,
-            )
+            cached = self._process_schema_response(response, artifact_id)
             self._schema_cache[cache_key] = cached
             return cached
 
@@ -146,6 +97,7 @@ class ApicurioRegistryClient:
         Raises:
             SchemaNotFoundError: If no schema exists for this globalId (FR-010).
             RegistryConnectionError: If the registry is unreachable (FR-012).
+            RuntimeError: If the client has been closed.
         """
         return self._get_schema_by_id("globalId", global_id)
 
@@ -164,11 +116,13 @@ class ApicurioRegistryClient:
         Raises:
             SchemaNotFoundError: If no schema exists for this contentId (FR-010).
             RegistryConnectionError: If the registry is unreachable (FR-012).
+            RuntimeError: If the client has been closed.
         """
         return self._get_schema_by_id("contentId", content_id)
 
     def _get_schema_by_id(self, id_type: str, id_value: int) -> dict[str, Any]:
         """Shared implementation for ID-based schema lookups (D12)."""
+        self._check_closed()
         cache_key = (id_type, id_value)
         if cache_key in self._id_cache:
             return self._id_cache[cache_key]
@@ -177,20 +131,12 @@ class ApicurioRegistryClient:
             if cache_key in self._id_cache:
                 return self._id_cache[cache_key]
 
-            endpoint = f"/ids/{id_type}s/{id_value}"
             try:
-                response = self._http_client.get(endpoint)
+                response = self._http_client.get(self._id_endpoint(id_type, id_value))
             except httpx.TransportError as exc:
                 raise RegistryConnectionError(self.url, exc) from exc
 
-            if response.status_code == 404:
-                raise SchemaNotFoundError.from_id(id_type, id_value)
-            try:
-                response.raise_for_status()
-            except httpx.HTTPStatusError as exc:
-                raise RegistryConnectionError(self.url, exc) from exc
-
-            schema: dict[str, Any] = json.loads(response.content)
+            schema = self._process_id_response(response, id_type, id_value)
             self._id_cache[cache_key] = schema
             return schema
 
@@ -200,6 +146,7 @@ class ApicurioRegistryClient:
         Call this when the client is no longer needed and you are not
         using it as a context manager. Safe to call multiple times.
         """
+        self._closed = True
         self._http_client.close()
 
     def __enter__(self) -> ApicurioRegistryClient:
