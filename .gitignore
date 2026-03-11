@@ -31,3 +31,6 @@ site/
 
 # Generated files
 .specify/dashboard.html
+
+# Tessl tiles (installed via `tessl install`, not vendored)
+.tessl/tiles/
