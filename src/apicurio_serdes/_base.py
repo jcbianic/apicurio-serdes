@@ -53,9 +53,7 @@ class _RegistryClientBase:
 
     def _schema_endpoint(self, artifact_id: str) -> str:
         return (
-            f"/groups/{self.group_id}"
-            f"/artifacts/{artifact_id}"
-            "/versions/latest/content"
+            f"/groups/{self.group_id}/artifacts/{artifact_id}/versions/latest/content"
         )
 
     @staticmethod
@@ -87,9 +85,7 @@ class _RegistryClientBase:
         if not (int64_min <= global_id <= int64_max):
             raise ValueError(f"globalId {global_id} is outside signed 64-bit range")
         if not (int64_min <= content_id <= int64_max):
-            raise ValueError(
-                f"contentId {content_id} is outside signed 64-bit range"
-            )
+            raise ValueError(f"contentId {content_id} is outside signed 64-bit range")
 
         return CachedSchema(
             schema=schema,

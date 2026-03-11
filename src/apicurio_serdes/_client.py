@@ -73,9 +73,7 @@ class ApicurioRegistryClient(_RegistryClientBase):
                 return self._schema_cache[cache_key]
 
             try:
-                response = self._http_client.get(
-                    self._schema_endpoint(artifact_id)
-                )
+                response = self._http_client.get(self._schema_endpoint(artifact_id))
             except httpx.TransportError as exc:
                 raise RegistryConnectionError(self.url, exc) from exc
 
@@ -131,9 +129,7 @@ class ApicurioRegistryClient(_RegistryClientBase):
                 return self._id_cache[cache_key]
 
             try:
-                response = self._http_client.get(
-                    self._id_endpoint(id_type, id_value)
-                )
+                response = self._http_client.get(self._id_endpoint(id_type, id_value))
             except httpx.TransportError as exc:
                 raise RegistryConnectionError(self.url, exc) from exc
 
