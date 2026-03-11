@@ -182,7 +182,6 @@ class TestConcurrentStampedePrevention:
     ) -> None:
         import asyncio
 
-
         route = _async_schema_route(mock_registry, "UserEvent")
         client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
