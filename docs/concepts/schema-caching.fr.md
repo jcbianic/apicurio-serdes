@@ -4,7 +4,7 @@
 
 ## Fonctionnement du cache
 
-Lorsque vous appelez un serializer pour la première fois, il demande à l'`ApicurioRegistryClient` de récupérer le schema depuis le registry. Le client stocke le résultat dans un cache en mémoire indexé par `(group_id, artifact_id)`.
+Lorsque vous appelez un serializer pour la première fois, il demande à l'`ApicurioRegistryClient` de récupérer le schema depuis le registry. Le client stocke le résultat sous forme de `CachedSchema` — une dataclass gelée (immutable) — dans un cache en mémoire indexé par `(group_id, artifact_id)`. Le gel de l'entrée en cache empêche la mutation accidentelle des données de schema partagées.
 
 ```text
 First call:

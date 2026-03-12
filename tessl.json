@@ -1,6 +1,6 @@
 {
   "name": "my-project",
-  "mode": "vendored",
+  "mode": "managed",
   "dependencies": {
     "tessl-labs/intent-integrity-kit": {
       "version": "2.7.13"

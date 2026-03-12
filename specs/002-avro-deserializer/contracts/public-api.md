@@ -47,7 +47,7 @@ class AvroDeserializer:
                    When None, the decoded dict is returned directly (FR-008).
         use_id: Which registry identifier type the 4-byte wire format
                 field represents. Must match the serializer's use_id
-                setting. Defaults to "contentId" (FR-006).
+                setting. Defaults to "globalId" (FR-006, ADR-006).
 
     Usage:
         >>> deserializer = AvroDeserializer(client)
@@ -58,7 +58,7 @@ class AvroDeserializer:
         self,
         registry_client: ApicurioRegistryClient,
         from_dict: Callable[[dict, SerializationContext], Any] | None = None,
-        use_id: Literal["globalId", "contentId"] = "contentId",
+        use_id: Literal["globalId", "contentId"] = "globalId",
     ) -> None: ...
 
     def __call__(self, data: bytes, ctx: SerializationContext) -> Any:

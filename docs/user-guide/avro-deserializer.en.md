@@ -27,7 +27,7 @@ record = deserializer(kafka_message.value(), ctx)
 |-----------|------|---------|-------------|
 | `registry_client` | `ApicurioRegistryClient` | required | The registry client used to resolve schema identifiers. |
 | `from_dict` | callable | `None` | Optional `(dict, ctx) -> Any` transformation applied after decoding. |
-| `use_id` | `"contentId"` or `"globalId"` | `"contentId"` | How to interpret the 4-byte schema identifier in the wire format header. |
+| `use_id` | `"contentId"` or `"globalId"` | `"globalId"` | How to interpret the 4-byte schema identifier in the wire format header. |
 
 ### Schema identifier mode (`use_id`)
 
@@ -35,8 +35,8 @@ The Confluent wire format stores a 4-byte schema identifier in bytes 1–4. The 
 
 | `use_id` | Registry endpoint |
 |----------|-------------------|
-| `"contentId"` (default) | `GET /ids/contentIds/{id}` |
-| `"globalId"` | `GET /ids/globalIds/{id}` |
+| `"globalId"` (default) | `GET /ids/globalIds/{id}` |
+| `"contentId"` | `GET /ids/contentIds/{id}` |
 
 **Important**: `use_id` must match the value used by the producer. If the producer embedded a `globalId`, the deserializer must use `use_id="globalId"`.
 

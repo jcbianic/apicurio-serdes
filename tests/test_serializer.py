@@ -557,6 +557,22 @@ def test_wire_format_param_stored_on_instance(
     assert serializer.wire_format == WireFormat.KAFKA_HEADERS
 
 
+def test_call_raises_type_error_for_kafka_headers(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """__call__ raises TypeError when wire_format is KAFKA_HEADERS."""
+    _schema_route(mock_registry, "UserEvent")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    serializer = AvroSerializer(
+        registry_client=client,
+        artifact_id="UserEvent",
+        wire_format=WireFormat.KAFKA_HEADERS,
+    )
+    ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+    with pytest.raises(TypeError, match="use serialize\\(\\)"):
+        serializer(VALID_USER_EVENT, ctx)
+
+
 def test_invalid_wire_format_raises_value_error(
     mock_registry: respx.MockRouter,
 ) -> None:

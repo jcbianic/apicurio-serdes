@@ -4,7 +4,7 @@
 
 ## How the Cache Works
 
-When you call a serializer for the first time, it asks the `ApicurioRegistryClient` to fetch the schema from the registry. The client stores the result in an in-memory cache keyed by `(group_id, artifact_id)`.
+When you call a serializer for the first time, it asks the `ApicurioRegistryClient` to fetch the schema from the registry. The client stores the result as a `CachedSchema` — a frozen (immutable) dataclass — in an in-memory cache keyed by `(group_id, artifact_id)`. Freezing the cached entry prevents accidental mutation of shared schema data.
 
 ```text
 First call:

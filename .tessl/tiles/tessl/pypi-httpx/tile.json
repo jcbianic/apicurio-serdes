@@ -1,7 +1,0 @@
-{
-  "name": "tessl/pypi-httpx",
-  "version": "0.28.0",
-  "docs": "docs/index.md",
-  "describes": "pkg:pypi/httpx@0.28.1",
-  "summary": "The next generation HTTP client."
-}

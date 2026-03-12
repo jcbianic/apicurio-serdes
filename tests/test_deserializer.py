@@ -51,6 +51,18 @@ def test_init_default_use_id(mock_registry: respx.MockRouter) -> None:
     assert deser.use_id == "globalId"
 
 
+def test_default_use_id_matches_serializer(mock_registry: respx.MockRouter) -> None:
+    """Default deserializer resolves via globalId endpoint, matching serializer default."""
+    global_route = _id_schema_route(mock_registry, "globalId", CONTENT_ID)
+    content_route = _id_schema_route(mock_registry, "contentId", CONTENT_ID)
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    deser = AvroDeserializer(registry_client=client)
+    data = make_confluent_bytes(CONTENT_ID, VALID_USER_EVENT)
+    deser(data, _ctx())
+    assert global_route.called
+    assert not content_route.called
+
+
 def test_init_explicit_use_id_global(mock_registry: respx.MockRouter) -> None:
     """use_id can be set to 'globalId' [FR-006]."""
     client = _make_client(mock_registry)

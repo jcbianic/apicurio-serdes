@@ -7,6 +7,7 @@
 [![Docs](https://readthedocs.org/projects/apicurio-serdes/badge/)](https://apicurio-serdes.readthedocs.io)
 [![PyPI version](https://img.shields.io/pypi/v/apicurio-serdes)](https://pypi.org/project/apicurio-serdes/)
 [![Python versions](https://img.shields.io/pypi/pyversions/apicurio-serdes)](https://pypi.org/project/apicurio-serdes/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/apicurio-serdes)](https://pypi.org/project/apicurio-serdes/)
 [![License](https://img.shields.io/pypi/l/apicurio-serdes)](https://pypi.org/project/apicurio-serdes/)
 
 Python serialization library for [Apicurio Registry](https://www.apicur.io/registry/).
