@@ -34,3 +34,6 @@ site/
 
 # Tessl tiles (installed via `tessl install`, not vendored)
 .tessl/tiles/
+
+# Local working notes (announcements, outreach, etc.)
+.local/
