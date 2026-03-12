@@ -184,9 +184,9 @@ class AvroSerializer:
     def __call__(self, data: Any, ctx: SerializationContext) -> bytes:
         """Serialize data to bytes. Delegates to serialize() and returns payload.
 
-        For CONFLUENT_PAYLOAD: returns framed bytes — identical to pre-feature
-        behavior. For KAFKA_HEADERS: returns raw Avro binary bytes only;
-        headers are discarded. Use serialize() when headers are needed.
+        Only supported for CONFLUENT_PAYLOAD wire format. For KAFKA_HEADERS,
+        use serialize() which returns a SerializedMessage with both payload
+        and headers.
 
         Args:
             data: The data to serialize. Must be a dict (or convertible
@@ -194,12 +194,18 @@ class AvroSerializer:
             ctx: Serialization context with topic and field metadata.
 
         Returns:
-            Serialized bytes (payload only). Headers are discarded.
+            Serialized bytes (CONFLUENT_PAYLOAD framed).
 
         Raises:
+            TypeError: If wire_format is KAFKA_HEADERS (use serialize() instead).
             SchemaNotFoundError: If artifact_id does not exist in the registry.
             RegistryConnectionError: If the registry is unreachable.
             SerializationError: If the to_dict callable raises an exception.
             ValueError: If data does not conform to the Avro schema.
         """
+        if self.wire_format is WireFormat.KAFKA_HEADERS:
+            raise TypeError(
+                "KAFKA_HEADERS wire format requires headers; "
+                "use serialize() instead of calling the serializer directly."
+            )
         return self.serialize(data, ctx).payload
