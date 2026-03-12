@@ -36,7 +36,8 @@ payload = serializer({"userId": "abc-123", "country": "FR"}, ctx)
 | `SchemaNotFoundError` | L'`artifact_id` n'existe pas dans le registry (HTTP 404). |
 | `RegistryConnectionError` | Le registry est injoignable (erreur réseau). |
 | `SerializationError` | Le callable `to_dict` a levé une exception. |
-| `ValueError` | Les données ne sont pas conformes au schema Avro, ou le mode strict a rejeté des champs supplémentaires. |
+| `ValueError` | Les données ne sont pas conformes au schema Avro, le mode strict a rejeté des champs supplémentaires, ou l'identifiant de schema dépasse la limite 32 bits non signée pour le wire format `CONFLUENT_PAYLOAD` (utilisez `WireFormat.KAFKA_HEADERS` pour le support des identifiants 64 bits). |
+| `RuntimeError` | Le client registry sous-jacent a été fermé. |
 
 Consultez [Gestion des erreurs](../how-to/error-handling.md) pour les stratégies de récupération et des exemples de code.
 

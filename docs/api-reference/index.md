@@ -8,6 +8,14 @@ Complete reference for all public classes, methods, and exceptions in `apicurio-
 
 ::: apicurio_serdes._client.ApicurioRegistryClient
 
+### AsyncApicurioRegistryClient
+
+::: apicurio_serdes._async_client.AsyncApicurioRegistryClient
+
+### CachedSchema
+
+::: apicurio_serdes._base.CachedSchema
+
 ### SerializationContext
 
 ::: apicurio_serdes.serialization.SerializationContext
@@ -16,11 +24,23 @@ Complete reference for all public classes, methods, and exceptions in `apicurio-
 
 ::: apicurio_serdes.serialization.MessageField
 
+### WireFormat
+
+::: apicurio_serdes.serialization.WireFormat
+
 ## Avro
 
 ### AvroSerializer
 
 ::: apicurio_serdes.avro._serializer.AvroSerializer
+
+### AvroDeserializer
+
+::: apicurio_serdes.avro._deserializer.AvroDeserializer
+
+### AsyncAvroDeserializer
+
+::: apicurio_serdes.avro._async_deserializer.AsyncAvroDeserializer
 
 ## Exceptions
 
@@ -35,3 +55,7 @@ Complete reference for all public classes, methods, and exceptions in `apicurio-
 ### SerializationError
 
 ::: apicurio_serdes._errors.SerializationError
+
+### DeserializationError
+
+::: apicurio_serdes._errors.DeserializationError

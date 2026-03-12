@@ -27,7 +27,7 @@ record = deserializer(kafka_message.value(), ctx)
 |-----------|------|--------|-------------|
 | `registry_client` | `ApicurioRegistryClient` | obligatoire | Le client registry utilisé pour résoudre les identifiants de schema. |
 | `from_dict` | callable | `None` | Transformation optionnelle `(dict, ctx) -> Any` appliquée après le décodage. |
-| `use_id` | `"contentId"` ou `"globalId"` | `"contentId"` | Comment interpréter l'identifiant de schema de 4 octets dans l'en-tête du wire format. |
+| `use_id` | `"contentId"` ou `"globalId"` | `"globalId"` | Comment interpréter l'identifiant de schema de 4 octets dans l'en-tête du wire format. |
 
 ### Mode d'identifiant de schema (`use_id`)
 
@@ -35,8 +35,8 @@ Le format Confluent wire format stocke un identifiant de schema de 4 octets aux 
 
 | `use_id` | Endpoint du registry |
 |----------|----------------------|
-| `"contentId"` (défaut) | `GET /ids/contentIds/{id}` |
-| `"globalId"` | `GET /ids/globalIds/{id}` |
+| `"globalId"` (défaut) | `GET /ids/globalIds/{id}` |
+| `"contentId"` | `GET /ids/contentIds/{id}` |
 
 **Important** : `use_id` doit correspondre à la valeur utilisée par le producteur. Si le producteur a intégré un `globalId`, le désérialiseur doit utiliser `use_id="globalId"`.
 

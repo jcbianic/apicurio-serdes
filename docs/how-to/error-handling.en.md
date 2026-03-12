@@ -1,16 +1,19 @@
 # Error Handling
 
-`apicurio-serdes` raises three specific exception types. Each represents a distinct failure mode with its own recovery strategy.
+`apicurio-serdes` raises specific exception types for each failure mode, plus standard Python exceptions for validation errors.
 
 ## Exception Overview
 
 | Exception | When it is raised | Key attributes |
 |-----------|-------------------|----------------|
-| `SchemaNotFoundError` | The artifact does not exist in the registry (HTTP 404) | `group_id`, `artifact_id` |
+| `SchemaNotFoundError` | The artifact or schema ID does not exist in the registry (HTTP 404) | `group_id`, `artifact_id` or `id_type`, `id_value` |
 | `RegistryConnectionError` | The registry is unreachable (network error) | `url` |
 | `SerializationError` | The `to_dict` callable raised an exception | `cause` |
+| `DeserializationError` | Wire format invalid, Avro decode failure, or `from_dict` hook failure | `cause` |
+| `RuntimeError` | The registry client has been closed | — |
+| `ValueError` | Schema ID exceeds 32-bit limit (CONFLUENT_PAYLOAD), or registry response IDs outside int64 range | — |
 
-All exceptions are importable from `apicurio_serdes._errors`.
+All custom exceptions are importable from `apicurio_serdes._errors`.
 
 ## Handling `SchemaNotFoundError`
 
@@ -114,6 +117,46 @@ If `strict=True` is enabled on the serializer, `ValueError` is also raised when 
 
 **Recovery:** Ensure the data dictionary has all required fields with the correct types.
 
+## Handling `RuntimeError` (Closed Client)
+
+Raised when you call a method on a registry client that has already been closed.
+
+```python
+try:
+    payload = serializer(data, ctx)
+except RuntimeError as e:
+    if "closed" in str(e):
+        print("Client was closed — create a new client instance")
+```
+
+**Common causes:**
+
+- Calling `close()` or exiting a context manager, then reusing the same client
+- Sharing a client across threads/coroutines where one path closes it prematurely
+
+**Recovery:** Create a new `ApicurioRegistryClient` or `AsyncApicurioRegistryClient` instance.
+
+## Handling `ValueError` (Validation)
+
+In addition to Avro schema validation errors from fastavro, `ValueError` is raised in two new situations:
+
+- **32-bit schema ID overflow**: When using `CONFLUENT_PAYLOAD` wire format, the schema ID must fit in an unsigned 32-bit integer. If the registry-assigned ID exceeds this limit, use `WireFormat.KAFKA_HEADERS` instead.
+- **int64 range validation**: When registry response headers contain a `globalId` or `contentId` outside the signed 64-bit integer range.
+
+```python
+try:
+    payload = serializer(data, ctx)
+except ValueError as e:
+    if "32-bit" in str(e):
+        print("Schema ID too large for CONFLUENT_PAYLOAD — switch to KAFKA_HEADERS")
+    else:
+        print(f"Data does not match schema: {e}")
+```
+
+If `strict=True` is enabled on the serializer, `ValueError` is also raised when the data contains extra fields not defined in the schema.
+
+**Recovery:** Ensure the data dictionary has all required fields with the correct types, or switch wire format for large schema IDs.
+
 ## Putting It All Together
 
 ```python
@@ -134,7 +177,10 @@ except RegistryConnectionError as e:
 except SerializationError as e:
     logger.error("to_dict hook failed: %s", e.cause)
     raise
+except RuntimeError as e:
+    logger.error("Client is closed: %s", e)
+    raise
 except ValueError as e:
-    logger.error("Schema validation failed: %s", e)
+    logger.error("Validation failed: %s", e)
     raise
 ```
