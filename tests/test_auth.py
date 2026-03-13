@@ -411,3 +411,18 @@ class TestKeycloakAuthSecurity:
                     client.get(ARTIFACT_URL)
         assert "pass" not in str(exc_info.value)
         assert "user" not in str(exc_info.value)
+
+    def test_transport_error_message_preserves_port(self) -> None:
+        url_with_creds = "https://user:pass@keycloak.example.com:8443/realms/r/protocol/openid-connect/token"
+        auth = KeycloakAuth(
+            token_url=url_with_creds,
+            client_id="client",
+            client_secret="secret",
+        )
+        with respx.mock() as router:
+            router.post(url_with_creds).mock(side_effect=httpx.ConnectError("refused"))
+            with httpx.Client(auth=auth) as client:
+                with pytest.raises(AuthenticationError) as exc_info:
+                    client.get(ARTIFACT_URL)
+        assert "pass" not in str(exc_info.value)
+        assert ":8443" in str(exc_info.value)
