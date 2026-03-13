@@ -46,9 +46,7 @@ class TestBearerAuth:
             route = _mock_registry(router)
             with httpx.Client(auth=BearerAuth(token="my-token")) as client:
                 client.get(ARTIFACT_URL)
-            assert (
-                route.calls[0].request.headers["authorization"] == "Bearer my-token"
-            )
+            assert route.calls[0].request.headers["authorization"] == "Bearer my-token"
 
     def test_dynamic_token_calls_provider(self) -> None:
         provider = MagicMock(return_value="dyn-token")
@@ -56,9 +54,7 @@ class TestBearerAuth:
             route = _mock_registry(router)
             with httpx.Client(auth=BearerAuth(token_provider=provider)) as client:
                 client.get(ARTIFACT_URL)
-            assert (
-                route.calls[0].request.headers["authorization"] == "Bearer dyn-token"
-            )
+            assert route.calls[0].request.headers["authorization"] == "Bearer dyn-token"
 
     def test_provider_called_on_each_request(self) -> None:
         call_count = 0
@@ -94,13 +90,9 @@ class TestBearerAuth:
     async def test_works_with_async_httpx_client(self) -> None:
         with respx.mock() as router:
             route = _mock_registry(router)
-            async with httpx.AsyncClient(
-                auth=BearerAuth(token="async-tok")
-            ) as client:
+            async with httpx.AsyncClient(auth=BearerAuth(token="async-tok")) as client:
                 await client.get(ARTIFACT_URL)
-            assert (
-                route.calls[0].request.headers["authorization"] == "Bearer async-tok"
-            )
+            assert route.calls[0].request.headers["authorization"] == "Bearer async-tok"
 
 
 # ── KeycloakAuth sync ──
@@ -191,9 +183,7 @@ class TestKeycloakAuthSync:
 
     def test_scope_included_in_token_request(self) -> None:
         with respx.mock() as router:
-            token_route = router.post(TOKEN_URL).mock(
-                return_value=_token_response()
-            )
+            token_route = router.post(TOKEN_URL).mock(return_value=_token_response())
             _mock_registry(router)
             auth = self._auth(scope="openid")
             with httpx.Client(auth=auth) as client:
@@ -203,9 +193,7 @@ class TestKeycloakAuthSync:
 
     def test_no_scope_omits_scope_from_request(self) -> None:
         with respx.mock() as router:
-            token_route = router.post(TOKEN_URL).mock(
-                return_value=_token_response()
-            )
+            token_route = router.post(TOKEN_URL).mock(return_value=_token_response())
             _mock_registry(router)
             auth = self._auth()
             with httpx.Client(auth=auth) as client:
@@ -385,9 +373,7 @@ class TestKeycloakAuthSecurity:
 
     def test_200_with_non_json_body_raises_authentication_error(self) -> None:
         with respx.mock() as router:
-            router.post(TOKEN_URL).mock(
-                return_value=Response(200, text="not json")
-            )
+            router.post(TOKEN_URL).mock(return_value=Response(200, text="not json"))
             auth = self._auth()
             with httpx.Client(auth=auth) as client:
                 with pytest.raises(AuthenticationError):
@@ -396,9 +382,7 @@ class TestKeycloakAuthSecurity:
     def test_401_error_message_does_not_include_full_response_body(self) -> None:
         sensitive_body = '{"error":"invalid_client","secret_echo":"super-secret"}'
         with respx.mock() as router:
-            router.post(TOKEN_URL).mock(
-                return_value=Response(401, text=sensitive_body)
-            )
+            router.post(TOKEN_URL).mock(return_value=Response(401, text=sensitive_body))
             auth = self._auth()
             with httpx.Client(auth=auth) as client:
                 with pytest.raises(AuthenticationError) as exc_info:
@@ -421,9 +405,7 @@ class TestKeycloakAuthSecurity:
             client_secret="secret",
         )
         with respx.mock() as router:
-            router.post(url_with_creds).mock(
-                side_effect=httpx.ConnectError("refused")
-            )
+            router.post(url_with_creds).mock(side_effect=httpx.ConnectError("refused"))
             with httpx.Client(auth=auth) as client:
                 with pytest.raises(AuthenticationError) as exc_info:
                     client.get(ARTIFACT_URL)

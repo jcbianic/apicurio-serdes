@@ -777,9 +777,7 @@ async def test_async_client_accepts_bearer_auth(
 
     from apicurio_serdes._auth import BearerAuth
 
-    url = (
-        f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/Auth/versions/latest/content"
-    )
+    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/Auth/versions/latest/content"
     route = mock_registry.get(url).mock(
         return_value=Response(
             200,

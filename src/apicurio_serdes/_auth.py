@@ -5,8 +5,7 @@ from __future__ import annotations
 import asyncio
 import threading
 import time
-from collections.abc import Callable, Generator
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable, Generator
 from urllib.parse import urlparse, urlunparse
 
 import httpx
@@ -130,7 +129,9 @@ class KeycloakAuth(httpx.Auth):
     def _is_expired(self) -> bool:
         if not self._token:
             return True
-        return self._expires_at < time.monotonic() + self._expires_in * _REFRESH_THRESHOLD
+        return (
+            self._expires_at < time.monotonic() + self._expires_in * _REFRESH_THRESHOLD
+        )
 
     def _build_token_data(self) -> dict[str, str]:
         data: dict[str, str] = {
@@ -175,9 +176,7 @@ class KeycloakAuth(httpx.Auth):
     def _sync_fetch_token(self) -> None:
         try:
             with httpx.Client() as client:
-                response = client.post(
-                    self._token_url, data=self._build_token_data()
-                )
+                response = client.post(self._token_url, data=self._build_token_data())
         except httpx.TransportError as exc:
             raise AuthenticationError(
                 f"Could not reach token endpoint {self._safe_url(self._token_url)}: {exc}"

@@ -35,9 +35,7 @@ class AsyncApicurioRegistryClient(_RegistryClientBase):
         ValueError: If url or group_id is empty.
     """
 
-    def __init__(
-        self, url: str, group_id: str, auth: httpx.Auth | None = None
-    ) -> None:
+    def __init__(self, url: str, group_id: str, auth: httpx.Auth | None = None) -> None:
         super().__init__(url, group_id)
         self._http_client = httpx.AsyncClient(base_url=url, auth=auth)
         self._lock = asyncio.Lock()
