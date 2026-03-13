@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from typing import Literal
 
     from apicurio_serdes._client import ApicurioRegistryClient, CachedSchema
+    from apicurio_serdes.avro._strategies import ArtifactResolver
     from apicurio_serdes.serialization import SerializationContext
 
 
@@ -30,7 +31,13 @@ class AvroSerializer:
         registry_client: An
             [ApicurioRegistryClient][apicurio_serdes._client.ApicurioRegistryClient]
             instance.
-        artifact_id: The artifact identifier for the target schema.
+        artifact_id: The static artifact identifier for the target schema.
+            Mutually exclusive with ``artifact_resolver``.
+        artifact_resolver: A callable ``(ctx) -> str`` that derives the
+            artifact ID from the serialization context at first serialize.
+            Mutually exclusive with ``artifact_id``. Built-in strategies:
+            :class:`~apicurio_serdes.avro.TopicIdStrategy` and
+            :class:`~apicurio_serdes.avro.SimpleTopicIdStrategy`.
         to_dict: Optional callable that converts input data to a dict
                  before Avro encoding. Signature: ``(data, ctx) -> dict``.
                  When ``None``, input is passed directly to the encoder.
@@ -42,13 +49,14 @@ class AvroSerializer:
                      WireFormat.CONFLUENT_PAYLOAD (FR-003).
 
     Raises:
-        ValueError: If wire_format is not a WireFormat enum member, or if
-            use_id is not ``"globalId"`` or ``"contentId"``.
+        ValueError: If both or neither of ``artifact_id`` / ``artifact_resolver``
+            are provided, if ``wire_format`` is not a WireFormat enum member, or
+            if ``use_id`` is not ``"globalId"`` or ``"contentId"``.
 
     Example:
         ```python
         from apicurio_serdes import ApicurioRegistryClient
-        from apicurio_serdes.avro import AvroSerializer
+        from apicurio_serdes.avro import AvroSerializer, TopicIdStrategy
         from apicurio_serdes.serialization import (
             SerializationContext,
             MessageField,
@@ -60,7 +68,7 @@ class AvroSerializer:
         )
         serializer = AvroSerializer(
             registry_client=client,
-            artifact_id="UserEvent",
+            artifact_resolver=TopicIdStrategy(),
         )
         ctx = SerializationContext(
             topic="user-events", field=MessageField.VALUE,
@@ -76,12 +84,22 @@ class AvroSerializer:
     def __init__(
         self,
         registry_client: ApicurioRegistryClient,
-        artifact_id: str,
+        artifact_id: str | None = None,
+        artifact_resolver: ArtifactResolver | None = None,
         to_dict: Callable[[Any, SerializationContext], dict[str, Any]] | None = None,
         use_id: Literal["globalId", "contentId"] = "globalId",
         strict: bool = False,
         wire_format: WireFormat = WireFormat.CONFLUENT_PAYLOAD,
     ) -> None:
+        if artifact_id is not None and artifact_resolver is not None:
+            raise ValueError(
+                "artifact_id and artifact_resolver are mutually exclusive; "
+                "provide exactly one."
+            )
+        if artifact_id is None and artifact_resolver is None:
+            raise ValueError(
+                "One of artifact_id or artifact_resolver is required."
+            )
         if not isinstance(wire_format, WireFormat):
             raise ValueError(
                 f"wire_format must be a WireFormat enum member, got {wire_format!r}"
@@ -91,7 +109,9 @@ class AvroSerializer:
                 f"use_id must be 'globalId' or 'contentId', got {use_id!r}"
             )
         self.registry_client = registry_client
-        self.artifact_id = artifact_id
+        self.artifact_id: str | None = artifact_id
+        self._artifact_resolver: ArtifactResolver | None = artifact_resolver
+        self._resolved_artifact_id: str | None = None
         self.to_dict = to_dict
         self.use_id = use_id
         self.strict = strict
@@ -116,14 +136,34 @@ class AvroSerializer:
             SerializedMessage with payload bytes and headers dict.
 
         Raises:
-            SchemaNotFoundError: If artifact_id does not exist in the registry.
+            SchemaNotFoundError: If the resolved artifact does not exist in the registry.
             RegistryConnectionError: If the registry is unreachable.
             SerializationError: If the to_dict callable raises an exception.
             ValueError: If data does not conform to the Avro schema.
         """
         # Lazy schema fetch (cached by client)
         if self._schema is None:
-            cached = self.registry_client.get_schema(self.artifact_id)
+            if self._artifact_resolver is not None and self._resolved_artifact_id is None:
+                try:
+                    resolved = self._artifact_resolver(ctx)
+                except Exception as exc:
+                    raise SerializationError(exc) from exc
+                if not isinstance(resolved, str) or not resolved:
+                    raise ValueError(
+                        f"artifact_resolver must return a non-empty str, got {resolved!r}"
+                    )
+                self._resolved_artifact_id = resolved
+            effective_id = (
+                self.artifact_id
+                if self.artifact_id is not None
+                else self._resolved_artifact_id
+            )
+            if effective_id is None:  # pragma: no cover
+                raise RuntimeError(
+                    "artifact_id is None and no resolver has produced an ID yet; "
+                    "this is an internal invariant violation."
+                )
+            cached = self.registry_client.get_schema(effective_id)
             self._schema = cached
             self._parsed_schema = fastavro.parse_schema(cached.schema)
 
@@ -198,7 +238,7 @@ class AvroSerializer:
 
         Raises:
             TypeError: If wire_format is KAFKA_HEADERS (use serialize() instead).
-            SchemaNotFoundError: If artifact_id does not exist in the registry.
+            SchemaNotFoundError: If the resolved artifact does not exist in the registry.
             RegistryConnectionError: If the registry is unreachable.
             SerializationError: If the to_dict callable raises an exception.
             ValueError: If data does not conform to the Avro schema.
