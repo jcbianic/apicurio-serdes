@@ -147,7 +147,10 @@ class KeycloakAuth(httpx.Auth):
     def _safe_url(url: str) -> str:
         """Strip userinfo from a URL to avoid leaking embedded credentials."""
         parsed = urlparse(url)
-        return urlunparse(parsed._replace(netloc=parsed.hostname or ""))
+        netloc = parsed.hostname or ""
+        if parsed.port:
+            netloc = f"{netloc}:{parsed.port}"
+        return urlunparse(parsed._replace(netloc=netloc))
 
     def _parse_token_response(self, response: httpx.Response) -> None:
         try:
