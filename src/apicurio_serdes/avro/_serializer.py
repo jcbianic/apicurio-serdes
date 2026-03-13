@@ -134,7 +134,8 @@ class AvroSerializer:
             SerializedMessage with payload bytes and headers dict.
 
         Raises:
-            ResolverError: If the artifact_resolver raises or returns a non-empty str.
+            ResolverError: If the artifact_resolver raises or returns something other
+                than a non-empty str.
             SchemaNotFoundError: If the resolved artifact does not exist in the registry.
             RegistryConnectionError: If the registry is unreachable.
             SerializationError: If the to_dict callable raises an exception.
@@ -242,7 +243,8 @@ class AvroSerializer:
 
         Raises:
             TypeError: If wire_format is KAFKA_HEADERS (use serialize() instead).
-            ResolverError: If the artifact_resolver raises or returns a non-empty str.
+            ResolverError: If the artifact_resolver raises or returns something other
+                than a non-empty str.
             SchemaNotFoundError: If the resolved artifact does not exist in the registry.
             RegistryConnectionError: If the registry is unreachable.
             SerializationError: If the to_dict callable raises an exception.
