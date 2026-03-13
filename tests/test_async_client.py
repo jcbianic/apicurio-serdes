@@ -754,3 +754,41 @@ class TestRegisterSchemaAsync:
             assert (
                 sync_sig.parameters[name].default == async_sig.parameters[name].default
             ), f"Default mismatch for param '{name}'"
+
+
+# ── Auth wiring tests ──
+
+
+def test_async_client_auth_defaults_to_none() -> None:
+    """auth parameter defaults to None; existing tests unaffected."""
+    import inspect
+
+    params = inspect.signature(AsyncApicurioRegistryClient.__init__).parameters
+    assert "auth" in params
+    assert params["auth"].default is None
+
+
+@pytest.mark.asyncio
+async def test_async_client_accepts_bearer_auth(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """AsyncApicurioRegistryClient accepts auth=BearerAuth and passes it to httpx."""
+    from httpx import Response
+
+    from apicurio_serdes._auth import BearerAuth
+
+    url = (
+        f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/Auth/versions/latest/content"
+    )
+    route = mock_registry.get(url).mock(
+        return_value=Response(
+            200,
+            content=b'{"type":"record","name":"X","fields":[]}',
+            headers={"X-Registry-GlobalId": "1", "X-Registry-ContentId": "2"},
+        )
+    )
+    client = AsyncApicurioRegistryClient(
+        url=REGISTRY_URL, group_id=GROUP_ID, auth=BearerAuth(token="async-wire")
+    )
+    await client.get_schema("Auth")
+    assert route.calls[0].request.headers["authorization"] == "Bearer async-wire"

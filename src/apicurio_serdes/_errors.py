@@ -135,6 +135,19 @@ class SchemaRegistrationError(Exception):
         self.__cause__ = cause
 
 
+class AuthenticationError(Exception):
+    """Raised when authentication with the token endpoint fails.
+
+    Covers: token endpoint unreachable, non-200 response from token endpoint.
+
+    Args:
+        message: Description of the authentication failure.
+    """
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+
+
 class RegistryConnectionError(Exception):
     """Raised when the Apicurio Registry is unreachable.
 
