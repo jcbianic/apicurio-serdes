@@ -45,9 +45,7 @@ class ApicurioRegistryClient(_RegistryClientBase):
         ```
     """
 
-    def __init__(
-        self, url: str, group_id: str, auth: httpx.Auth | None = None
-    ) -> None:
+    def __init__(self, url: str, group_id: str, auth: httpx.Auth | None = None) -> None:
         super().__init__(url, group_id)
         self._http_client = httpx.Client(base_url=url, auth=auth)
         self._lock = threading.RLock()
