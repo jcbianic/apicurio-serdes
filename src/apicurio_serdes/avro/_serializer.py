@@ -158,6 +158,7 @@ class AvroSerializer:
                         f"artifact_resolver must return a non-empty str, got {resolved!r}"
                     )
                 self._resolved_artifact_id = resolved
+                self.artifact_id = resolved
             effective_id = (
                 self.artifact_id
                 if self.artifact_id is not None
