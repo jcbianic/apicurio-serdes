@@ -37,3 +37,6 @@ site/
 
 # Local working notes (announcements, outreach, etc.)
 .local/
+
+# Git worktrees
+.worktrees/
