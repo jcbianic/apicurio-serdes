@@ -82,6 +82,29 @@ class SerializationError(Exception):
         self.__cause__ = cause
 
 
+class ResolverError(Exception):
+    """Raised when the ``artifact_resolver`` callable fails during serialization.
+
+    Covers two failure modes:
+
+    - The resolver raised an exception (original set as ``__cause__``).
+    - The resolver returned a value that is not a non-empty string.
+
+    Args:
+        message: Human-readable description of the failure.
+        cause: The original exception raised by the resolver, if any.
+
+    Attributes:
+        cause: The original exception, if any.
+    """
+
+    def __init__(self, message: str, cause: Exception | None = None) -> None:
+        self.cause = cause
+        super().__init__(message)
+        if cause is not None:
+            self.__cause__ = cause
+
+
 class RegistryConnectionError(Exception):
     """Raised when the Apicurio Registry is unreachable.
 

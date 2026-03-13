@@ -13,6 +13,7 @@ from pytest_bdd import given, parsers, scenario, then, when
 from apicurio_serdes import ApicurioRegistryClient
 from apicurio_serdes._errors import (
     RegistryConnectionError,
+    ResolverError,
     SchemaNotFoundError,
     SerializationError,
 )
@@ -738,10 +739,10 @@ def test_resolver_called_once_schema_cached(
     assert route.call_count == 1
 
 
-def test_resolver_raising_exception_wraps_as_serialization_error(
+def test_resolver_raising_exception_wraps_as_resolver_error(
     mock_registry: respx.MockRouter,
 ) -> None:
-    """A resolver that raises is wrapped in SerializationError."""
+    """A resolver that raises is wrapped in ResolverError."""
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
     def bad_resolver(ctx: SerializationContext) -> str:
@@ -749,19 +750,19 @@ def test_resolver_raising_exception_wraps_as_serialization_error(
 
     ser = AvroSerializer(registry_client=client, artifact_resolver=bad_resolver)
     ctx = SerializationContext(topic="test", field=MessageField.VALUE)
-    with pytest.raises(SerializationError) as exc_info:
+    with pytest.raises(ResolverError, match="resolver failed") as exc_info:
         ser(VALID_USER_EVENT, ctx)
     assert isinstance(exc_info.value.__cause__, RuntimeError)
 
 
-def test_resolver_returning_non_str_raises_value_error(
+def test_resolver_returning_non_str_raises_resolver_error(
     mock_registry: respx.MockRouter,
 ) -> None:
-    """A resolver returning a non-str raises ValueError."""
+    """A resolver returning a non-str raises ResolverError."""
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
     ser = AvroSerializer(registry_client=client, artifact_resolver=lambda ctx: None)  # type: ignore[arg-type, return-value]
     ctx = SerializationContext(topic="test", field=MessageField.VALUE)
-    with pytest.raises(ValueError, match="non-empty str"):
+    with pytest.raises(ResolverError, match="non-empty str"):
         ser(VALID_USER_EVENT, ctx)
 
 

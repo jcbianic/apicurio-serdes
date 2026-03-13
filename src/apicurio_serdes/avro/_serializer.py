@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 import fastavro
 
-from apicurio_serdes._errors import SerializationError
+from apicurio_serdes._errors import ResolverError, SerializationError
 from apicurio_serdes.serialization import SerializedMessage, WireFormat
 
 if TYPE_CHECKING:
@@ -134,6 +134,7 @@ class AvroSerializer:
             SerializedMessage with payload bytes and headers dict.
 
         Raises:
+            ResolverError: If the artifact_resolver raises or returns a non-empty str.
             SchemaNotFoundError: If the resolved artifact does not exist in the registry.
             RegistryConnectionError: If the registry is unreachable.
             SerializationError: If the to_dict callable raises an exception.
@@ -148,9 +149,11 @@ class AvroSerializer:
                 try:
                     resolved = self._artifact_resolver(ctx)
                 except Exception as exc:
-                    raise SerializationError(exc) from exc
+                    raise ResolverError(
+                        f"artifact_resolver raised: {exc}", cause=exc
+                    ) from exc
                 if not isinstance(resolved, str) or not resolved:
-                    raise ValueError(
+                    raise ResolverError(
                         f"artifact_resolver must return a non-empty str, got {resolved!r}"
                     )
                 self._resolved_artifact_id = resolved
@@ -239,6 +242,7 @@ class AvroSerializer:
 
         Raises:
             TypeError: If wire_format is KAFKA_HEADERS (use serialize() instead).
+            ResolverError: If the artifact_resolver raises or returns a non-empty str.
             SchemaNotFoundError: If the resolved artifact does not exist in the registry.
             RegistryConnectionError: If the registry is unreachable.
             SerializationError: If the to_dict callable raises an exception.

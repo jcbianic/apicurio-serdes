@@ -7,6 +7,7 @@ from apicurio_serdes._client import ApicurioRegistryClient
 from apicurio_serdes._errors import (
     DeserializationError,
     RegistryConnectionError,
+    ResolverError,
     SchemaNotFoundError,
     SerializationError,
 )
@@ -19,6 +20,7 @@ __all__ = [
     "AsyncApicurioRegistryClient",
     "DeserializationError",
     "RegistryConnectionError",
+    "ResolverError",
     "SchemaNotFoundError",
     "SerializationError",
     "WireFormat",
