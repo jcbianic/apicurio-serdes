@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from apicurio_serdes.avro import ArtifactResolver, SimpleTopicIdStrategy, TopicIdStrategy
+from apicurio_serdes.avro import (
+    ArtifactResolver,
+    SimpleTopicIdStrategy,
+    TopicIdStrategy,
+)
 from apicurio_serdes.serialization import MessageField, SerializationContext
 
 

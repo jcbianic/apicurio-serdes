@@ -97,9 +97,7 @@ class AvroSerializer:
                 "provide exactly one."
             )
         if artifact_id is None and artifact_resolver is None:
-            raise ValueError(
-                "One of artifact_id or artifact_resolver is required."
-            )
+            raise ValueError("One of artifact_id or artifact_resolver is required.")
         if not isinstance(wire_format, WireFormat):
             raise ValueError(
                 f"wire_format must be a WireFormat enum member, got {wire_format!r}"
@@ -143,7 +141,10 @@ class AvroSerializer:
         """
         # Lazy schema fetch (cached by client)
         if self._schema is None:
-            if self._artifact_resolver is not None and self._resolved_artifact_id is None:
+            if (
+                self._artifact_resolver is not None
+                and self._resolved_artifact_id is None
+            ):
                 try:
                     resolved = self._artifact_resolver(ctx)
                 except Exception as exc:

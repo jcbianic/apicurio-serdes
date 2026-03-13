@@ -678,9 +678,7 @@ def test_topic_id_strategy_calls_registry_with_derived_artifact_id(
 
     _schema_route(mock_registry, "orders-value")
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
-    ser = AvroSerializer(
-        registry_client=client, artifact_resolver=TopicIdStrategy()
-    )
+    ser = AvroSerializer(registry_client=client, artifact_resolver=TopicIdStrategy())
     ctx = SerializationContext(topic="orders", field=MessageField.VALUE)
     result = ser(VALID_USER_EVENT, ctx)
     assert result[0:1] == b"\x00"
