@@ -5,12 +5,15 @@ from __future__ import annotations
 import asyncio
 import threading
 import time
-from collections.abc import AsyncGenerator, Callable, Generator
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse, urlunparse
 
 import httpx
 
 from apicurio_serdes._errors import AuthenticationError
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Callable, Generator
 
 __all__ = ["BearerAuth", "KeycloakAuth"]
 
@@ -172,15 +175,18 @@ class KeycloakAuth(httpx.Auth):
             expires_in = float(payload["expires_in"])
         except (KeyError, TypeError, ValueError) as exc:
             raise AuthenticationError(
-                f"Unexpected token endpoint response (missing access_token or expires_in): {exc}"
+                "Unexpected token endpoint response"
+                f" (missing access_token or expires_in): {exc}"
             ) from exc
         if not isinstance(token, str) or not token:
             raise AuthenticationError(
-                f"Unexpected token endpoint response (access_token is empty or not a string): {token!r}"
+                "Unexpected token endpoint response"
+                f" (access_token is empty or not a string): {token!r}"
             )
         if expires_in <= 0:
             raise AuthenticationError(
-                f"Unexpected token endpoint response (expires_in must be positive): {expires_in}"
+                "Unexpected token endpoint response"
+                f" (expires_in must be positive): {expires_in}"
             )
         self._token = token
         self._expires_in = expires_in
@@ -194,7 +200,8 @@ class KeycloakAuth(httpx.Auth):
                 response = client.post(self._token_url, data=self._build_token_data())
         except httpx.TransportError as exc:
             raise AuthenticationError(
-                f"Could not reach token endpoint {self._safe_url(self._token_url)}: {exc}"
+                f"Could not reach token endpoint"
+                f" {self._safe_url(self._token_url)}: {exc}"
             ) from exc
         self._parse_token_response(response)
 
@@ -227,7 +234,8 @@ class KeycloakAuth(httpx.Auth):
                 )
         except httpx.TransportError as exc:
             raise AuthenticationError(
-                f"Could not reach token endpoint {self._safe_url(self._token_url)}: {exc}"
+                f"Could not reach token endpoint"
+                f" {self._safe_url(self._token_url)}: {exc}"
             ) from exc
         self._parse_token_response(response)
 
