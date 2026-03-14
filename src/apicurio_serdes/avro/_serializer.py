@@ -136,7 +136,8 @@ class AvroSerializer:
         Raises:
             ResolverError: If the artifact_resolver raises or returns something other
                 than a non-empty str.
-            SchemaNotFoundError: If the resolved artifact does not exist in the registry.
+            SchemaNotFoundError: If the resolved artifact does not exist in the
+                registry.
             RegistryConnectionError: If the registry is unreachable.
             SerializationError: If the to_dict callable raises an exception.
             ValueError: If data does not conform to the Avro schema.
@@ -155,7 +156,8 @@ class AvroSerializer:
                     ) from exc
                 if not isinstance(resolved, str) or not resolved:
                     raise ResolverError(
-                        f"artifact_resolver must return a non-empty str, got {resolved!r}"
+                        f"artifact_resolver must return a non-empty str,"
+                        f" got {resolved!r}"
                     )
                 self._resolved_artifact_id = resolved
             effective_id = (
@@ -245,7 +247,8 @@ class AvroSerializer:
             TypeError: If wire_format is KAFKA_HEADERS (use serialize() instead).
             ResolverError: If the artifact_resolver raises or returns something other
                 than a non-empty str.
-            SchemaNotFoundError: If the resolved artifact does not exist in the registry.
+            SchemaNotFoundError: If the resolved artifact does not exist in the
+                registry.
             RegistryConnectionError: If the registry is unreachable.
             SerializationError: If the to_dict callable raises an exception.
             ValueError: If data does not conform to the Avro schema.
