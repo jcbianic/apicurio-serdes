@@ -166,13 +166,15 @@ class KeycloakAuth(httpx.Auth):
             ) from exc
         try:
             payload = response.json()
-            self._token = payload["access_token"]
-            self._expires_in = float(payload["expires_in"])
+            token = payload["access_token"]
+            expires_in = float(payload["expires_in"])
         except (KeyError, TypeError, ValueError) as exc:
             raise AuthenticationError(
                 f"Unexpected token endpoint response (missing access_token or expires_in): {exc}"
             ) from exc
-        self._expires_at = time.monotonic() + self._expires_in
+        self._token = token
+        self._expires_in = expires_in
+        self._expires_at = time.monotonic() + expires_in
 
     # ── Sync path ──
 
