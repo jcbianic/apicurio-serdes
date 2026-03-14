@@ -404,7 +404,9 @@ class TestKeycloakAuthSecurity:
     def test_200_with_null_access_token_raises_authentication_error(self) -> None:
         with respx.mock() as router:
             router.post(TOKEN_URL).mock(
-                return_value=Response(200, json={"access_token": None, "expires_in": 300})
+                return_value=Response(
+                    200, json={"access_token": None, "expires_in": 300}
+                )
             )
             auth = self._auth()
             with httpx.Client(auth=auth) as client:
