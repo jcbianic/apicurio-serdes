@@ -371,6 +371,19 @@ class TestKeycloakAuthSecurity:
                 with pytest.raises(AuthenticationError, match="access_token"):
                     client.get(ARTIFACT_URL)
 
+    def test_200_with_missing_expires_in_raises_authentication_error(self) -> None:
+        with respx.mock() as router:
+            router.post(TOKEN_URL).mock(
+                return_value=Response(200, json={"access_token": "tok"})
+            )
+            auth = self._auth()
+            with httpx.Client(auth=auth) as client:
+                with pytest.raises(AuthenticationError, match="expires_in"):
+                    client.get(ARTIFACT_URL)
+        # Token state must not be partially mutated on failure
+        assert auth._token == ""
+        assert auth._expires_at == 0.0
+
     def test_200_with_non_json_body_raises_authentication_error(self) -> None:
         with respx.mock() as router:
             router.post(TOKEN_URL).mock(return_value=Response(200, text="not json"))
