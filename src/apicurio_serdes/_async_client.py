@@ -23,14 +23,18 @@ class AsyncApicurioRegistryClient(_RegistryClientBase):
              Example: "http://registry:8080/apis/registry/v3"
         group_id: Schema group identifier. Applied to every
                   schema lookup made by this client instance.
+        auth: Optional httpx authentication handler. Pass a
+              :class:`~apicurio_serdes.BearerAuth` or
+              :class:`~apicurio_serdes.KeycloakAuth` instance for
+              authenticated registries. Defaults to ``None`` (no auth).
 
     Raises:
         ValueError: If url or group_id is empty.
     """
 
-    def __init__(self, url: str, group_id: str) -> None:
+    def __init__(self, url: str, group_id: str, auth: httpx.Auth | None = None) -> None:
         super().__init__(url, group_id)
-        self._http_client = httpx.AsyncClient(base_url=url)
+        self._http_client = httpx.AsyncClient(base_url=url, auth=auth)
         self._lock = asyncio.Lock()
 
     async def get_schema(self, artifact_id: str) -> CachedSchema:
