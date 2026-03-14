@@ -13,6 +13,7 @@ from pytest_bdd import given, parsers, scenario, then, when
 from apicurio_serdes import ApicurioRegistryClient
 from apicurio_serdes._errors import (
     RegistryConnectionError,
+    ResolverError,
     SchemaNotFoundError,
     SerializationError,
 )
@@ -629,6 +630,140 @@ def test_parsed_schema_none_raises_runtime_error(
     serializer._parsed_schema = None
     with pytest.raises(RuntimeError, match="_parsed_schema unexpectedly None"):
         serializer.serialize(VALID_USER_EVENT, ctx)
+
+
+# ── artifact_resolver construction validation tests ──
+
+
+def test_both_artifact_id_and_resolver_raises_value_error() -> None:
+    """Providing both artifact_id and artifact_resolver raises ValueError."""
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        AvroSerializer(
+            registry_client=client,
+            artifact_id="UserEvent",
+            artifact_resolver=lambda ctx: "UserEvent",
+        )
+
+
+def test_neither_artifact_id_nor_resolver_raises_value_error() -> None:
+    """Providing neither artifact_id nor artifact_resolver raises ValueError."""
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(ValueError, match="required"):
+        AvroSerializer(registry_client=client)
+
+
+def test_artifact_id_only_constructs_successfully() -> None:
+    """artifact_id only constructs without error (existing behaviour)."""
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    ser = AvroSerializer(registry_client=client, artifact_id="UserEvent")
+    assert ser.artifact_id == "UserEvent"
+
+
+def test_artifact_resolver_only_constructs_successfully() -> None:
+    """artifact_resolver only constructs without error (new behaviour)."""
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    resolver = lambda ctx: "UserEvent"  # noqa: E731
+    ser = AvroSerializer(registry_client=client, artifact_resolver=resolver)
+    assert ser._artifact_resolver is resolver
+
+
+# ── artifact_resolver serialize path integration tests ──
+
+
+def test_topic_id_strategy_calls_registry_with_derived_artifact_id(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """TopicIdStrategy resolves to 'orders-value'; registry called with that ID."""
+    from apicurio_serdes.avro import TopicIdStrategy
+
+    _schema_route(mock_registry, "orders-value")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    ser = AvroSerializer(registry_client=client, artifact_resolver=TopicIdStrategy())
+    ctx = SerializationContext(topic="orders", field=MessageField.VALUE)
+    result = ser(VALID_USER_EVENT, ctx)
+    assert result[0:1] == b"\x00"
+    assert len(result) > 5
+
+
+def test_simple_topic_id_strategy_calls_registry_with_topic(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """SimpleTopicIdStrategy resolves to 'orders'; registry called with that ID."""
+    from apicurio_serdes.avro import SimpleTopicIdStrategy
+
+    _schema_route(mock_registry, "orders")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    ser = AvroSerializer(
+        registry_client=client, artifact_resolver=SimpleTopicIdStrategy()
+    )
+    ctx = SerializationContext(topic="orders", field=MessageField.VALUE)
+    result = ser(VALID_USER_EVENT, ctx)
+    assert result[0:1] == b"\x00"
+    assert len(result) > 5
+
+
+def test_lambda_resolver_equivalent_to_static_artifact_id(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """lambda ctx: 'UserEvent' resolver behaves like artifact_id='UserEvent'."""
+    _schema_route(mock_registry, "UserEvent")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    ser = AvroSerializer(
+        registry_client=client, artifact_resolver=lambda ctx: "UserEvent"
+    )
+    ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+    result = ser(VALID_USER_EVENT, ctx)
+    assert result[0:1] == b"\x00"
+    assert len(result) > 5
+
+
+def test_resolver_called_once_schema_cached(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """Serializing twice with the same resolver calls the registry exactly once."""
+    route = _schema_route(mock_registry, "UserEvent")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    call_count = 0
+
+    def counting_resolver(ctx: SerializationContext) -> str:
+        nonlocal call_count
+        call_count += 1
+        return "UserEvent"
+
+    ser = AvroSerializer(registry_client=client, artifact_resolver=counting_resolver)
+    ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+    ser(VALID_USER_EVENT, ctx)
+    ser(VALID_USER_EVENT, ctx)
+    assert call_count == 1
+    assert route.call_count == 1
+
+
+def test_resolver_raising_exception_wraps_as_resolver_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """A resolver that raises is wrapped in ResolverError."""
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+
+    def bad_resolver(ctx: SerializationContext) -> str:
+        raise RuntimeError("resolver failed")
+
+    ser = AvroSerializer(registry_client=client, artifact_resolver=bad_resolver)
+    ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+    with pytest.raises(ResolverError, match="resolver failed") as exc_info:
+        ser(VALID_USER_EVENT, ctx)
+    assert isinstance(exc_info.value.__cause__, RuntimeError)
+
+
+def test_resolver_returning_non_str_raises_resolver_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """A resolver returning a non-str raises ResolverError."""
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    ser = AvroSerializer(registry_client=client, artifact_resolver=lambda ctx: None)  # type: ignore[arg-type, return-value]
+    ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+    with pytest.raises(ResolverError, match="non-empty str"):
+        ser(VALID_USER_EVENT, ctx)
 
 
 def test_confluent_payload_schema_id_exceeds_uint32_raises_value_error(
