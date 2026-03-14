@@ -85,8 +85,10 @@ class KeycloakAuth(httpx.Auth):
         scope: Optional OAuth2 scope string (e.g. ``"openid"``).
 
     Raises:
-        AuthenticationError: If the token endpoint is unreachable or returns
-            a non-200 response.
+        AuthenticationError: If the token endpoint is unreachable, returns a
+            non-200 response, or returns a 200 response with a malformed body
+            (missing or empty ``access_token``, missing ``expires_in``, or
+            non-JSON).
 
     Example:
         ```python
@@ -172,6 +174,10 @@ class KeycloakAuth(httpx.Auth):
             raise AuthenticationError(
                 f"Unexpected token endpoint response (missing access_token or expires_in): {exc}"
             ) from exc
+        if not isinstance(token, str) or not token:
+            raise AuthenticationError(
+                f"Unexpected token endpoint response (access_token is empty or not a string): {token!r}"
+            )
         self._token = token
         self._expires_in = expires_in
         self._expires_at = time.monotonic() + expires_in

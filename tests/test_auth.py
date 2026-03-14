@@ -181,6 +181,14 @@ class TestKeycloakAuthSync:
                 with pytest.raises(AuthenticationError):
                     client.get(ARTIFACT_URL)
 
+    def test_token_endpoint_read_timeout_raises_authentication_error(self) -> None:
+        with respx.mock() as router:
+            router.post(TOKEN_URL).mock(side_effect=httpx.ReadTimeout("timed out"))
+            auth = self._auth()
+            with httpx.Client(auth=auth) as client:
+                with pytest.raises(AuthenticationError):
+                    client.get(ARTIFACT_URL)
+
     def test_scope_included_in_token_request(self) -> None:
         with respx.mock() as router:
             token_route = router.post(TOKEN_URL).mock(return_value=_token_response())
@@ -294,6 +302,17 @@ class TestKeycloakAuthAsync:
                 with pytest.raises(AuthenticationError):
                     await client.get(ARTIFACT_URL)
 
+    @pytest.mark.asyncio
+    async def test_token_endpoint_read_timeout_raises_authentication_error(
+        self,
+    ) -> None:
+        with respx.mock() as router:
+            router.post(TOKEN_URL).mock(side_effect=httpx.ReadTimeout("timed out"))
+            auth = self._auth()
+            async with httpx.AsyncClient(auth=auth) as client:
+                with pytest.raises(AuthenticationError):
+                    await client.get(ARTIFACT_URL)
+
     def test_lazy_lock_usable_from_inside_event_loop(self) -> None:
         """KeycloakAuth created outside event loop works fine when used async."""
         # Object is created here (outside any event loop)
@@ -370,6 +389,28 @@ class TestKeycloakAuthSecurity:
             with httpx.Client(auth=auth) as client:
                 with pytest.raises(AuthenticationError, match="access_token"):
                     client.get(ARTIFACT_URL)
+
+    def test_200_with_empty_access_token_raises_authentication_error(self) -> None:
+        with respx.mock() as router:
+            router.post(TOKEN_URL).mock(
+                return_value=Response(200, json={"access_token": "", "expires_in": 300})
+            )
+            auth = self._auth()
+            with httpx.Client(auth=auth) as client:
+                with pytest.raises(AuthenticationError, match="access_token"):
+                    client.get(ARTIFACT_URL)
+        assert auth._token == ""
+
+    def test_200_with_null_access_token_raises_authentication_error(self) -> None:
+        with respx.mock() as router:
+            router.post(TOKEN_URL).mock(
+                return_value=Response(200, json={"access_token": None, "expires_in": 300})
+            )
+            auth = self._auth()
+            with httpx.Client(auth=auth) as client:
+                with pytest.raises(AuthenticationError, match="access_token"):
+                    client.get(ARTIFACT_URL)
+        assert auth._token == ""
 
     def test_200_with_missing_expires_in_raises_authentication_error(self) -> None:
         with respx.mock() as router:
