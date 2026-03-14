@@ -87,8 +87,8 @@ class KeycloakAuth(httpx.Auth):
     Raises:
         AuthenticationError: If the token endpoint is unreachable, returns a
             non-200 response, or returns a 200 response with a malformed body
-            (missing or empty ``access_token``, missing ``expires_in``, or
-            non-JSON).
+            (missing or empty ``access_token``, missing or non-positive
+            ``expires_in``, or non-JSON).
 
     Example:
         ```python
@@ -177,6 +177,10 @@ class KeycloakAuth(httpx.Auth):
         if not isinstance(token, str) or not token:
             raise AuthenticationError(
                 f"Unexpected token endpoint response (access_token is empty or not a string): {token!r}"
+            )
+        if expires_in <= 0:
+            raise AuthenticationError(
+                f"Unexpected token endpoint response (expires_in must be positive): {expires_in}"
             )
         self._token = token
         self._expires_in = expires_in

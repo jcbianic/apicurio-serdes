@@ -139,8 +139,8 @@ class AuthenticationError(Exception):
     """Raised when authentication with the token endpoint fails.
 
     Covers: token endpoint unreachable, non-200 response, or a 200 response
-    with a malformed body (missing or empty ``access_token``, missing
-    ``expires_in``, or non-JSON).
+    with a malformed body (missing or empty ``access_token``, missing or
+    non-positive ``expires_in``, or non-JSON).
 
     Args:
         message: Description of the authentication failure.
