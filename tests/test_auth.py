@@ -169,25 +169,24 @@ class TestKeycloakAuthSync:
         with respx.mock() as router:
             router.post(TOKEN_URL).mock(return_value=Response(401, text="Unauthorized"))
             auth = self._auth()
-            with httpx.Client(auth=auth) as client:
-                with pytest.raises(AuthenticationError, match="401"):
-                    client.get(ARTIFACT_URL)
+            with httpx.Client(auth=auth) as client, pytest.raises(
+                AuthenticationError, match="401"
+            ):
+                client.get(ARTIFACT_URL)
 
     def test_token_endpoint_unreachable_raises_authentication_error(self) -> None:
         with respx.mock() as router:
             router.post(TOKEN_URL).mock(side_effect=httpx.ConnectError("refused"))
             auth = self._auth()
-            with httpx.Client(auth=auth) as client:
-                with pytest.raises(AuthenticationError):
-                    client.get(ARTIFACT_URL)
+            with httpx.Client(auth=auth) as client, pytest.raises(AuthenticationError):
+                client.get(ARTIFACT_URL)
 
     def test_token_endpoint_read_timeout_raises_authentication_error(self) -> None:
         with respx.mock() as router:
             router.post(TOKEN_URL).mock(side_effect=httpx.ReadTimeout("timed out"))
             auth = self._auth()
-            with httpx.Client(auth=auth) as client:
-                with pytest.raises(AuthenticationError):
-                    client.get(ARTIFACT_URL)
+            with httpx.Client(auth=auth) as client, pytest.raises(AuthenticationError):
+                client.get(ARTIFACT_URL)
 
     def test_scope_included_in_token_request(self) -> None:
         with respx.mock() as router:
@@ -338,7 +337,6 @@ class TestDoubleCheckedLocking:
         """Second _is_expired() inside the lock returns False → _sync_fetch_token skipped."""
         auth = self._auth()
         call_count = [0]
-        original = auth._is_expired
 
         def once_then_false() -> bool:
             call_count[0] += 1
@@ -386,9 +384,10 @@ class TestKeycloakAuthSecurity:
                 return_value=Response(200, json={"expires_in": 300})
             )
             auth = self._auth()
-            with httpx.Client(auth=auth) as client:
-                with pytest.raises(AuthenticationError, match="access_token"):
-                    client.get(ARTIFACT_URL)
+            with httpx.Client(auth=auth) as client, pytest.raises(
+                AuthenticationError, match="access_token"
+            ):
+                client.get(ARTIFACT_URL)
 
     def test_200_with_empty_access_token_raises_authentication_error(self) -> None:
         with respx.mock() as router:
@@ -396,9 +395,10 @@ class TestKeycloakAuthSecurity:
                 return_value=Response(200, json={"access_token": "", "expires_in": 300})
             )
             auth = self._auth()
-            with httpx.Client(auth=auth) as client:
-                with pytest.raises(AuthenticationError, match="access_token"):
-                    client.get(ARTIFACT_URL)
+            with httpx.Client(auth=auth) as client, pytest.raises(
+                AuthenticationError, match="access_token"
+            ):
+                client.get(ARTIFACT_URL)
         assert auth._token == ""
 
     def test_200_with_null_access_token_raises_authentication_error(self) -> None:
@@ -409,9 +409,10 @@ class TestKeycloakAuthSecurity:
                 )
             )
             auth = self._auth()
-            with httpx.Client(auth=auth) as client:
-                with pytest.raises(AuthenticationError, match="access_token"):
-                    client.get(ARTIFACT_URL)
+            with httpx.Client(auth=auth) as client, pytest.raises(
+                AuthenticationError, match="access_token"
+            ):
+                client.get(ARTIFACT_URL)
         assert auth._token == ""
 
     def test_200_with_missing_expires_in_raises_authentication_error(self) -> None:
@@ -420,9 +421,10 @@ class TestKeycloakAuthSecurity:
                 return_value=Response(200, json={"access_token": "tok"})
             )
             auth = self._auth()
-            with httpx.Client(auth=auth) as client:
-                with pytest.raises(AuthenticationError, match="expires_in"):
-                    client.get(ARTIFACT_URL)
+            with httpx.Client(auth=auth) as client, pytest.raises(
+                AuthenticationError, match="expires_in"
+            ):
+                client.get(ARTIFACT_URL)
         # Token state must not be partially mutated on failure
         assert auth._token == ""
         assert auth._expires_at == 0.0
@@ -438,9 +440,10 @@ class TestKeycloakAuthSecurity:
                 )
             )
             auth = self._auth()
-            with httpx.Client(auth=auth) as client:
-                with pytest.raises(AuthenticationError, match="expires_in"):
-                    client.get(ARTIFACT_URL)
+            with httpx.Client(auth=auth) as client, pytest.raises(
+                AuthenticationError, match="expires_in"
+            ):
+                client.get(ARTIFACT_URL)
         # Token state must not be mutated on failure
         assert auth._token == ""
         assert auth._expires_at == 0.0
@@ -449,18 +452,18 @@ class TestKeycloakAuthSecurity:
         with respx.mock() as router:
             router.post(TOKEN_URL).mock(return_value=Response(200, text="not json"))
             auth = self._auth()
-            with httpx.Client(auth=auth) as client:
-                with pytest.raises(AuthenticationError):
-                    client.get(ARTIFACT_URL)
+            with httpx.Client(auth=auth) as client, pytest.raises(AuthenticationError):
+                client.get(ARTIFACT_URL)
 
     def test_401_error_message_does_not_include_full_response_body(self) -> None:
         sensitive_body = '{"error":"invalid_client","secret_echo":"super-secret"}'
         with respx.mock() as router:
             router.post(TOKEN_URL).mock(return_value=Response(401, text=sensitive_body))
             auth = self._auth()
-            with httpx.Client(auth=auth) as client:
-                with pytest.raises(AuthenticationError) as exc_info:
-                    client.get(ARTIFACT_URL)
+            with httpx.Client(auth=auth) as client, pytest.raises(
+                AuthenticationError
+            ) as exc_info:
+                client.get(ARTIFACT_URL)
             # Full body must not appear in the error message
             assert sensitive_body not in str(exc_info.value)
 
@@ -480,9 +483,10 @@ class TestKeycloakAuthSecurity:
         )
         with respx.mock() as router:
             router.post(url_with_creds).mock(side_effect=httpx.ConnectError("refused"))
-            with httpx.Client(auth=auth) as client:
-                with pytest.raises(AuthenticationError) as exc_info:
-                    client.get(ARTIFACT_URL)
+            with httpx.Client(auth=auth) as client, pytest.raises(
+                AuthenticationError
+            ) as exc_info:
+                client.get(ARTIFACT_URL)
         assert "pass" not in str(exc_info.value)
         assert "user" not in str(exc_info.value)
 
@@ -495,8 +499,9 @@ class TestKeycloakAuthSecurity:
         )
         with respx.mock() as router:
             router.post(url_with_creds).mock(side_effect=httpx.ConnectError("refused"))
-            with httpx.Client(auth=auth) as client:
-                with pytest.raises(AuthenticationError) as exc_info:
-                    client.get(ARTIFACT_URL)
+            with httpx.Client(auth=auth) as client, pytest.raises(
+                AuthenticationError
+            ) as exc_info:
+                client.get(ARTIFACT_URL)
         assert "pass" not in str(exc_info.value)
         assert ":8443" in str(exc_info.value)
