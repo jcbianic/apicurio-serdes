@@ -108,12 +108,18 @@ class ResolverError(Exception):
 class SchemaRegistrationError(Exception):
     """Raised when the registry rejects a schema registration request.
 
-    Covers 4xx and 5xx responses from the artifact creation endpoint, as well
-    as transport errors that occur during the POST.
+    Covers 4xx and 5xx responses from the artifact creation endpoint and
+    missing response headers. Transport errors (network failures) raise
+    ``RegistryConnectionError`` instead.
+
+    Note:
+        The exception message includes ``str(cause)``, which may contain the
+        full HTTP response body. Sanitise before logging in environments where
+        registry error responses may contain sensitive information.
 
     Args:
         artifact_id: The artifact identifier that failed to register.
-        cause: The underlying exception (HTTP error or transport error).
+        cause: The underlying exception (HTTP error or missing header).
 
     Attributes:
         artifact_id: The artifact identifier that failed to register.

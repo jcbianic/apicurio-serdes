@@ -84,6 +84,7 @@ class AvroSerializer:
     """
 
     _VALID_USE_ID = frozenset({"globalId", "contentId"})
+    _VALID_IF_EXISTS = frozenset({"FAIL", "RETURN", "RETURN_OR_UPDATE", "UPDATE"})
 
     def __init__(
         self,
@@ -112,6 +113,11 @@ class AvroSerializer:
         if use_id not in self._VALID_USE_ID:
             raise ValueError(
                 f"use_id must be 'globalId' or 'contentId', got {use_id!r}"
+            )
+        if if_exists not in self._VALID_IF_EXISTS:
+            raise ValueError(
+                f"if_exists must be one of 'FAIL', 'RETURN', 'RETURN_OR_UPDATE', "
+                f"'UPDATE', got {if_exists!r}"
             )
         if auto_register and schema is None:
             raise ValueError("schema must be provided when auto_register=True")

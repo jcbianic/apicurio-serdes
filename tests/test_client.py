@@ -656,15 +656,13 @@ def test_register_schema_global_id_outside_int64_raises_value_error(
     mock_registry: respx.MockRouter,
 ) -> None:
     """register_schema with overflow globalId in response raises ValueError."""
-    import json
-
     from httpx import Response
 
     url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts"
     mock_registry.post(url).mock(
         return_value=Response(
             200,
-            content=json.dumps(USER_EVENT_SCHEMA_JSON),
+            json={"artifactType": "AVRO"},
             headers={
                 "X-Registry-GlobalId": str(2**63),  # outside int64 range
                 "X-Registry-ContentId": "1",
@@ -680,15 +678,13 @@ def test_register_schema_content_id_outside_int64_raises_value_error(
     mock_registry: respx.MockRouter,
 ) -> None:
     """register_schema with overflow contentId in response raises ValueError."""
-    import json
-
     from httpx import Response
 
     url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts"
     mock_registry.post(url).mock(
         return_value=Response(
             200,
-            content=json.dumps(USER_EVENT_SCHEMA_JSON),
+            json={"artifactType": "AVRO"},
             headers={
                 "X-Registry-GlobalId": "1",
                 "X-Registry-ContentId": str(2**63),  # outside int64 range
@@ -697,6 +693,27 @@ def test_register_schema_content_id_outside_int64_raises_value_error(
     )
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
     with pytest.raises(ValueError, match="contentId"):
+        client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
+
+
+def test_register_schema_missing_id_header_raises_schema_registration_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """200 response missing X-Registry-GlobalId raises SchemaRegistrationError."""
+    from apicurio_serdes._errors import SchemaRegistrationError
+    from httpx import Response
+
+    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts"
+    mock_registry.post(url).mock(
+        return_value=Response(
+            200,
+            json={"artifactType": "AVRO"},
+            # X-Registry-GlobalId intentionally omitted
+            headers={"X-Registry-ContentId": "1"},
+        )
+    )
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(SchemaRegistrationError):
         client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
 
 

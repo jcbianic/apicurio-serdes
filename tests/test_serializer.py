@@ -812,6 +812,18 @@ class TestAutoRegister:
                 auto_register=True,
             )
 
+    def test_invalid_if_exists_raises_value_error(self) -> None:
+        """Invalid if_exists value raises ValueError at construction."""
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        with pytest.raises(ValueError, match="if_exists"):
+            AvroSerializer(
+                registry_client=client,
+                artifact_id="UserEvent",
+                auto_register=True,
+                schema=USER_EVENT_SCHEMA_JSON,
+                if_exists="UPSERT",
+            )
+
     def test_auto_register_false_with_schema_accepted(
         self, mock_registry: respx.MockRouter
     ) -> None:

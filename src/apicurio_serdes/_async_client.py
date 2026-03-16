@@ -156,7 +156,7 @@ class AsyncApicurioRegistryClient(_RegistryClientBase):
             except httpx.TransportError as exc:
                 raise RegistryConnectionError(self.url, exc) from exc
 
-            cached = self._process_registration_response(response, artifact_id)
+            cached = self._process_registration_response(response, artifact_id, schema)
             self._schema_cache[(self.group_id, artifact_id)] = cached
             return cached
 

@@ -99,12 +99,17 @@ class _RegistryClientBase:
         return f"/groups/{self.group_id}/artifacts"
 
     def _process_registration_response(
-        self, response: httpx.Response, artifact_id: str
+        self, response: httpx.Response, artifact_id: str, schema: dict[str, Any]
     ) -> CachedSchema:
         """Parse an HTTP response from an artifact registration endpoint.
 
+        The Apicurio Registry v3 POST endpoint returns ArtifactMetaData, not
+        the schema content. The caller passes the schema it just submitted so
+        the CachedSchema can be populated without an extra GET.
+
         Raises:
-            SchemaRegistrationError: On any non-2xx HTTP response.
+            SchemaRegistrationError: On any non-2xx HTTP response, or if the
+                response is missing the expected ID headers.
             ValueError: If globalId/contentId exceed signed 64-bit range.
         """
         try:
@@ -112,9 +117,11 @@ class _RegistryClientBase:
         except httpx.HTTPStatusError as exc:
             raise SchemaRegistrationError(artifact_id, exc) from exc
 
-        schema = json.loads(response.text)
-        global_id = int(response.headers["X-Registry-GlobalId"])
-        content_id = int(response.headers["X-Registry-ContentId"])
+        try:
+            global_id = int(response.headers["X-Registry-GlobalId"])
+            content_id = int(response.headers["X-Registry-ContentId"])
+        except KeyError as exc:
+            raise SchemaRegistrationError(artifact_id, exc) from exc
 
         int64_min, int64_max = -(2**63), 2**63 - 1
         if not (int64_min <= global_id <= int64_max):

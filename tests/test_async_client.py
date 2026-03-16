@@ -679,6 +679,26 @@ class TestRegisterSchemaAsync:
         with pytest.raises(RuntimeError, match="closed"):
             await client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
 
+    async def test_missing_id_header_raises_schema_registration_error(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """200 response missing X-Registry-GlobalId raises SchemaRegistrationError."""
+        from apicurio_serdes._errors import SchemaRegistrationError
+        from httpx import Response
+
+        url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts"
+        mock_registry.post(url).mock(
+            return_value=Response(
+                200,
+                json={"artifactType": "AVRO"},
+                # X-Registry-GlobalId intentionally omitted
+                headers={"X-Registry-ContentId": "1"},
+            )
+        )
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        with pytest.raises(SchemaRegistrationError):
+            await client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
+
     def test_interface_parity_with_sync_client(self) -> None:
         """register_schema signature matches the sync client."""
         import inspect
