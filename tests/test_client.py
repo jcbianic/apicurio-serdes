@@ -700,8 +700,9 @@ def test_register_schema_missing_id_header_raises_schema_registration_error(
     mock_registry: respx.MockRouter,
 ) -> None:
     """200 response missing X-Registry-GlobalId raises SchemaRegistrationError."""
-    from apicurio_serdes._errors import SchemaRegistrationError
     from httpx import Response
+
+    from apicurio_serdes._errors import SchemaRegistrationError
 
     url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts"
     mock_registry.post(url).mock(
