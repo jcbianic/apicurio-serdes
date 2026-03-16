@@ -17,8 +17,8 @@ from tests.conftest import (
     GROUP_ID,
     REGISTRY_URL,
     USER_EVENT_SCHEMA_JSON,
-    _register_route,
     _register_error_route,
+    _register_route,
 )
 
 
@@ -686,14 +686,11 @@ class TestRegisterSchemaAsync:
         from apicurio_serdes._client import ApicurioRegistryClient
 
         sync_sig = inspect.signature(ApicurioRegistryClient.register_schema)
-        async_sig = inspect.signature(
-            AsyncApicurioRegistryClient.register_schema
-        )
+        async_sig = inspect.signature(AsyncApicurioRegistryClient.register_schema)
         assert list(sync_sig.parameters) == list(async_sig.parameters)
         for name in sync_sig.parameters:
             if name == "self":
                 continue
             assert (
-                sync_sig.parameters[name].default
-                == async_sig.parameters[name].default
+                sync_sig.parameters[name].default == async_sig.parameters[name].default
             ), f"Default mismatch for param '{name}'"

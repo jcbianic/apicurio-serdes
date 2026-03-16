@@ -8,7 +8,11 @@ from typing import TYPE_CHECKING, Any
 
 import fastavro
 
-from apicurio_serdes._errors import ResolverError, SchemaNotFoundError, SerializationError
+from apicurio_serdes._errors import (
+    ResolverError,
+    SchemaNotFoundError,
+    SerializationError,
+)
 from apicurio_serdes.serialization import SerializedMessage, WireFormat
 
 if TYPE_CHECKING:

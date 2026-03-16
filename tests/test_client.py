@@ -23,7 +23,6 @@ from tests.conftest import (
     VALID_USER_EVENT_ALT,
     _id_not_found_route,
     _id_schema_route,
-    _not_found_route,
     _register_error_route,
     _register_route,
     _schema_route,
