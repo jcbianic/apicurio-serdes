@@ -655,17 +655,19 @@ def test_register_schema_after_close_raises_runtime_error(
 def test_register_schema_global_id_outside_int64_raises_value_error(
     mock_registry: respx.MockRouter,
 ) -> None:
-    """register_schema with overflow globalId in response raises ValueError."""
+    """register_schema with overflow globalId in response body raises ValueError."""
     from httpx import Response
 
     url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts"
     mock_registry.post(url).mock(
         return_value=Response(
             200,
-            json={"artifactType": "AVRO"},
-            headers={
-                "X-Registry-GlobalId": str(2**63),  # outside int64 range
-                "X-Registry-ContentId": "1",
+            json={
+                "artifact": {},
+                "version": {
+                    "globalId": 2**63,  # outside int64 range
+                    "contentId": 1,
+                },
             },
         )
     )
@@ -677,17 +679,19 @@ def test_register_schema_global_id_outside_int64_raises_value_error(
 def test_register_schema_content_id_outside_int64_raises_value_error(
     mock_registry: respx.MockRouter,
 ) -> None:
-    """register_schema with overflow contentId in response raises ValueError."""
+    """register_schema with overflow contentId in response body raises ValueError."""
     from httpx import Response
 
     url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts"
     mock_registry.post(url).mock(
         return_value=Response(
             200,
-            json={"artifactType": "AVRO"},
-            headers={
-                "X-Registry-GlobalId": "1",
-                "X-Registry-ContentId": str(2**63),  # outside int64 range
+            json={
+                "artifact": {},
+                "version": {
+                    "globalId": 1,
+                    "contentId": 2**63,  # outside int64 range
+                },
             },
         )
     )
@@ -696,10 +700,10 @@ def test_register_schema_content_id_outside_int64_raises_value_error(
         client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
 
 
-def test_register_schema_missing_id_header_raises_schema_registration_error(
+def test_register_schema_missing_version_key_raises_schema_registration_error(
     mock_registry: respx.MockRouter,
 ) -> None:
-    """200 response missing X-Registry-GlobalId raises SchemaRegistrationError."""
+    """200 response missing version.globalId in body raises SchemaRegistrationError."""
     from httpx import Response
 
     from apicurio_serdes._errors import SchemaRegistrationError
@@ -708,14 +712,53 @@ def test_register_schema_missing_id_header_raises_schema_registration_error(
     mock_registry.post(url).mock(
         return_value=Response(
             200,
-            json={"artifactType": "AVRO"},
-            # X-Registry-GlobalId intentionally omitted
-            headers={"X-Registry-ContentId": "1"},
+            json={"artifact": {}, "version": {"contentId": 1}},
+            # globalId intentionally omitted from version
         )
     )
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
     with pytest.raises(SchemaRegistrationError):
         client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
+
+
+def test_register_schema_fast_path_cache_hit(mock_registry: respx.MockRouter) -> None:
+    """Pre-populated cache means register_schema never POSTs."""
+    from apicurio_serdes._base import CachedSchema
+
+    cached = CachedSchema(schema=USER_EVENT_SCHEMA_JSON, global_id=99, content_id=88)
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    client._schema_cache[(GROUP_ID, "UserEvent")] = cached
+    result = client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
+    assert result is cached
+
+
+def test_register_schema_double_check_locking(mock_registry: respx.MockRouter) -> None:
+    """Exercise the inner double-check path for register_schema.
+
+    Simulates a race where another thread populates the cache between
+    the fast-path check and the lock-guarded check.
+    """
+    from apicurio_serdes._base import CachedSchema
+
+    cached = CachedSchema(schema=USER_EVENT_SCHEMA_JSON, global_id=99, content_id=88)
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+
+    cache_key = (GROUP_ID, "UserEvent")
+    check_count: dict[str, int] = {"n": 0}
+
+    class _RaceDict(dict[tuple[str, str], Any]):
+        def __contains__(self, key: object) -> bool:
+            if key == cache_key:
+                check_count["n"] += 1
+                if check_count["n"] == 1:
+                    return False  # fast-path miss
+                self[cache_key] = cached  # type: ignore[index]
+                return True
+            return super().__contains__(key)
+
+    client._schema_cache = _RaceDict()  # type: ignore[assignment]
+    result = client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
+    assert result is cached
 
 
 def test_id_cache_double_check_locking(mock_registry: respx.MockRouter) -> None:

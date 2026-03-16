@@ -83,11 +83,40 @@ async def produce(request):
 |---------|------|-------|
 | Class | `ApicurioRegistryClient` | `AsyncApicurioRegistryClient` |
 | Schema fetch | `client.get_schema(id)` | `await client.get_schema(id)` |
+| Schema registration | `client.register_schema(id, schema)` | `await client.register_schema(id, schema)` |
 | Return type | `CachedSchema` | `CachedSchema` (same class) |
 | Constructor params | `url`, `group_id` | `url`, `group_id` (identical) |
 | Cache safety | `threading.RLock` | `asyncio.Lock` |
 | Cleanup | (automatic GC) | `async with` or `await client.aclose()` |
 | Errors | `SchemaNotFoundError`, `RegistryConnectionError` | Same error types |
+
+## Registering Schemas
+
+`register_schema` posts a new schema artifact to the registry. The result is
+cached so a subsequent `get_schema` call for the same `artifact_id` is always
+a cache hit with no additional HTTP request:
+
+```python
+cached = await client.register_schema(
+    "UserEvent",
+    {
+        "type": "record",
+        "name": "UserEvent",
+        "namespace": "com.example",
+        "fields": [
+            {"name": "userId", "type": "string"},
+            {"name": "country", "type": "string"},
+        ],
+    },
+    if_exists="RETURN",  # default — return existing artifact without error
+)
+print(cached.global_id)   # Registry-assigned globalId
+print(cached.content_id)  # Registry-assigned contentId
+```
+
+The `if_exists` parameter accepts `"FAIL"`, `"RETURN"` (default),
+`"RETURN_OR_UPDATE"`, or `"UPDATE"`. `SchemaRegistrationError` is raised when
+the registry returns a 4xx or 5xx response.
 
 ## Error Handling
 

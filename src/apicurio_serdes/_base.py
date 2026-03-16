@@ -103,13 +103,15 @@ class _RegistryClientBase:
     ) -> CachedSchema:
         """Parse an HTTP response from an artifact registration endpoint.
 
-        The Apicurio Registry v3 POST endpoint returns ArtifactMetaData, not
-        the schema content. The caller passes the schema it just submitted so
-        the CachedSchema can be populated without an extra GET.
+        The Apicurio Registry v3 POST endpoint returns a CreateArtifactResponse
+        JSON body with globalId and contentId nested under the "version" key.
+        The caller passes the schema it just submitted so the CachedSchema can be
+        populated without an extra GET.
 
         Raises:
             SchemaRegistrationError: On any non-2xx HTTP response, or if the
-                response is missing the expected ID headers.
+                response body is missing the expected "version.globalId" /
+                "version.contentId" fields.
             ValueError: If globalId/contentId exceed signed 64-bit range.
         """
         try:
@@ -118,8 +120,9 @@ class _RegistryClientBase:
             raise SchemaRegistrationError(artifact_id, exc) from exc
 
         try:
-            global_id = int(response.headers["X-Registry-GlobalId"])
-            content_id = int(response.headers["X-Registry-ContentId"])
+            version = response.json()["version"]
+            global_id = int(version["globalId"])
+            content_id = int(version["contentId"])
         except KeyError as exc:
             raise SchemaRegistrationError(artifact_id, exc) from exc
 

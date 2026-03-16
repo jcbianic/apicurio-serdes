@@ -142,7 +142,12 @@ class AsyncApicurioRegistryClient(_RegistryClientBase):
             RuntimeError: If the client has been closed.
         """
         self._check_closed()
+        cache_key = (self.group_id, artifact_id)
+        if cache_key in self._schema_cache:
+            return self._schema_cache[cache_key]
         async with self._lock:
+            if cache_key in self._schema_cache:
+                return self._schema_cache[cache_key]
             try:
                 response = await self._http_client.post(
                     self._register_endpoint(),
@@ -157,7 +162,7 @@ class AsyncApicurioRegistryClient(_RegistryClientBase):
                 raise RegistryConnectionError(self.url, exc) from exc
 
             cached = self._process_registration_response(response, artifact_id, schema)
-            self._schema_cache[(self.group_id, artifact_id)] = cached
+            self._schema_cache[cache_key] = cached
             return cached
 
     async def _get_schema_by_id(self, id_type: str, id_value: int) -> dict[str, Any]:

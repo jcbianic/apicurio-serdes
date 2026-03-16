@@ -128,18 +128,25 @@ def _register_route(
 ) -> respx.Route:
     """Register a mock route for a successful artifact creation POST.
 
-    The real Apicurio Registry v3 POST endpoint returns ArtifactMetaData,
-    not the schema content. The mock reflects this by returning a minimal
-    metadata body; the implementation uses the submitted schema directly.
+    The real Apicurio Registry v3 POST /groups/{groupId}/artifacts endpoint
+    returns a CreateArtifactResponse JSON body with globalId and contentId
+    nested under the "version" key — no X-Registry-* response headers.
     """
     url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts"
     return router.post(url, params={"ifExists": if_exists}).mock(
         return_value=Response(
             200,
-            json={"artifactType": "AVRO", "artifactId": artifact_id},
-            headers={
-                "X-Registry-GlobalId": str(global_id),
-                "X-Registry-ContentId": str(content_id),
+            json={
+                "artifact": {
+                    "groupId": GROUP_ID,
+                    "artifactId": artifact_id,
+                    "artifactType": "AVRO",
+                },
+                "version": {
+                    "globalId": global_id,
+                    "contentId": content_id,
+                    "artifactType": "AVRO",
+                },
             },
         )
     )

@@ -679,10 +679,10 @@ class TestRegisterSchemaAsync:
         with pytest.raises(RuntimeError, match="closed"):
             await client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
 
-    async def test_missing_id_header_raises_schema_registration_error(
+    async def test_missing_version_key_raises_schema_registration_error(
         self, mock_registry: respx.MockRouter
     ) -> None:
-        """200 response missing X-Registry-GlobalId raises SchemaRegistrationError."""
+        """200 response missing version.globalId in body raises SchemaRegistrationError."""
         from httpx import Response
 
         from apicurio_serdes._errors import SchemaRegistrationError
@@ -691,14 +691,51 @@ class TestRegisterSchemaAsync:
         mock_registry.post(url).mock(
             return_value=Response(
                 200,
-                json={"artifactType": "AVRO"},
-                # X-Registry-GlobalId intentionally omitted
-                headers={"X-Registry-ContentId": "1"},
+                json={"artifact": {}, "version": {"contentId": 1}},
+                # globalId intentionally omitted from version
             )
         )
         client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
         with pytest.raises(SchemaRegistrationError):
             await client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
+
+    async def test_fast_path_cache_hit(self) -> None:
+        """Pre-populated cache means register_schema never POSTs."""
+        from apicurio_serdes._base import CachedSchema
+
+        cached = CachedSchema(
+            schema=USER_EVENT_SCHEMA_JSON, global_id=99, content_id=88
+        )
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        client._schema_cache[(GROUP_ID, "UserEvent")] = cached
+        result = await client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
+        assert result is cached
+
+    async def test_double_check_locking(self) -> None:
+        """Exercise the inner double-check path for async register_schema."""
+        from apicurio_serdes._base import CachedSchema
+
+        cached = CachedSchema(
+            schema=USER_EVENT_SCHEMA_JSON, global_id=99, content_id=88
+        )
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+
+        cache_key = (GROUP_ID, "UserEvent")
+        check_count: dict[str, int] = {"n": 0}
+
+        class _RaceDict(dict[tuple[str, str], Any]):
+            def __contains__(self, key: object) -> bool:
+                if key == cache_key:
+                    check_count["n"] += 1
+                    if check_count["n"] == 1:
+                        return False  # fast-path miss
+                    self[cache_key] = cached  # type: ignore[index]
+                    return True
+                return super().__contains__(key)
+
+        client._schema_cache = _RaceDict()  # type: ignore[assignment]
+        result = await client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
+        assert result is cached
 
     def test_interface_parity_with_sync_client(self) -> None:
         """register_schema signature matches the sync client."""
