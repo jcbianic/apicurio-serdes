@@ -940,7 +940,9 @@ class TestAutoRegister:
     ) -> None:
         """Default if_exists='FIND_OR_CREATE_VERSION' is forwarded as ifExists=FIND_OR_CREATE_VERSION."""
         _not_found_route(mock_registry, "UserEvent")
-        reg_route = _register_route(mock_registry, "UserEvent", if_exists="FIND_OR_CREATE_VERSION")
+        reg_route = _register_route(
+            mock_registry, "UserEvent", if_exists="FIND_OR_CREATE_VERSION"
+        )
         client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
         ser = AvroSerializer(
             registry_client=client,

@@ -105,7 +105,9 @@ class AvroSerializer:
         artifact_resolver: ArtifactResolver | None = None,
         schema: dict[str, Any] | None = None,
         auto_register: bool = False,
-        if_exists: Literal["FAIL", "CREATE_VERSION", "FIND_OR_CREATE_VERSION"] = "FIND_OR_CREATE_VERSION",
+        if_exists: Literal[
+            "FAIL", "CREATE_VERSION", "FIND_OR_CREATE_VERSION"
+        ] = "FIND_OR_CREATE_VERSION",
         to_dict: Callable[[Any, SerializationContext], dict[str, Any]] | None = None,
         use_id: Literal["globalId", "contentId"] = "globalId",
         strict: bool = False,

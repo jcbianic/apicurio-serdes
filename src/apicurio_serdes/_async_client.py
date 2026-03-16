@@ -116,7 +116,9 @@ class AsyncApicurioRegistryClient(_RegistryClientBase):
         self,
         artifact_id: str,
         schema: dict[str, Any],
-        if_exists: Literal["FAIL", "CREATE_VERSION", "FIND_OR_CREATE_VERSION"] = "FIND_OR_CREATE_VERSION",
+        if_exists: Literal[
+            "FAIL", "CREATE_VERSION", "FIND_OR_CREATE_VERSION"
+        ] = "FIND_OR_CREATE_VERSION",
     ) -> CachedSchema:
         """Register a schema artifact with the registry (async).
 

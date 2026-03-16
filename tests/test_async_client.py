@@ -631,7 +631,9 @@ class TestRegisterSchemaAsync:
         self, mock_registry: respx.MockRouter
     ) -> None:
         """Default if_exists is 'FIND_OR_CREATE_VERSION'."""
-        route = _register_route(mock_registry, "UserEvent", if_exists="FIND_OR_CREATE_VERSION")
+        route = _register_route(
+            mock_registry, "UserEvent", if_exists="FIND_OR_CREATE_VERSION"
+        )
         client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
         await client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
         assert route.call_count == 1
