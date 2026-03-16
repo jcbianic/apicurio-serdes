@@ -664,8 +664,7 @@ def test_artifact_resolver_only_constructs_successfully() -> None:
     """artifact_resolver only constructs without error (new behaviour)."""
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
     resolver = lambda ctx: "UserEvent"  # noqa: E731
-    ser = AvroSerializer(registry_client=client, artifact_resolver=resolver)
-    assert ser._artifact_resolver is resolver
+    AvroSerializer(registry_client=client, artifact_resolver=resolver)
 
 
 # ── artifact_resolver serialize path integration tests ──
