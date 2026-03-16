@@ -11,6 +11,7 @@ import httpx
 from apicurio_serdes._errors import (
     RegistryConnectionError,
     SchemaNotFoundError,
+    SchemaRegistrationError,
 )
 
 
@@ -93,6 +94,60 @@ class _RegistryClientBase:
             global_id=global_id,
             content_id=content_id,
         )
+
+    def _register_endpoint(self) -> str:
+        return f"/groups/{self.group_id}/artifacts"
+
+    def _register_body(
+        self, artifact_id: str, schema: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Build the v3 CreateArtifact request body for artifact registration."""
+        return {
+            "artifactId": artifact_id,
+            "artifactType": "AVRO",
+            "firstVersion": {
+                "content": {
+                    "content": json.dumps(schema),
+                    "contentType": "application/json",
+                }
+            },
+        }
+
+    def _process_registration_response(
+        self, response: httpx.Response, artifact_id: str, schema: dict[str, Any]
+    ) -> CachedSchema:
+        """Parse an HTTP response from an artifact registration endpoint.
+
+        The Apicurio Registry v3 POST endpoint returns a CreateArtifactResponse
+        JSON body with globalId and contentId nested under the "version" key.
+        The caller passes the schema it just submitted so the CachedSchema can be
+        populated without an extra GET.
+
+        Raises:
+            SchemaRegistrationError: On any non-2xx HTTP response, or if the
+                response body is missing the expected "version.globalId" /
+                "version.contentId" fields.
+            ValueError: If globalId/contentId exceed signed 64-bit range.
+        """
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            raise SchemaRegistrationError(artifact_id, exc) from exc
+
+        try:
+            version = response.json()["version"]
+            global_id = int(version["globalId"])
+            content_id = int(version["contentId"])
+        except KeyError as exc:
+            raise SchemaRegistrationError(artifact_id, exc) from exc
+
+        int64_min, int64_max = -(2**63), 2**63 - 1
+        if not (int64_min <= global_id <= int64_max):
+            raise ValueError(f"globalId {global_id} is outside signed 64-bit range")
+        if not (int64_min <= content_id <= int64_max):
+            raise ValueError(f"contentId {content_id} is outside signed 64-bit range")
+
+        return CachedSchema(schema=schema, global_id=global_id, content_id=content_id)
 
     def _process_id_response(
         self, response: httpx.Response, id_type: str, id_value: int

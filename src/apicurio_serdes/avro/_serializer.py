@@ -8,7 +8,11 @@ from typing import TYPE_CHECKING, Any
 
 import fastavro
 
-from apicurio_serdes._errors import ResolverError, SerializationError
+from apicurio_serdes._errors import (
+    ResolverError,
+    SchemaNotFoundError,
+    SerializationError,
+)
 from apicurio_serdes.serialization import SerializedMessage, WireFormat
 
 if TYPE_CHECKING:
@@ -38,6 +42,16 @@ class AvroSerializer:
             Mutually exclusive with ``artifact_id``. Built-in strategies:
             :class:`~apicurio_serdes.avro.TopicIdStrategy` and
             :class:`~apicurio_serdes.avro.SimpleTopicIdStrategy`.
+        schema: The Avro schema dict to register. Required when
+                ``auto_register=True``; ignored otherwise.
+        auto_register: When ``True``, register ``schema`` with the registry
+                       on first serialize if the artifact is not found (HTTP 404).
+                       Disabled by default.
+        if_exists: Behaviour when the artifact already exists during
+                   auto-registration. One of ``"FAIL"``,
+                   ``"FIND_OR_CREATE_VERSION"`` (default), or
+                   ``"CREATE_VERSION"``. Only consulted when
+                   ``auto_register=True``.
         to_dict: Optional callable that converts input data to a dict
                  before Avro encoding. Signature: ``(data, ctx) -> dict``.
                  When ``None``, input is passed directly to the encoder.
@@ -50,8 +64,10 @@ class AvroSerializer:
 
     Raises:
         ValueError: If both or neither of ``artifact_id`` / ``artifact_resolver``
-            are provided, if ``wire_format`` is not a WireFormat enum member, or
-            if ``use_id`` is not ``"globalId"`` or ``"contentId"``.
+            are provided; if ``wire_format`` is not a WireFormat enum member;
+            if ``use_id`` is not ``"globalId"`` or ``"contentId"``; if
+            ``if_exists`` is not one of the four allowed values; or if
+            ``auto_register=True`` and ``schema`` is not provided.
 
     Example:
         ```python
@@ -80,12 +96,18 @@ class AvroSerializer:
     """
 
     _VALID_USE_ID = frozenset({"globalId", "contentId"})
+    _VALID_IF_EXISTS = frozenset({"FAIL", "CREATE_VERSION", "FIND_OR_CREATE_VERSION"})
 
     def __init__(
         self,
         registry_client: ApicurioRegistryClient,
         artifact_id: str | None = None,
         artifact_resolver: ArtifactResolver | None = None,
+        schema: dict[str, Any] | None = None,
+        auto_register: bool = False,
+        if_exists: Literal[
+            "FAIL", "CREATE_VERSION", "FIND_OR_CREATE_VERSION"
+        ] = "FIND_OR_CREATE_VERSION",
         to_dict: Callable[[Any, SerializationContext], dict[str, Any]] | None = None,
         use_id: Literal["globalId", "contentId"] = "globalId",
         strict: bool = False,
@@ -106,10 +128,20 @@ class AvroSerializer:
             raise ValueError(
                 f"use_id must be 'globalId' or 'contentId', got {use_id!r}"
             )
+        if if_exists not in self._VALID_IF_EXISTS:
+            raise ValueError(
+                f"if_exists must be one of 'FAIL', 'CREATE_VERSION', "
+                f"'FIND_OR_CREATE_VERSION', got {if_exists!r}"
+            )
+        if auto_register and schema is None:
+            raise ValueError("schema must be provided when auto_register=True")
         self.registry_client = registry_client
         self.artifact_id: str | None = artifact_id
         self._artifact_resolver: ArtifactResolver | None = artifact_resolver
         self._resolved_artifact_id: str | None = None
+        self._local_schema: dict[str, Any] | None = schema
+        self.auto_register = auto_register
+        self.if_exists = if_exists
         self.to_dict = to_dict
         self.use_id = use_id
         self.strict = strict
@@ -137,7 +169,9 @@ class AvroSerializer:
             ResolverError: If the artifact_resolver raises or returns something other
                 than a non-empty str.
             SchemaNotFoundError: If the resolved artifact does not exist in the
-                registry.
+                registry and ``auto_register=False``.
+            SchemaRegistrationError: If ``auto_register=True`` and the registry
+                rejects the registration request (4xx/5xx).
             RegistryConnectionError: If the registry is unreachable.
             SerializationError: If the to_dict callable raises an exception.
             ValueError: If data does not conform to the Avro schema.
@@ -170,7 +204,14 @@ class AvroSerializer:
                     "artifact_id is None and no resolver has produced an ID yet; "
                     "this is an internal invariant violation."
                 )
-            cached = self.registry_client.get_schema(effective_id)
+            try:
+                cached = self.registry_client.get_schema(effective_id)
+            except SchemaNotFoundError:
+                if not self.auto_register or self._local_schema is None:
+                    raise
+                cached = self.registry_client.register_schema(
+                    effective_id, self._local_schema, self.if_exists
+                )
             self._schema = cached
             self._parsed_schema = fastavro.parse_schema(cached.schema)
 
@@ -248,7 +289,9 @@ class AvroSerializer:
             ResolverError: If the artifact_resolver raises or returns something other
                 than a non-empty str.
             SchemaNotFoundError: If the resolved artifact does not exist in the
-                registry.
+                registry and ``auto_register=False``.
+            SchemaRegistrationError: If ``auto_register=True`` and the registry
+                rejects the registration request (4xx/5xx).
             RegistryConnectionError: If the registry is unreachable.
             SerializationError: If the to_dict callable raises an exception.
             ValueError: If data does not conform to the Avro schema.

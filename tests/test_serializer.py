@@ -29,10 +29,13 @@ from tests.conftest import (
     GROUP_ID,
     INVALID_USER_EVENT_MISSING_FIELD,
     REGISTRY_URL,
+    USER_EVENT_SCHEMA_JSON,
     VALID_USER_EVENT,
     VALID_USER_EVENT_ALT,
     VALID_USER_EVENT_EXTRA_FIELDS,
     _not_found_route,
+    _register_error_route,
+    _register_route,
     _schema_route,
 )
 
@@ -791,3 +794,199 @@ def test_confluent_payload_schema_id_exceeds_uint32_raises_value_error(
     )
     with pytest.raises(ValueError, match="unsigned 32-bit limit"):
         serializer.serialize(VALID_USER_EVENT, ctx)
+
+
+# ── auto-register tests ──
+
+
+class TestAutoRegister:
+    """Tests for AvroSerializer auto_register feature."""
+
+    def test_auto_register_true_without_schema_raises_value_error(self) -> None:
+        """auto_register=True without schema= raises ValueError at construction."""
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        with pytest.raises(ValueError, match="schema"):
+            AvroSerializer(
+                registry_client=client,
+                artifact_id="UserEvent",
+                auto_register=True,
+            )
+
+    def test_invalid_if_exists_raises_value_error(self) -> None:
+        """Invalid if_exists value raises ValueError at construction."""
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        with pytest.raises(ValueError, match="if_exists"):
+            AvroSerializer(
+                registry_client=client,
+                artifact_id="UserEvent",
+                auto_register=True,
+                schema=USER_EVENT_SCHEMA_JSON,
+                if_exists="UPSERT",
+            )
+
+    def test_auto_register_false_with_schema_accepted(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """auto_register=False with schema= constructs without error (schema ignored)."""
+        _schema_route(mock_registry, "UserEvent")
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        ser = AvroSerializer(
+            registry_client=client,
+            artifact_id="UserEvent",
+            auto_register=False,
+            schema=USER_EVENT_SCHEMA_JSON,
+        )
+        assert ser is not None
+
+    def test_auto_register_get_404_then_post_200_succeeds(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """GET 404 + POST 200 with auto_register=True returns framed bytes."""
+        _not_found_route(mock_registry, "UserEvent")
+        _register_route(mock_registry, "UserEvent")
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        ser = AvroSerializer(
+            registry_client=client,
+            artifact_id="UserEvent",
+            auto_register=True,
+            schema=USER_EVENT_SCHEMA_JSON,
+        )
+        ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+        result = ser.serialize(VALID_USER_EVENT, ctx)
+        assert result.payload[0:1] == b"\x00"
+        assert len(result.payload) > 5
+
+    def test_auto_register_second_serialize_is_cache_hit(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """Second serialize call after auto-register is a cache hit (no extra HTTP)."""
+        not_found = _not_found_route(mock_registry, "UserEvent")
+        reg_route = _register_route(mock_registry, "UserEvent")
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        ser = AvroSerializer(
+            registry_client=client,
+            artifact_id="UserEvent",
+            auto_register=True,
+            schema=USER_EVENT_SCHEMA_JSON,
+        )
+        ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+        result1 = ser.serialize(VALID_USER_EVENT, ctx)
+        result2 = ser.serialize(VALID_USER_EVENT, ctx)
+        # Registry called exactly once for GET (404) and once for POST
+        assert not_found.call_count == 1
+        assert reg_route.call_count == 1
+        # Both results are valid framed bytes (serialization worked)
+        assert result1.payload[0:1] == b"\x00"
+        assert result2.payload[0:1] == b"\x00"
+
+    def test_auto_register_false_get_404_propagates_schema_not_found(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """auto_register=False: GET 404 raises SchemaNotFoundError unchanged."""
+        from apicurio_serdes._errors import SchemaNotFoundError
+
+        _not_found_route(mock_registry, "UserEvent")
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        ser = AvroSerializer(
+            registry_client=client,
+            artifact_id="UserEvent",
+        )
+        ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+        with pytest.raises(SchemaNotFoundError):
+            ser.serialize(VALID_USER_EVENT, ctx)
+
+    def test_auto_register_post_409_raises_schema_registration_error(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """GET 404 + POST 409 raises SchemaRegistrationError."""
+        from apicurio_serdes._errors import SchemaRegistrationError
+
+        _not_found_route(mock_registry, "UserEvent")
+        _register_error_route(mock_registry, 409)
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        ser = AvroSerializer(
+            registry_client=client,
+            artifact_id="UserEvent",
+            auto_register=True,
+            schema=USER_EVENT_SCHEMA_JSON,
+        )
+        ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+        with pytest.raises(SchemaRegistrationError):
+            ser.serialize(VALID_USER_EVENT, ctx)
+
+    def test_auto_register_post_network_error_raises_registry_connection_error(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """GET 404 + POST network error raises RegistryConnectionError."""
+        from apicurio_serdes._errors import RegistryConnectionError
+
+        _not_found_route(mock_registry, "UserEvent")
+        mock_registry.post(
+            url__startswith=f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts"
+        ).mock(side_effect=httpx.ConnectError("refused"))
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        ser = AvroSerializer(
+            registry_client=client,
+            artifact_id="UserEvent",
+            auto_register=True,
+            schema=USER_EVENT_SCHEMA_JSON,
+        )
+        ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+        with pytest.raises(RegistryConnectionError):
+            ser.serialize(VALID_USER_EVENT, ctx)
+
+    def test_auto_register_if_exists_default_is_find_or_create_version(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """Default if_exists='FIND_OR_CREATE_VERSION' is forwarded as ifExists=FIND_OR_CREATE_VERSION."""
+        _not_found_route(mock_registry, "UserEvent")
+        reg_route = _register_route(
+            mock_registry, "UserEvent", if_exists="FIND_OR_CREATE_VERSION"
+        )
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        ser = AvroSerializer(
+            registry_client=client,
+            artifact_id="UserEvent",
+            auto_register=True,
+            schema=USER_EVENT_SCHEMA_JSON,
+        )
+        ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+        ser.serialize(VALID_USER_EVENT, ctx)
+        assert reg_route.call_count == 1
+
+    def test_auto_register_if_exists_fail_forwarded(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """if_exists='FAIL' is forwarded as ifExists=FAIL."""
+        _not_found_route(mock_registry, "UserEvent")
+        reg_route = _register_route(mock_registry, "UserEvent", if_exists="FAIL")
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        ser = AvroSerializer(
+            registry_client=client,
+            artifact_id="UserEvent",
+            auto_register=True,
+            schema=USER_EVENT_SCHEMA_JSON,
+            if_exists="FAIL",
+        )
+        ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+        ser.serialize(VALID_USER_EVENT, ctx)
+        assert reg_route.call_count == 1
+
+    def test_auto_register_with_artifact_resolver(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """auto_register=True works with artifact_resolver."""
+        from apicurio_serdes.avro import TopicIdStrategy
+
+        _not_found_route(mock_registry, "test-value")
+        _register_route(mock_registry, "test-value")
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        ser = AvroSerializer(
+            registry_client=client,
+            artifact_resolver=TopicIdStrategy(),
+            auto_register=True,
+            schema=USER_EVENT_SCHEMA_JSON,
+        )
+        ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+        result = ser.serialize(VALID_USER_EVENT, ctx)
+        assert result.payload[0:1] == b"\x00"

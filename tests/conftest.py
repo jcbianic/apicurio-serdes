@@ -118,6 +118,54 @@ def _id_not_found_route(
     )
 
 
+def _register_route(
+    router: respx.MockRouter,
+    artifact_id: str,
+    *,
+    global_id: int = GLOBAL_ID,
+    content_id: int = CONTENT_ID,
+    if_exists: str = "FIND_OR_CREATE_VERSION",
+) -> respx.Route:
+    """Register a mock route for a successful artifact creation POST.
+
+    The real Apicurio Registry v3 POST /groups/{groupId}/artifacts endpoint
+    returns a CreateArtifactResponse JSON body with globalId and contentId
+    nested under the "version" key — no X-Registry-* response headers.
+    """
+    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts"
+    return router.post(url, params={"ifExists": if_exists}).mock(
+        return_value=Response(
+            200,
+            json={
+                "artifact": {
+                    "groupId": GROUP_ID,
+                    "artifactId": artifact_id,
+                    "artifactType": "AVRO",
+                },
+                "version": {
+                    "globalId": global_id,
+                    "contentId": content_id,
+                    "artifactType": "AVRO",
+                },
+            },
+        )
+    )
+
+
+def _register_error_route(
+    router: respx.MockRouter,
+    status_code: int,
+) -> respx.Route:
+    """Register a mock route that returns an error for artifact creation POST."""
+    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts"
+    return router.post(url).mock(
+        return_value=Response(
+            status_code,
+            json={"error_code": status_code, "message": "registration error"},
+        )
+    )
+
+
 def make_confluent_bytes(
     schema_id: int,
     data: dict[str, Any],

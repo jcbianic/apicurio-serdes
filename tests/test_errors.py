@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from apicurio_serdes._errors import DeserializationError, SchemaNotFoundError
+from apicurio_serdes._errors import (
+    DeserializationError,
+    SchemaNotFoundError,
+    SchemaRegistrationError,
+)
 
 # ── T002: DeserializationError ──
 
@@ -107,5 +111,51 @@ def test_registry_connection_error_importable_from_package_root() -> None:
     """RegistryConnectionError is importable from apicurio_serdes [TD-003]."""
     from apicurio_serdes import RegistryConnectionError as Imported
     from apicurio_serdes._errors import RegistryConnectionError as Direct
+
+    assert Imported is Direct
+
+
+# ── SchemaRegistrationError ──
+
+
+def test_schema_registration_error_stores_artifact_id() -> None:
+    """SchemaRegistrationError stores artifact_id attribute."""
+    cause = ValueError("409 Conflict")
+    err = SchemaRegistrationError("UserEvent", cause)
+    assert err.artifact_id == "UserEvent"
+
+
+def test_schema_registration_error_stores_cause() -> None:
+    """SchemaRegistrationError stores cause attribute."""
+    cause = RuntimeError("server error")
+    err = SchemaRegistrationError("UserEvent", cause)
+    assert err.cause is cause
+
+
+def test_schema_registration_error_sets_dunder_cause() -> None:
+    """SchemaRegistrationError sets __cause__ for exception chaining."""
+    cause = OSError("network failure")
+    err = SchemaRegistrationError("UserEvent", cause)
+    assert err.__cause__ is cause
+
+
+def test_schema_registration_error_message_includes_artifact_id() -> None:
+    """SchemaRegistrationError message includes the artifact ID."""
+    cause = ValueError("conflict")
+    err = SchemaRegistrationError("MyArtifact", cause)
+    assert "MyArtifact" in str(err)
+
+
+def test_schema_registration_error_is_exception() -> None:
+    """SchemaRegistrationError is raised and caught as Exception."""
+    cause = ValueError("oops")
+    with pytest.raises(SchemaRegistrationError):
+        raise SchemaRegistrationError("UserEvent", cause)
+
+
+def test_schema_registration_error_importable_from_package_root() -> None:
+    """SchemaRegistrationError is importable from apicurio_serdes."""
+    from apicurio_serdes import SchemaRegistrationError as Imported
+    from apicurio_serdes._errors import SchemaRegistrationError as Direct
 
     assert Imported is Direct
