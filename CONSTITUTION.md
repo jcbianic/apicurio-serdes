@@ -2,11 +2,12 @@
 
 <!--
   sync-impact-report:
-    version-change: N/A → 1.0.0
-    modified-principles: (none — initial ratification)
-    added-sections: Core Principles, Quality Standards, Development Workflow, Governance
+    version-change: 1.2.1 → 1.3.0
+    modified-principles: V (Simplicity and Minimal Footprint) — carved out auto-register as opt-in serializer behavior
+    added-sections: (none)
     removed-sections: (none)
     follow-up-TODOs:
+      - Implement auto-register feature (issue #36)
       - Validate coverage-enforcement tooling in CI
       - Confirm wire format defaults against Apicurio 3.x reference implementation
 -->
@@ -92,8 +93,14 @@ using schemas stored in a schema registry. It must resist scope creep
 beyond that responsibility.
 
 **Rules:**
-- Registry management operations (creating, updating, deleting artifacts)
-  are permanently out of scope and must never be added to the core library.
+- Registry management operations (creating, updating, or deleting artifacts
+  as administrative operations) are permanently out of scope and must never
+  be added to the core library.
+- Auto-registration (ensuring a schema version exists as a serializer
+  side-effect) is **allowed as an opt-in behavior, disabled by default**.
+  It is a narrow write scoped to the serialization act itself, not open-ended
+  registry management. It must be disabled by default to preserve the
+  read-only safety model in production.
 - Code generation from schemas is permanently out of scope.
 - Every public API addition must be justified by a documented user need
   from the target persona.
@@ -101,7 +108,11 @@ beyond that responsibility.
 
 **Rationale:** A focused, minimal library is easier to audit, maintain,
 and trust. Users should be able to read and understand the full library
-in a single session.
+in a single session. Auto-registration is carved out because both reference
+implementations (Confluent Python, Apicurio Java) treat it as core SerDe
+functionality, not registry administration, and requiring a separate
+out-of-band registration step before any producer can run creates
+unnecessary operational friction.
 
 ## Quality Standards
 
@@ -151,7 +162,7 @@ applies to all contributors and all code within this repository.
 **Compliance:** All PRs and code reviews must verify compliance with this
 constitution. Violations must be flagged before merge.
 
-**Version**: 1.2.1 | **Ratified**: 2026-03-06 | **Last Amended**: 2026-03-06
+**Version**: 1.3.0 | **Ratified**: 2026-03-06 | **Last Amended**: 2026-03-16
 
 ## Clarifications
 
