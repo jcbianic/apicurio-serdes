@@ -98,6 +98,19 @@ class _RegistryClientBase:
     def _register_endpoint(self) -> str:
         return f"/groups/{self.group_id}/artifacts"
 
+    def _register_body(self, artifact_id: str, schema: dict[str, Any]) -> dict[str, Any]:
+        """Build the v3 CreateArtifact request body for artifact registration."""
+        return {
+            "artifactId": artifact_id,
+            "artifactType": "AVRO",
+            "firstVersion": {
+                "content": {
+                    "content": json.dumps(schema),
+                    "contentType": "application/json",
+                }
+            },
+        }
+
     def _process_registration_response(
         self, response: httpx.Response, artifact_id: str, schema: dict[str, Any]
     ) -> CachedSchema:

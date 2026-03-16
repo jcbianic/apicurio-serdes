@@ -124,7 +124,7 @@ def _register_route(
     *,
     global_id: int = GLOBAL_ID,
     content_id: int = CONTENT_ID,
-    if_exists: str = "RETURN",
+    if_exists: str = "FIND_OR_CREATE_VERSION",
 ) -> respx.Route:
     """Register a mock route for a successful artifact creation POST.
 

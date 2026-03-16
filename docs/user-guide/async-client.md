@@ -108,14 +108,14 @@ cached = await client.register_schema(
             {"name": "country", "type": "string"},
         ],
     },
-    if_exists="RETURN",  # default — return existing artifact without error
+    if_exists="FIND_OR_CREATE_VERSION",  # default — return existing or create new version
 )
 print(cached.global_id)   # Registry-assigned globalId
 print(cached.content_id)  # Registry-assigned contentId
 ```
 
-The `if_exists` parameter accepts `"FAIL"`, `"RETURN"` (default),
-`"RETURN_OR_UPDATE"`, or `"UPDATE"`. `SchemaRegistrationError` is raised when
+The `if_exists` parameter accepts `"FAIL"`, `"FIND_OR_CREATE_VERSION"`
+(default), or `"CREATE_VERSION"`. `SchemaRegistrationError` is raised when
 the registry returns a 4xx or 5xx response.
 
 ## Error Handling

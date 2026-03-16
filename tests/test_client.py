@@ -582,7 +582,7 @@ def test_register_schema_populates_cache(mock_registry: respx.MockRouter) -> Non
     assert get_route.call_count == 0
 
 
-@pytest.mark.parametrize("if_exists", ["FAIL", "RETURN", "RETURN_OR_UPDATE", "UPDATE"])
+@pytest.mark.parametrize("if_exists", ["FAIL", "CREATE_VERSION", "FIND_OR_CREATE_VERSION"])
 def test_register_schema_forwards_if_exists(
     mock_registry: respx.MockRouter, if_exists: str
 ) -> None:
@@ -593,11 +593,11 @@ def test_register_schema_forwards_if_exists(
     assert route.call_count == 1
 
 
-def test_register_schema_default_if_exists_is_return(
+def test_register_schema_default_if_exists_is_find_or_create_version(
     mock_registry: respx.MockRouter,
 ) -> None:
-    """Default if_exists is 'RETURN', forwarded as ifExists=RETURN."""
-    route = _register_route(mock_registry, "UserEvent", if_exists="RETURN")
+    """Default if_exists is 'FIND_OR_CREATE_VERSION', forwarded as ifExists=FIND_OR_CREATE_VERSION."""
+    route = _register_route(mock_registry, "UserEvent", if_exists="FIND_OR_CREATE_VERSION")
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
     client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
     assert route.call_count == 1

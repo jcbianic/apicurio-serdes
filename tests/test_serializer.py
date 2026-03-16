@@ -935,12 +935,12 @@ class TestAutoRegister:
         with pytest.raises(RegistryConnectionError):
             ser.serialize(VALID_USER_EVENT, ctx)
 
-    def test_auto_register_if_exists_default_is_return(
+    def test_auto_register_if_exists_default_is_find_or_create_version(
         self, mock_registry: respx.MockRouter
     ) -> None:
-        """Default if_exists='RETURN' is forwarded as ifExists=RETURN."""
+        """Default if_exists='FIND_OR_CREATE_VERSION' is forwarded as ifExists=FIND_OR_CREATE_VERSION."""
         _not_found_route(mock_registry, "UserEvent")
-        reg_route = _register_route(mock_registry, "UserEvent", if_exists="RETURN")
+        reg_route = _register_route(mock_registry, "UserEvent", if_exists="FIND_OR_CREATE_VERSION")
         client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
         ser = AvroSerializer(
             registry_client=client,

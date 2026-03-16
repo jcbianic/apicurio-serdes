@@ -2,6 +2,25 @@
 
 All user-visible changes are documented here.
 
+## Unreleased
+
+### Added
+
+- `register_schema(artifact_id, schema, if_exists)` method on both
+  `ApicurioRegistryClient` and `AsyncApicurioRegistryClient`. Registers a
+  schema artifact via the Apicurio Registry v3 `POST /groups/{groupId}/artifacts`
+  endpoint and populates the internal cache on success.
+- `AvroSerializer` accepts three new optional constructor parameters:
+  `schema` (Avro schema dict), `auto_register` (bool, default `False`), and
+  `if_exists` (v3 `ifExists` policy). When `auto_register=True`, the first
+  serialize call registers the schema automatically if the artifact is not
+  found (HTTP 404).
+- `SchemaRegistrationError` — new typed exception raised when the registry
+  rejects a schema registration request (4xx/5xx response or missing JSON
+  fields in the response body). Exported from the package root.
+- `if_exists` values follow the Apicurio Registry v3 API: `"FAIL"`,
+  `"FIND_OR_CREATE_VERSION"` (default), `"CREATE_VERSION"`.
+
 ## 0.2.0 (2026-03-11)
 
 ### Client Hardening & Deduplication

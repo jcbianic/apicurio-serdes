@@ -48,9 +48,10 @@ class AvroSerializer:
                        on first serialize if the artifact is not found (HTTP 404).
                        Disabled by default.
         if_exists: Behaviour when the artifact already exists during
-                   auto-registration. One of ``"FAIL"``, ``"RETURN"`` (default),
-                   ``"RETURN_OR_UPDATE"``, or ``"UPDATE"``. Only consulted
-                   when ``auto_register=True``.
+                   auto-registration. One of ``"FAIL"``,
+                   ``"FIND_OR_CREATE_VERSION"`` (default), or
+                   ``"CREATE_VERSION"``. Only consulted when
+                   ``auto_register=True``.
         to_dict: Optional callable that converts input data to a dict
                  before Avro encoding. Signature: ``(data, ctx) -> dict``.
                  When ``None``, input is passed directly to the encoder.
@@ -95,7 +96,7 @@ class AvroSerializer:
     """
 
     _VALID_USE_ID = frozenset({"globalId", "contentId"})
-    _VALID_IF_EXISTS = frozenset({"FAIL", "RETURN", "RETURN_OR_UPDATE", "UPDATE"})
+    _VALID_IF_EXISTS = frozenset({"FAIL", "CREATE_VERSION", "FIND_OR_CREATE_VERSION"})
 
     def __init__(
         self,
@@ -104,7 +105,7 @@ class AvroSerializer:
         artifact_resolver: ArtifactResolver | None = None,
         schema: dict[str, Any] | None = None,
         auto_register: bool = False,
-        if_exists: Literal["FAIL", "RETURN", "RETURN_OR_UPDATE", "UPDATE"] = "RETURN",
+        if_exists: Literal["FAIL", "CREATE_VERSION", "FIND_OR_CREATE_VERSION"] = "FIND_OR_CREATE_VERSION",
         to_dict: Callable[[Any, SerializationContext], dict[str, Any]] | None = None,
         use_id: Literal["globalId", "contentId"] = "globalId",
         strict: bool = False,
@@ -127,8 +128,8 @@ class AvroSerializer:
             )
         if if_exists not in self._VALID_IF_EXISTS:
             raise ValueError(
-                f"if_exists must be one of 'FAIL', 'RETURN', 'RETURN_OR_UPDATE', "
-                f"'UPDATE', got {if_exists!r}"
+                f"if_exists must be one of 'FAIL', 'CREATE_VERSION', "
+                f"'FIND_OR_CREATE_VERSION', got {if_exists!r}"
             )
         if auto_register and schema is None:
             raise ValueError("schema must be provided when auto_register=True")

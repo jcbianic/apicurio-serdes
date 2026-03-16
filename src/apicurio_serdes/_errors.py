@@ -109,8 +109,8 @@ class SchemaRegistrationError(Exception):
     """Raised when the registry rejects a schema registration request.
 
     Covers 4xx and 5xx responses from the artifact creation endpoint and
-    missing response headers. Transport errors (network failures) raise
-    ``RegistryConnectionError`` instead.
+    missing JSON fields in the response body. Transport errors (network
+    failures) raise ``RegistryConnectionError`` instead.
 
     Note:
         The exception message includes ``str(cause)``, which may contain the
@@ -119,7 +119,7 @@ class SchemaRegistrationError(Exception):
 
     Args:
         artifact_id: The artifact identifier that failed to register.
-        cause: The underlying exception (HTTP error or missing header).
+        cause: The underlying exception (HTTP error or missing JSON field).
 
     Attributes:
         artifact_id: The artifact identifier that failed to register.

@@ -614,7 +614,7 @@ class TestRegisterSchemaAsync:
         assert get_route.call_count == 0
 
     @pytest.mark.parametrize(
-        "if_exists", ["FAIL", "RETURN", "RETURN_OR_UPDATE", "UPDATE"]
+        "if_exists", ["FAIL", "CREATE_VERSION", "FIND_OR_CREATE_VERSION"]
     )
     async def test_forwards_if_exists(
         self, mock_registry: respx.MockRouter, if_exists: str
@@ -627,11 +627,11 @@ class TestRegisterSchemaAsync:
         )
         assert route.call_count == 1
 
-    async def test_default_if_exists_is_return(
+    async def test_default_if_exists_is_find_or_create_version(
         self, mock_registry: respx.MockRouter
     ) -> None:
-        """Default if_exists is 'RETURN'."""
-        route = _register_route(mock_registry, "UserEvent", if_exists="RETURN")
+        """Default if_exists is 'FIND_OR_CREATE_VERSION'."""
+        route = _register_route(mock_registry, "UserEvent", if_exists="FIND_OR_CREATE_VERSION")
         client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
         await client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
         assert route.call_count == 1

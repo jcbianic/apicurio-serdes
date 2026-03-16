@@ -116,7 +116,7 @@ class AsyncApicurioRegistryClient(_RegistryClientBase):
         self,
         artifact_id: str,
         schema: dict[str, Any],
-        if_exists: Literal["FAIL", "RETURN", "RETURN_OR_UPDATE", "UPDATE"] = "RETURN",
+        if_exists: Literal["FAIL", "CREATE_VERSION", "FIND_OR_CREATE_VERSION"] = "FIND_OR_CREATE_VERSION",
     ) -> CachedSchema:
         """Register a schema artifact with the registry (async).
 
@@ -128,10 +128,10 @@ class AsyncApicurioRegistryClient(_RegistryClientBase):
             artifact_id: The artifact identifier to register under.
             schema: The Avro schema dict to register.
             if_exists: Behaviour when the artifact already exists.
-                ``"RETURN"`` (default) returns the existing artifact.
+                ``"FIND_OR_CREATE_VERSION"`` (default) returns the existing version
+                if the content matches, otherwise creates a new version.
                 ``"FAIL"`` raises on conflict.
-                ``"RETURN_OR_UPDATE"`` returns existing or registers a new version.
-                ``"UPDATE"`` always registers a new version.
+                ``"CREATE_VERSION"`` always creates a new version.
 
         Returns:
             CachedSchema with the registered schema and registry-assigned IDs.
@@ -151,11 +151,7 @@ class AsyncApicurioRegistryClient(_RegistryClientBase):
             try:
                 response = await self._http_client.post(
                     self._register_endpoint(),
-                    json=schema,
-                    headers={
-                        "X-Registry-ArtifactId": artifact_id,
-                        "X-Registry-ArtifactType": "AVRO",
-                    },
+                    json=self._register_body(artifact_id, schema),
                     params={"ifExists": if_exists},
                 )
             except httpx.TransportError as exc:

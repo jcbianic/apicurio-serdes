@@ -28,7 +28,7 @@ payload = serializer({"userId": "abc-123", "country": "FR"}, ctx)
 | `artifact_resolver` | callable | `None` | Callable `(ctx) -> str` that derives the artifact ID from the serialization context. Mutually exclusive with `artifact_id`. |
 | `schema` | `dict` | `None` | Avro schema dict to register. Required when `auto_register=True`; ignored otherwise. |
 | `auto_register` | `bool` | `False` | Register `schema` with the registry on first serialize if the artifact is not found (HTTP 404). |
-| `if_exists` | `str` | `"RETURN"` | Behaviour when the artifact already exists during auto-registration. One of `"FAIL"`, `"RETURN"`, `"RETURN_OR_UPDATE"`, `"UPDATE"`. |
+| `if_exists` | `str` | `"FIND_OR_CREATE_VERSION"` | Behaviour when the artifact already exists during auto-registration. One of `"FAIL"`, `"FIND_OR_CREATE_VERSION"`, `"CREATE_VERSION"`. |
 | `to_dict` | callable | `None` | Converts non-dict input to a dict before encoding. See [Custom Serialization](../how-to/custom-serialization.md). |
 | `use_id` | `"globalId"` or `"contentId"` | `"globalId"` | Which schema identifier to embed in the wire format header. See [Choosing Between globalId and contentId](../how-to/identifier-selection.md). |
 | `strict` | `bool` | `False` | Reject input fields not present in the schema with `ValueError`. |
@@ -57,8 +57,9 @@ serializer = AvroSerializer(
 ```
 
 The `if_exists` parameter controls what happens if another process already
-registered the artifact concurrently. The default `"RETURN"` returns the
-existing artifact without error, which is the safest choice in most cases.
+registered the artifact concurrently. The default `"FIND_OR_CREATE_VERSION"`
+returns the existing version if the schema content matches, or creates a new
+version otherwise — making it safe to call concurrently.
 
 ## Exceptions
 
