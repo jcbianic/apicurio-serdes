@@ -11,6 +11,7 @@ import httpx
 from apicurio_serdes._errors import (
     RegistryConnectionError,
     SchemaNotFoundError,
+    SchemaRegistrationError,
 )
 
 
@@ -93,6 +94,35 @@ class _RegistryClientBase:
             global_id=global_id,
             content_id=content_id,
         )
+
+    def _register_endpoint(self) -> str:
+        return f"/groups/{self.group_id}/artifacts"
+
+    def _process_registration_response(
+        self, response: httpx.Response, artifact_id: str
+    ) -> CachedSchema:
+        """Parse an HTTP response from an artifact registration endpoint.
+
+        Raises:
+            SchemaRegistrationError: On any non-2xx HTTP response.
+            ValueError: If globalId/contentId exceed signed 64-bit range.
+        """
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            raise SchemaRegistrationError(artifact_id, exc) from exc
+
+        schema = json.loads(response.text)
+        global_id = int(response.headers["X-Registry-GlobalId"])
+        content_id = int(response.headers["X-Registry-ContentId"])
+
+        int64_min, int64_max = -(2**63), 2**63 - 1
+        if not (int64_min <= global_id <= int64_max):
+            raise ValueError(f"globalId {global_id} is outside signed 64-bit range")
+        if not (int64_min <= content_id <= int64_max):
+            raise ValueError(f"contentId {content_id} is outside signed 64-bit range")
+
+        return CachedSchema(schema=schema, global_id=global_id, content_id=content_id)
 
     def _process_id_response(
         self, response: httpx.Response, id_type: str, id_value: int

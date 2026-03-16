@@ -118,6 +118,43 @@ def _id_not_found_route(
     )
 
 
+def _register_route(
+    router: respx.MockRouter,
+    artifact_id: str,
+    *,
+    schema: dict[str, Any] = USER_EVENT_SCHEMA_JSON,
+    global_id: int = GLOBAL_ID,
+    content_id: int = CONTENT_ID,
+    if_exists: str = "RETURN",
+) -> respx.Route:
+    """Register a mock route for a successful artifact creation POST."""
+    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts"
+    return router.post(url, params={"ifExists": if_exists}).mock(
+        return_value=Response(
+            200,
+            content=json.dumps(schema),
+            headers={
+                "X-Registry-GlobalId": str(global_id),
+                "X-Registry-ContentId": str(content_id),
+            },
+        )
+    )
+
+
+def _register_error_route(
+    router: respx.MockRouter,
+    status_code: int,
+) -> respx.Route:
+    """Register a mock route that returns an error for artifact creation POST."""
+    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts"
+    return router.post(url).mock(
+        return_value=Response(
+            status_code,
+            json={"error_code": status_code, "message": "registration error"},
+        )
+    )
+
+
 def make_confluent_bytes(
     schema_id: int,
     data: dict[str, Any],

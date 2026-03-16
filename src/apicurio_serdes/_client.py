@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import threading
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import httpx
 
 from apicurio_serdes._base import CachedSchema, _RegistryClientBase
 from apicurio_serdes._errors import RegistryConnectionError
+
+if TYPE_CHECKING:
+    from typing import Literal
 
 # Re-export so ``from apicurio_serdes._client import CachedSchema`` keeps working.
 __all__ = ["ApicurioRegistryClient", "CachedSchema"]
@@ -119,6 +122,54 @@ class ApicurioRegistryClient(_RegistryClientBase):
             RuntimeError: If the client has been closed.
         """
         return self._get_schema_by_id("contentId", content_id)
+
+    def register_schema(
+        self,
+        artifact_id: str,
+        schema: dict[str, Any],
+        if_exists: Literal["FAIL", "RETURN", "RETURN_OR_UPDATE", "UPDATE"] = "RETURN",
+    ) -> CachedSchema:
+        """Register a schema artifact with the registry.
+
+        Posts the schema to the registry under the configured group. On success,
+        populates the internal cache so subsequent ``get_schema`` calls are cache
+        hits with no additional HTTP request.
+
+        Args:
+            artifact_id: The artifact identifier to register under.
+            schema: The Avro schema dict to register.
+            if_exists: Behaviour when the artifact already exists.
+                ``"RETURN"`` (default) returns the existing artifact.
+                ``"FAIL"`` raises on conflict.
+                ``"RETURN_OR_UPDATE"`` returns existing or registers a new version.
+                ``"UPDATE"`` always registers a new version.
+
+        Returns:
+            CachedSchema with the registered schema and registry-assigned IDs.
+
+        Raises:
+            SchemaRegistrationError: If the registry returns a 4xx or 5xx response.
+            RegistryConnectionError: If the registry is unreachable.
+            RuntimeError: If the client has been closed.
+        """
+        self._check_closed()
+        with self._lock:
+            try:
+                response = self._http_client.post(
+                    self._register_endpoint(),
+                    json=schema,
+                    headers={
+                        "X-Registry-ArtifactId": artifact_id,
+                        "X-Registry-ArtifactType": "AVRO",
+                    },
+                    params={"ifExists": if_exists},
+                )
+            except httpx.TransportError as exc:
+                raise RegistryConnectionError(self.url, exc) from exc
+
+            cached = self._process_registration_response(response, artifact_id)
+            self._schema_cache[(self.group_id, artifact_id)] = cached
+            return cached
 
     def _get_schema_by_id(self, id_type: str, id_value: int) -> dict[str, Any]:
         """Shared implementation for ID-based schema lookups (D12)."""

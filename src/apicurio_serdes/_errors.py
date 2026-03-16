@@ -105,6 +105,30 @@ class ResolverError(Exception):
             self.__cause__ = cause
 
 
+class SchemaRegistrationError(Exception):
+    """Raised when the registry rejects a schema registration request.
+
+    Covers 4xx and 5xx responses from the artifact creation endpoint, as well
+    as transport errors that occur during the POST.
+
+    Args:
+        artifact_id: The artifact identifier that failed to register.
+        cause: The underlying exception (HTTP error or transport error).
+
+    Attributes:
+        artifact_id: The artifact identifier that failed to register.
+        cause: The underlying exception.
+    """
+
+    def __init__(self, artifact_id: str, cause: Exception) -> None:
+        self.artifact_id = artifact_id
+        self.cause = cause
+        super().__init__(
+            f"Failed to register schema for artifact '{artifact_id}': {cause}"
+        )
+        self.__cause__ = cause
+
+
 class RegistryConnectionError(Exception):
     """Raised when the Apicurio Registry is unreachable.
 

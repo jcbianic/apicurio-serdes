@@ -9,6 +9,7 @@ from apicurio_serdes._errors import (
     RegistryConnectionError,
     ResolverError,
     SchemaNotFoundError,
+    SchemaRegistrationError,
     SerializationError,
 )
 from apicurio_serdes.serialization import WireFormat
@@ -22,6 +23,7 @@ __all__ = [
     "RegistryConnectionError",
     "ResolverError",
     "SchemaNotFoundError",
+    "SchemaRegistrationError",
     "SerializationError",
     "WireFormat",
     "__version__",

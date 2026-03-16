@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 import fastavro
 
-from apicurio_serdes._errors import ResolverError, SerializationError
+from apicurio_serdes._errors import ResolverError, SchemaNotFoundError, SerializationError
 from apicurio_serdes.serialization import SerializedMessage, WireFormat
 
 if TYPE_CHECKING:
@@ -86,6 +86,9 @@ class AvroSerializer:
         registry_client: ApicurioRegistryClient,
         artifact_id: str | None = None,
         artifact_resolver: ArtifactResolver | None = None,
+        schema: dict[str, Any] | None = None,
+        auto_register: bool = False,
+        if_exists: Literal["FAIL", "RETURN", "RETURN_OR_UPDATE", "UPDATE"] = "RETURN",
         to_dict: Callable[[Any, SerializationContext], dict[str, Any]] | None = None,
         use_id: Literal["globalId", "contentId"] = "globalId",
         strict: bool = False,
@@ -106,10 +109,15 @@ class AvroSerializer:
             raise ValueError(
                 f"use_id must be 'globalId' or 'contentId', got {use_id!r}"
             )
+        if auto_register and schema is None:
+            raise ValueError("schema must be provided when auto_register=True")
         self.registry_client = registry_client
         self.artifact_id: str | None = artifact_id
         self._artifact_resolver: ArtifactResolver | None = artifact_resolver
         self._resolved_artifact_id: str | None = None
+        self._local_schema: dict[str, Any] | None = schema
+        self.auto_register = auto_register
+        self.if_exists = if_exists
         self.to_dict = to_dict
         self.use_id = use_id
         self.strict = strict
@@ -170,7 +178,14 @@ class AvroSerializer:
                     "artifact_id is None and no resolver has produced an ID yet; "
                     "this is an internal invariant violation."
                 )
-            cached = self.registry_client.get_schema(effective_id)
+            try:
+                cached = self.registry_client.get_schema(effective_id)
+            except SchemaNotFoundError:
+                if not self.auto_register or self._local_schema is None:
+                    raise
+                cached = self.registry_client.register_schema(
+                    effective_id, self._local_schema, self.if_exists
+                )
             self._schema = cached
             self._parsed_schema = fastavro.parse_schema(cached.schema)
 

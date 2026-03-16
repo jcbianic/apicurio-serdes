@@ -14,6 +14,8 @@ from apicurio_serdes import ApicurioRegistryClient
 from apicurio_serdes.avro import AvroSerializer
 from apicurio_serdes.serialization import MessageField, SerializationContext
 from tests.conftest import (
+    CONTENT_ID,
+    GLOBAL_ID,
     GROUP_ID,
     REGISTRY_URL,
     USER_EVENT_SCHEMA_JSON,
@@ -21,6 +23,9 @@ from tests.conftest import (
     VALID_USER_EVENT_ALT,
     _id_not_found_route,
     _id_schema_route,
+    _not_found_route,
+    _register_error_route,
+    _register_route,
     _schema_route,
 )
 
@@ -550,6 +555,150 @@ def test_get_schema_by_global_id_read_timeout_raises_registry_connection_error(
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
     with pytest.raises(RegistryConnectionError):
         client.get_schema_by_global_id(7)
+
+
+# ── register_schema tests ──
+
+
+def test_register_schema_happy_path(mock_registry: respx.MockRouter) -> None:
+    """register_schema returns a CachedSchema with correct IDs."""
+    from apicurio_serdes._base import CachedSchema
+
+    _register_route(mock_registry, "UserEvent")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    result = client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
+    assert isinstance(result, CachedSchema)
+    assert result.schema == USER_EVENT_SCHEMA_JSON
+    assert result.global_id == GLOBAL_ID
+    assert result.content_id == CONTENT_ID
+
+
+def test_register_schema_populates_cache(mock_registry: respx.MockRouter) -> None:
+    """After register_schema, get_schema is a cache hit (zero HTTP calls)."""
+    _register_route(mock_registry, "UserEvent")
+    get_route = _schema_route(mock_registry, "UserEvent")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
+    client.get_schema("UserEvent")
+    assert get_route.call_count == 0
+
+
+@pytest.mark.parametrize("if_exists", ["FAIL", "RETURN", "RETURN_OR_UPDATE", "UPDATE"])
+def test_register_schema_forwards_if_exists(
+    mock_registry: respx.MockRouter, if_exists: str
+) -> None:
+    """register_schema forwards if_exists as ifExists query param."""
+    route = _register_route(mock_registry, "UserEvent", if_exists=if_exists)
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON, if_exists=if_exists)
+    assert route.call_count == 1
+
+
+def test_register_schema_default_if_exists_is_return(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """Default if_exists is 'RETURN', forwarded as ifExists=RETURN."""
+    route = _register_route(mock_registry, "UserEvent", if_exists="RETURN")
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
+    assert route.call_count == 1
+
+
+def test_register_schema_409_raises_schema_registration_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """409 Conflict raises SchemaRegistrationError with artifact_id."""
+    from apicurio_serdes._errors import SchemaRegistrationError
+
+    _register_error_route(mock_registry, 409)
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(SchemaRegistrationError) as exc_info:
+        client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
+    assert exc_info.value.artifact_id == "UserEvent"
+
+
+def test_register_schema_500_raises_schema_registration_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """500 raises SchemaRegistrationError."""
+    from apicurio_serdes._errors import SchemaRegistrationError
+
+    _register_error_route(mock_registry, 500)
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(SchemaRegistrationError):
+        client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
+
+
+def test_register_schema_network_error_raises_registry_connection_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """Network failure raises RegistryConnectionError."""
+    from apicurio_serdes._errors import RegistryConnectionError
+
+    mock_registry.post(
+        url__startswith=f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts"
+    ).mock(side_effect=httpx.ConnectError("refused"))
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(RegistryConnectionError):
+        client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
+
+
+def test_register_schema_after_close_raises_runtime_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """register_schema on a closed client raises RuntimeError."""
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    client.close()
+    with pytest.raises(RuntimeError, match="closed"):
+        client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
+
+
+def test_register_schema_global_id_outside_int64_raises_value_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """register_schema with overflow globalId in response raises ValueError."""
+    import json
+
+    from httpx import Response
+
+    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts"
+    mock_registry.post(url).mock(
+        return_value=Response(
+            200,
+            content=json.dumps(USER_EVENT_SCHEMA_JSON),
+            headers={
+                "X-Registry-GlobalId": str(2**63),  # outside int64 range
+                "X-Registry-ContentId": "1",
+            },
+        )
+    )
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(ValueError, match="globalId"):
+        client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
+
+
+def test_register_schema_content_id_outside_int64_raises_value_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """register_schema with overflow contentId in response raises ValueError."""
+    import json
+
+    from httpx import Response
+
+    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts"
+    mock_registry.post(url).mock(
+        return_value=Response(
+            200,
+            content=json.dumps(USER_EVENT_SCHEMA_JSON),
+            headers={
+                "X-Registry-GlobalId": "1",
+                "X-Registry-ContentId": str(2**63),  # outside int64 range
+            },
+        )
+    )
+    client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(ValueError, match="contentId"):
+        client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
 
 
 def test_id_cache_double_check_locking(mock_registry: respx.MockRouter) -> None:
