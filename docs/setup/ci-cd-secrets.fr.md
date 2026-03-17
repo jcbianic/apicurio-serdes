@@ -23,7 +23,7 @@ Le pipeline CI/CD nécessite un seul secret GitHub :
    TestPyPI) ou **Entire account** pour une configuration initiale
 6. Cliquez sur **Add token** et copiez le token (commence par `pypi-`)
 
-### Ajouter le secret à GitHub
+### Ajouter le secret GitHub
 
 1. Allez sur votre dépôt GitHub
 2. Naviguez vers **Settings** > **Secrets and variables** > **Actions**
@@ -117,7 +117,7 @@ déclenche la suite CI complète (typecheck, test, docs-build et publish-testpyp
 ```
 
 **Correction** : Suivez les étapes dans [Obtenir TESTPYPI_API_TOKEN](#obtenir-testpypi_api_token)
-et [Ajouter le secret à GitHub](#ajouter-le-secret-à-github) ci-dessus.
+et [Ajouter le secret GitHub](#ajouter-le-secret-github) ci-dessus.
 
 ### Token TestPyPI expiré
 
