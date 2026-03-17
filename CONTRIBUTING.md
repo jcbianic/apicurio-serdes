@@ -29,6 +29,9 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 git clone https://github.com/jcbianic/apicurio-serdes.git
 cd apicurio-serdes
 uv sync --group dev
+
+# Install git hooks (runs ruff on commit and on push)
+uv run pre-commit install --hook-type pre-commit --hook-type pre-push
 ```
 
 ## Running checks locally
