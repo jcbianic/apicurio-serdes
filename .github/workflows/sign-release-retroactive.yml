@@ -1,0 +1,45 @@
+name: Sign Release (Retroactive)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to sign (e.g. v0.3.0)"
+        required: true
+
+jobs:
+  sign:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: Download release artifacts from PyPI
+        env:
+          TAG: ${{ github.event.inputs.tag }}
+        run: |
+          python3 - << 'EOF'
+          import json, urllib.request, os
+          tag = os.environ["TAG"]
+          version = tag.lstrip("v")
+          url = f"https://pypi.org/pypi/apicurio-serdes/{version}/json"
+          with urllib.request.urlopen(url) as r:
+              data = json.load(r)
+          os.makedirs("dist", exist_ok=True)
+          for f in data["urls"]:
+              fn = f["filename"]
+              print(f"Downloading {fn}...")
+              urllib.request.urlretrieve(f["url"], f"dist/{fn}")
+          print("Done.")
+          EOF
+      - name: Sign artifacts with Sigstore
+        uses: sigstore/gh-action-sigstore-python@a5caf349bc536fbef3668a10ed7f5cd309a4b53d  # v3.2.0
+        with:
+          inputs: >-
+            dist/*.tar.gz
+            dist/*.whl
+      - name: Upload signatures to GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.inputs.tag }}" dist/*.sigstore.json --repo "${{ github.repository }}"
