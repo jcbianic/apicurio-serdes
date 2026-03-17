@@ -20,6 +20,17 @@ All user-visible changes are documented here.
   fields in the response body). Exported from the package root.
 - `if_exists` values follow the Apicurio Registry v3 API: `"FAIL"`,
   `"FIND_OR_CREATE_VERSION"` (default), `"CREATE_VERSION"`.
+- `QualifiedRecordIdStrategy` — new artifact resolver strategy. Derives the
+  artifact ID from the Avro schema's record name and namespace:
+  `"{namespace}.{name}"` when namespace is present, `"{name}"` otherwise.
+  Matches the Confluent `RecordNameStrategy`. Raises `ValueError` at
+  construction if the schema has no `"name"` field.
+- `TopicRecordIdStrategy` — new artifact resolver strategy. Derives the
+  artifact ID from the topic and the Avro schema's record name:
+  `"{topic}-{namespace}.{name}"` when namespace is present,
+  `"{topic}-{name}"` otherwise. Matches the Confluent
+  `TopicRecordNameStrategy`. Raises `ValueError` at construction if the
+  schema has no `"name"` field.
 
 ## 0.2.0 (2026-03-11)
 
