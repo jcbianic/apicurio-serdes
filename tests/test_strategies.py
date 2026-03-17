@@ -44,7 +44,9 @@ class TestSimpleTopicIdStrategy:
 
 class TestQualifiedRecordIdStrategy:
     def test_with_namespace(self) -> None:
-        strategy = QualifiedRecordIdStrategy({"name": "Order", "namespace": "com.example"})
+        strategy = QualifiedRecordIdStrategy(
+            {"name": "Order", "namespace": "com.example"}
+        )
         assert strategy(_ctx("orders", MessageField.VALUE)) == "com.example.Order"
 
     def test_without_namespace(self) -> None:
@@ -52,7 +54,9 @@ class TestQualifiedRecordIdStrategy:
         assert strategy(_ctx("orders", MessageField.VALUE)) == "Order"
 
     def test_field_ignored(self) -> None:
-        strategy = QualifiedRecordIdStrategy({"name": "Order", "namespace": "com.example"})
+        strategy = QualifiedRecordIdStrategy(
+            {"name": "Order", "namespace": "com.example"}
+        )
         assert strategy(_ctx("orders", MessageField.KEY)) == "com.example.Order"
 
     def test_no_name_raises(self) -> None:
@@ -76,7 +80,9 @@ class TestQualifiedRecordIdStrategy:
 class TestTopicRecordIdStrategy:
     def test_with_namespace_value(self) -> None:
         strategy = TopicRecordIdStrategy({"name": "Order", "namespace": "com.example"})
-        assert strategy(_ctx("orders", MessageField.VALUE)) == "orders-com.example.Order"
+        assert (
+            strategy(_ctx("orders", MessageField.VALUE)) == "orders-com.example.Order"
+        )
 
     def test_with_namespace_key(self) -> None:
         strategy = TopicRecordIdStrategy({"name": "Order", "namespace": "com.example"})
