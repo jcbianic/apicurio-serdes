@@ -98,7 +98,10 @@ class QualifiedRecordIdStrategy:
         ```python
         from apicurio_serdes.avro import QualifiedRecordIdStrategy
 
-        schema = {"type": "record", "name": "Order", "namespace": "com.example", "fields": []}
+        schema = {
+            "type": "record", "name": "Order",
+            "namespace": "com.example", "fields": [],
+        }
         strategy = QualifiedRecordIdStrategy(schema)
         # strategy(ctx) == "com.example.Order"
         ```
@@ -150,7 +153,10 @@ class TopicRecordIdStrategy:
         from apicurio_serdes.avro import TopicRecordIdStrategy
         from apicurio_serdes.serialization import MessageField, SerializationContext
 
-        schema = {"type": "record", "name": "Order", "namespace": "com.example", "fields": []}
+        schema = {
+            "type": "record", "name": "Order",
+            "namespace": "com.example", "fields": [],
+        }
         strategy = TopicRecordIdStrategy(schema)
         ctx = SerializationContext(topic="orders", field=MessageField.VALUE)
         # strategy(ctx) == "orders-com.example.Order"
