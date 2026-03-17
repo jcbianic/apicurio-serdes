@@ -2,6 +2,35 @@
 
 Toutes les modifications visibles par les utilisateurs sont documentées ici.
 
+## Non publié
+
+### Ajouts
+
+- Méthode `register_schema(artifact_id, schema, if_exists)` sur `ApicurioRegistryClient`
+  et `AsyncApicurioRegistryClient`. Enregistre un artifact de schema via l'endpoint
+  Apicurio Registry v3 `POST /groups/{groupId}/artifacts` et peuple le cache
+  interne en cas de succès.
+- `AvroSerializer` accepte trois nouveaux paramètres optionnels : `schema` (dict
+  de schema Avro), `auto_register` (bool, défaut `False`) et `if_exists` (politique
+  `ifExists` v3). Quand `auto_register=True`, le premier appel à serialize enregistre
+  le schema automatiquement si l'artifact est introuvable (HTTP 404).
+- `SchemaRegistrationError` — nouvelle exception typée levée quand le registry
+  rejette une demande d'enregistrement de schema (réponse 4xx/5xx ou champs JSON
+  manquants dans le corps de la réponse). Exportée depuis la racine du paquet.
+- Les valeurs de `if_exists` suivent l'API Apicurio Registry v3 : `"FAIL"`,
+  `"FIND_OR_CREATE_VERSION"` (défaut), `"CREATE_VERSION"`.
+- `QualifiedRecordIdStrategy` — nouvelle stratégie de résolution d'artifact. Dérive
+  l'identifiant d'artifact depuis le nom et le namespace du record Avro :
+  `"{namespace}.{name}"` quand le namespace est présent, `"{name}"` sinon.
+  Correspond à la `RecordNameStrategy` de Confluent. Lève une `ValueError` à la
+  construction si le schema ne possède pas de champ `"name"`.
+- `TopicRecordIdStrategy` — nouvelle stratégie de résolution d'artifact. Dérive
+  l'identifiant d'artifact depuis le topic et le nom du record Avro :
+  `"{topic}-{namespace}.{name}"` quand le namespace est présent,
+  `"{topic}-{name}"` sinon. Correspond à la `TopicRecordNameStrategy` de Confluent.
+  Lève une `ValueError` à la construction si le schema ne possède pas de champ
+  `"name"`.
+
 ## 0.2.0 (2026-03-11)
 
 ### Durcissement des clients et déduplication
