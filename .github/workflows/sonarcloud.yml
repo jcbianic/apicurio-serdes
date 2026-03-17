@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   sonarcloud:
-    if: github.event.pull_request.draft == false || github.event_name == 'push'
+    if: (github.event.pull_request.draft == false || github.event_name == 'push') && github.actor != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
