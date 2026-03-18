@@ -293,8 +293,12 @@ def test_async_deserializer_init_signature_matches_sync() -> None:
 
     from apicurio_serdes.avro import AvroDeserializer
 
-    sync_params = set(inspect.signature(AvroDeserializer.__init__).parameters) - {"self"}
-    async_params = set(inspect.signature(AsyncAvroDeserializer.__init__).parameters) - {"self"}
+    sync_params = set(inspect.signature(AvroDeserializer.__init__).parameters) - {
+        "self"
+    }
+    async_params = set(inspect.signature(AsyncAvroDeserializer.__init__).parameters) - {
+        "self"
+    }
     assert sync_params == async_params
 
 
