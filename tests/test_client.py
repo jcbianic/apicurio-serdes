@@ -793,3 +793,36 @@ def test_id_cache_double_check_locking(mock_registry: respx.MockRouter) -> None:
     client._id_cache = _RaceDict()  # type: ignore[assignment]
     result = client.get_schema_by_content_id(42)
     assert result is cached_schema
+
+
+# ── Auth wiring tests ──
+
+
+def test_client_auth_defaults_to_none() -> None:
+    """auth parameter defaults to None; existing tests unaffected."""
+    import inspect
+
+    params = inspect.signature(ApicurioRegistryClient.__init__).parameters
+    assert "auth" in params
+    assert params["auth"].default is None
+
+
+def test_client_accepts_bearer_auth(mock_registry: respx.MockRouter) -> None:
+    """ApicurioRegistryClient accepts auth=BearerAuth and passes it to httpx."""
+    from httpx import Response
+
+    from apicurio_serdes._auth import BearerAuth
+
+    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/Auth/versions/latest/content"
+    route = mock_registry.get(url).mock(
+        return_value=Response(
+            200,
+            content=b'{"type":"record","name":"X","fields":[]}',
+            headers={"X-Registry-GlobalId": "1", "X-Registry-ContentId": "2"},
+        )
+    )
+    client = ApicurioRegistryClient(
+        url=REGISTRY_URL, group_id=GROUP_ID, auth=BearerAuth(token="wire-tok")
+    )
+    client.get_schema("Auth")
+    assert route.calls[0].request.headers["authorization"] == "Bearer wire-tok"
