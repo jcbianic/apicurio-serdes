@@ -230,6 +230,7 @@ def test_from_dict_error_wrapped(mock_registry: respx.MockRouter) -> None:
 
 # ── Reader schema (schema evolution) ──
 
+
 class TestReaderSchema:
     """Reader schema support — Avro schema evolution."""
 

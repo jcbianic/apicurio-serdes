@@ -305,6 +305,7 @@ def test_async_deserializer_init_signature_matches_sync() -> None:
 
 # ── Reader schema (schema evolution) ──
 
+
 class TestReaderSchema:
     """Reader schema support — Avro schema evolution (async)."""
 
