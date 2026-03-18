@@ -34,6 +34,14 @@ class AsyncAvroDeserializer:
         use_id: Which registry identifier type the 4-byte wire format
                 field represents. Must match the serializer's use_id
                 setting. Defaults to "globalId".
+        reader_schema: Optional Avro schema dict used as the reader schema
+                       during deserialization. When provided, fastavro
+                       performs schema resolution between the writer schema
+                       (embedded in the message) and this reader schema,
+                       enabling field defaults to fill gaps for added fields,
+                       type promotions, and other Avro evolution rules. When
+                       None (default), the writer schema is used for both
+                       roles (no evolution). Parsed once at construction time.
 
     Example:
         ```python
@@ -58,11 +66,15 @@ class AsyncAvroDeserializer:
         registry_client: AsyncApicurioRegistryClient,
         from_dict: Callable[[dict[str, Any], SerializationContext], Any] | None = None,
         use_id: Literal["globalId", "contentId"] = "globalId",
+        reader_schema: dict[str, Any] | None = None,
     ) -> None:
         self.registry_client = registry_client
         self.from_dict = from_dict
         self.use_id = use_id
         self._parsed_cache: dict[int, Any] = {}
+        self._parsed_reader_schema: Any = (
+            fastavro.parse_schema(reader_schema) if reader_schema is not None else None
+        )
 
     async def __call__(self, data: bytes, ctx: SerializationContext) -> Any:
         """Deserialize Confluent-framed Avro bytes (async).
@@ -111,7 +123,7 @@ class AsyncAvroDeserializer:
 
         try:
             result: Any = fastavro.schemaless_reader(
-                io.BytesIO(data[5:]), parsed_schema, parsed_schema
+                io.BytesIO(data[5:]), parsed_schema, self._parsed_reader_schema
             )
         except Exception as exc:
             raise DeserializationError(

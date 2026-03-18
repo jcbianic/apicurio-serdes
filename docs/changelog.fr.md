@@ -6,6 +6,13 @@ Toutes les modifications visibles par les utilisateurs sont documentées ici.
 
 ### Ajouts
 
+- `AvroDeserializer` et `AsyncAvroDeserializer` acceptent un paramètre optionnel
+  `reader_schema` (dict de schema Avro, défaut `None`). Quand il est fourni,
+  fastavro effectue une résolution de schema Avro entre le schema d'écriture
+  (embarqué dans le message) et le schema lecteur fourni, permettant les
+  patrons d'évolution de schema : les valeurs par défaut remplissent les
+  nouveaux champs ajoutés, les promotions de type sont supportées, ainsi que
+  les renommages de champs via alias. Parsé une seule fois à la construction.
 - Méthode `register_schema(artifact_id, schema, if_exists)` sur `ApicurioRegistryClient`
   et `AsyncApicurioRegistryClient`. Enregistre un artifact de schema via l'endpoint
   Apicurio Registry v3 `POST /groups/{groupId}/artifacts` et peuple le cache
