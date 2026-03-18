@@ -914,9 +914,7 @@ def test_async_init_max_retries_zero_valid() -> None:
 def test_async_init_max_retries_negative_raises_value_error() -> None:
     """max_retries=-1 raises ValueError."""
     with pytest.raises(ValueError, match="max_retries"):
-        AsyncApicurioRegistryClient(
-            url=REGISTRY_URL, group_id=GROUP_ID, max_retries=-1
-        )
+        AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID, max_retries=-1)
 
 
 def test_async_init_signature_matches_sync() -> None:
@@ -941,12 +939,12 @@ async def test_async_get_schema_retries_on_connect_error_then_succeeds(
     mock_registry: respx.MockRouter,
 ) -> None:
     """ConnectError on first attempt retried; schema returned on second attempt."""
-    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content"
+    url = (
+        f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content"
+    )
     mock_registry.get(url).mock(side_effect=_async_flaky_schema_handler(1))
     client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
-    with patch(
-        "apicurio_serdes._async_client.asyncio.sleep", new_callable=AsyncMock
-    ):
+    with patch("apicurio_serdes._async_client.asyncio.sleep", new_callable=AsyncMock):
         result = await client.get_schema("UserEvent")
     assert result.schema == USER_EVENT_SCHEMA_JSON
 
@@ -957,16 +955,18 @@ async def test_async_get_schema_exhausts_retries_raises_connection_error(
     """All attempts fail; RegistryConnectionError raised after max_retries exhausted."""
     from apicurio_serdes._errors import RegistryConnectionError
 
-    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content"
+    url = (
+        f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content"
+    )
     route = mock_registry.get(url).mock(side_effect=_async_flaky_schema_handler(99))
     client = AsyncApicurioRegistryClient(
         url=REGISTRY_URL, group_id=GROUP_ID, max_retries=2
     )
-    with patch(
-        "apicurio_serdes._async_client.asyncio.sleep", new_callable=AsyncMock
+    with (
+        patch("apicurio_serdes._async_client.asyncio.sleep", new_callable=AsyncMock),
+        pytest.raises(RegistryConnectionError),
     ):
-        with pytest.raises(RegistryConnectionError):
-            await client.get_schema("UserEvent")
+        await client.get_schema("UserEvent")
     assert route.call_count == 3
 
 
@@ -974,13 +974,11 @@ async def test_async_get_schema_by_global_id_retries_on_connect_error(
     mock_registry: respx.MockRouter,
 ) -> None:
     """ID lookup retried on ConnectError."""
-    mock_registry.get(
-        url__startswith=f"{REGISTRY_URL}/ids/globalIds/"
-    ).mock(side_effect=_async_flaky_id_handler(1))
+    mock_registry.get(url__startswith=f"{REGISTRY_URL}/ids/globalIds/").mock(
+        side_effect=_async_flaky_id_handler(1)
+    )
     client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
-    with patch(
-        "apicurio_serdes._async_client.asyncio.sleep", new_callable=AsyncMock
-    ):
+    with patch("apicurio_serdes._async_client.asyncio.sleep", new_callable=AsyncMock):
         result = await client.get_schema_by_global_id(GLOBAL_ID)
     assert result == USER_EVENT_SCHEMA_JSON
 
@@ -989,13 +987,11 @@ async def test_async_register_schema_retries_on_connect_error(
     mock_registry: respx.MockRouter,
 ) -> None:
     """register_schema retried on ConnectError."""
-    mock_registry.post(
-        url__startswith=f"{REGISTRY_URL}/groups/"
-    ).mock(side_effect=_async_flaky_register_handler(1))
+    mock_registry.post(url__startswith=f"{REGISTRY_URL}/groups/").mock(
+        side_effect=_async_flaky_register_handler(1)
+    )
     client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
-    with patch(
-        "apicurio_serdes._async_client.asyncio.sleep", new_callable=AsyncMock
-    ):
+    with patch("apicurio_serdes._async_client.asyncio.sleep", new_callable=AsyncMock):
         result = await client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
     assert result.global_id == GLOBAL_ID
 
@@ -1008,14 +1004,14 @@ async def test_async_get_schema_retries_on_retryable_status(
     mock_registry: respx.MockRouter, fail_status: int
 ) -> None:
     """Schema GET retried on 429/502/503/504."""
-    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content"
+    url = (
+        f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content"
+    )
     mock_registry.get(url).mock(
         side_effect=_async_flaky_status_schema_handler(fail_status, 1)
     )
     client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
-    with patch(
-        "apicurio_serdes._async_client.asyncio.sleep", new_callable=AsyncMock
-    ):
+    with patch("apicurio_serdes._async_client.asyncio.sleep", new_callable=AsyncMock):
         result = await client.get_schema("UserEvent")
     assert result.schema == USER_EVENT_SCHEMA_JSON
 
@@ -1071,7 +1067,9 @@ async def test_async_get_schema_max_retries_zero_no_retry(
     """max_retries=0 disables retry; ConnectError raises after 1 attempt."""
     from apicurio_serdes._errors import RegistryConnectionError
 
-    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content"
+    url = (
+        f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content"
+    )
     route = mock_registry.get(url).mock(side_effect=httpx.ConnectError("refused"))
     client = AsyncApicurioRegistryClient(
         url=REGISTRY_URL, group_id=GROUP_ID, max_retries=0
@@ -1087,16 +1085,18 @@ async def test_async_get_schema_exhausts_retries_on_503_raises_connection_error(
     """When all retries on 503 are exhausted, RegistryConnectionError is raised."""
     from apicurio_serdes._errors import RegistryConnectionError
 
-    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content"
+    url = (
+        f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content"
+    )
     mock_registry.get(url).mock(return_value=httpx.Response(503))
     client = AsyncApicurioRegistryClient(
         url=REGISTRY_URL, group_id=GROUP_ID, max_retries=1
     )
-    with patch(
-        "apicurio_serdes._async_client.asyncio.sleep", new_callable=AsyncMock
+    with (
+        patch("apicurio_serdes._async_client.asyncio.sleep", new_callable=AsyncMock),
+        pytest.raises(RegistryConnectionError),
     ):
-        with pytest.raises(RegistryConnectionError):
-            await client.get_schema("UserEvent")
+        await client.get_schema("UserEvent")
 
 
 # Backoff
@@ -1106,7 +1106,9 @@ async def test_async_get_schema_sleep_called_between_retries(
     mock_registry: respx.MockRouter,
 ) -> None:
     """asyncio.sleep is called with a non-negative delay between retry attempts."""
-    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content"
+    url = (
+        f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content"
+    )
     mock_registry.get(url).mock(side_effect=_async_flaky_schema_handler(1))
     client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
     with patch(
@@ -1124,7 +1126,10 @@ async def test_async_get_schema_sleep_called_between_retries(
 async def test_async_custom_http_client_is_used() -> None:
     """User-provided AsyncClient is used for HTTP requests."""
     mock_client = MagicMock(spec=httpx.AsyncClient)
-    _req = httpx.Request("GET", f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content")
+    _req = httpx.Request(
+        "GET",
+        f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content",
+    )
     mock_client.request = AsyncMock(
         return_value=httpx.Response(
             200,

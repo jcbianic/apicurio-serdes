@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 import httpx
 
-from apicurio_serdes._base import CachedSchema, _RETRYABLE_STATUSES, _RegistryClientBase
+from apicurio_serdes._base import _RETRYABLE_STATUSES, CachedSchema, _RegistryClientBase
 from apicurio_serdes._errors import RegistryConnectionError
 
 if TYPE_CHECKING:
