@@ -18,7 +18,58 @@ if TYPE_CHECKING:
     from apicurio_serdes.serialization import SerializationContext
 
 
-class AvroDeserializer:
+class _BaseAvroDeserializer:
+    """Shared initialisation and decode logic for sync and async deserializers."""
+
+    def __init__(
+        self,
+        from_dict: Callable[[dict[str, Any], SerializationContext], Any] | None,
+        use_id: Literal["globalId", "contentId"],
+        reader_schema: dict[str, Any] | None,
+    ) -> None:
+        self.from_dict = from_dict
+        self.use_id = use_id
+        self._parsed_cache: dict[int, Any] = {}
+        self._parsed_reader_schema = (
+            fastavro.parse_schema(reader_schema) if reader_schema is not None else None
+        )
+
+    def _decode(
+        self,
+        schema_id: int,
+        schema_dict: dict[str, Any],
+        payload: bytes,
+        ctx: SerializationContext,
+    ) -> Any:
+        """Cache the writer schema and decode the Avro payload."""
+        # Cache parsed schema to avoid repeated parse_schema calls (FR-007)
+        if schema_id not in self._parsed_cache:
+            self._parsed_cache[schema_id] = fastavro.parse_schema(schema_dict)
+        parsed_schema = self._parsed_cache[schema_id]
+
+        # FR-011: decode Avro payload
+        try:
+            result: Any = fastavro.schemaless_reader(
+                io.BytesIO(payload), parsed_schema, self._parsed_reader_schema
+            )
+        except Exception as exc:
+            raise DeserializationError(
+                f"Avro decode failure: {exc}", cause=exc
+            ) from exc
+
+        # FR-008, FR-009: apply from_dict hook if configured
+        if self.from_dict is not None:
+            try:
+                return self.from_dict(result, ctx)
+            except Exception as exc:
+                raise DeserializationError(
+                    f"from_dict conversion failed: {exc}", cause=exc
+                ) from exc
+
+        return result
+
+
+class AvroDeserializer(_BaseAvroDeserializer):
     """Deserializes Confluent-framed Avro bytes to Python dicts.
 
     Reads the wire format header to extract the schema identifier,
@@ -51,13 +102,8 @@ class AvroDeserializer:
         *,
         reader_schema: dict[str, Any] | None = None,
     ) -> None:
+        super().__init__(from_dict=from_dict, use_id=use_id, reader_schema=reader_schema)
         self.registry_client = registry_client
-        self.from_dict = from_dict
-        self.use_id = use_id
-        self._parsed_cache: dict[int, Any] = {}
-        self._parsed_reader_schema = (
-            fastavro.parse_schema(reader_schema) if reader_schema is not None else None
-        )
 
     def __call__(self, data: bytes, ctx: SerializationContext) -> Any:
         """Deserialize Confluent-framed Avro bytes.
@@ -105,28 +151,4 @@ class AvroDeserializer:
         else:
             schema_dict = self.registry_client.get_schema_by_content_id(schema_id)
 
-        # Cache parsed schema to avoid repeated parse_schema calls (FR-007)
-        if schema_id not in self._parsed_cache:
-            self._parsed_cache[schema_id] = fastavro.parse_schema(schema_dict)
-        parsed_schema = self._parsed_cache[schema_id]
-
-        # FR-011: decode Avro payload
-        try:
-            result: Any = fastavro.schemaless_reader(
-                io.BytesIO(data[5:]), parsed_schema, self._parsed_reader_schema
-            )
-        except Exception as exc:
-            raise DeserializationError(
-                f"Avro decode failure: {exc}", cause=exc
-            ) from exc
-
-        # FR-008, FR-009: apply from_dict hook if configured
-        if self.from_dict is not None:
-            try:
-                return self.from_dict(result, ctx)
-            except Exception as exc:
-                raise DeserializationError(
-                    f"from_dict conversion failed: {exc}", cause=exc
-                ) from exc
-
-        return result
+        return self._decode(schema_id, schema_dict, data[5:], ctx)

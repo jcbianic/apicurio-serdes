@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-import io
 import struct
 from typing import TYPE_CHECKING, Any
 
-import fastavro
-
 from apicurio_serdes._errors import DeserializationError
+from apicurio_serdes.avro._deserializer import _BaseAvroDeserializer
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -18,7 +16,7 @@ if TYPE_CHECKING:
     from apicurio_serdes.serialization import SerializationContext
 
 
-class AsyncAvroDeserializer:
+class AsyncAvroDeserializer(_BaseAvroDeserializer):
     """Deserializes Confluent-framed Avro bytes to Python dicts (async).
 
     Non-blocking counterpart to AvroDeserializer. Uses
@@ -69,13 +67,8 @@ class AsyncAvroDeserializer:
         *,
         reader_schema: dict[str, Any] | None = None,
     ) -> None:
+        super().__init__(from_dict=from_dict, use_id=use_id, reader_schema=reader_schema)
         self.registry_client = registry_client
-        self.from_dict = from_dict
-        self.use_id = use_id
-        self._parsed_cache: dict[int, Any] = {}
-        self._parsed_reader_schema = (
-            fastavro.parse_schema(reader_schema) if reader_schema is not None else None
-        )
 
     async def __call__(self, data: bytes, ctx: SerializationContext) -> Any:
         """Deserialize Confluent-framed Avro bytes (async).
@@ -118,25 +111,4 @@ class AsyncAvroDeserializer:
         else:
             schema_dict = await self.registry_client.get_schema_by_content_id(schema_id)
 
-        if schema_id not in self._parsed_cache:
-            self._parsed_cache[schema_id] = fastavro.parse_schema(schema_dict)
-        parsed_schema = self._parsed_cache[schema_id]
-
-        try:
-            result: Any = fastavro.schemaless_reader(
-                io.BytesIO(data[5:]), parsed_schema, self._parsed_reader_schema
-            )
-        except Exception as exc:
-            raise DeserializationError(
-                f"Avro decode failure: {exc}", cause=exc
-            ) from exc
-
-        if self.from_dict is not None:
-            try:
-                return self.from_dict(result, ctx)
-            except Exception as exc:
-                raise DeserializationError(
-                    f"from_dict conversion failed: {exc}", cause=exc
-                ) from exc
-
-        return result
+        return self._decode(schema_id, schema_dict, data[5:], ctx)
