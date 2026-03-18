@@ -166,6 +166,39 @@ def _register_error_route(
     )
 
 
+# ── Reader schema evolution fixtures ──
+
+WRITER_SCHEMA_EVOLUTION: dict[str, Any] = {
+    "type": "record",
+    "name": "UserEventV1",
+    "namespace": "com.example",
+    "fields": [
+        {"name": "userId", "type": "string"},
+    ],
+}
+
+READER_SCHEMA_EVOLUTION: dict[str, Any] = {
+    "type": "record",
+    "name": "UserEventV1",
+    "namespace": "com.example",
+    "fields": [
+        {"name": "userId", "type": "string"},
+        {"name": "version", "type": "string", "default": "v1"},
+    ],
+}
+
+INCOMPATIBLE_READER_SCHEMA: dict[str, Any] = {
+    "type": "record",
+    "name": "UserEventV1",
+    "namespace": "com.example",
+    "fields": [
+        {"name": "userId", "type": "string"},
+        # required field with no default — cannot be filled from writer schema
+        {"name": "required_field", "type": "string"},
+    ],
+}
+
+
 def make_confluent_bytes(
     schema_id: int,
     data: dict[str, Any],

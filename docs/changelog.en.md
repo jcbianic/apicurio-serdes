@@ -6,6 +6,12 @@ All user-visible changes are documented here.
 
 ### Added
 
+- `AvroDeserializer` and `AsyncAvroDeserializer` accept an optional
+  `reader_schema` parameter (Avro schema dict, default `None`). When provided,
+  fastavro performs Avro schema resolution between the writer schema (embedded
+  in the message) and the supplied reader schema, enabling schema evolution
+  patterns: field defaults fill gaps for added fields, type promotions, and
+  alias-based field renames. Parsed once at construction time.
 - `register_schema(artifact_id, schema, if_exists)` method on both
   `ApicurioRegistryClient` and `AsyncApicurioRegistryClient`. Registers a
   schema artifact via the Apicurio Registry v3 `POST /groups/{groupId}/artifacts`
