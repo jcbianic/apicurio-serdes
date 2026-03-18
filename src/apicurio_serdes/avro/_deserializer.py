@@ -55,7 +55,7 @@ class AvroDeserializer:
         self.from_dict = from_dict
         self.use_id = use_id
         self._parsed_cache: dict[int, Any] = {}
-        self._parsed_reader_schema: Any = (
+        self._parsed_reader_schema = (
             fastavro.parse_schema(reader_schema) if reader_schema is not None else None
         )
 
