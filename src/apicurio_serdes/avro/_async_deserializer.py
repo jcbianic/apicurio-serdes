@@ -66,6 +66,7 @@ class AsyncAvroDeserializer:
         registry_client: AsyncApicurioRegistryClient,
         from_dict: Callable[[dict[str, Any], SerializationContext], Any] | None = None,
         use_id: Literal["globalId", "contentId"] = "globalId",
+        *,
         reader_schema: dict[str, Any] | None = None,
     ) -> None:
         self.registry_client = registry_client
