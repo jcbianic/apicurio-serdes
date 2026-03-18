@@ -15,6 +15,7 @@ from apicurio_serdes.avro import AvroDeserializer
 from apicurio_serdes.serialization import MessageField, SerializationContext
 from tests.conftest import (
     GROUP_ID,
+    INCOMPATIBLE_READER_SCHEMA,
     READER_SCHEMA_EVOLUTION,
     REGISTRY_URL,
     VALID_USER_EVENT,
@@ -229,18 +230,6 @@ def test_from_dict_error_wrapped(mock_registry: respx.MockRouter) -> None:
 
 # ── Reader schema (schema evolution) ──
 
-_INCOMPATIBLE_READER_SCHEMA: dict[str, Any] = {
-    "type": "record",
-    "name": "UserEventV1",
-    "namespace": "com.example",
-    "fields": [
-        {"name": "userId", "type": "string"},
-        # required field with no default — cannot be filled from writer schema
-        {"name": "required_field", "type": "string"},
-    ],
-}
-
-
 class TestReaderSchema:
     """Reader schema support — Avro schema evolution."""
 
@@ -286,7 +275,7 @@ class TestReaderSchema:
         )
         client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
         deser = AvroDeserializer(
-            registry_client=client, reader_schema=_INCOMPATIBLE_READER_SCHEMA
+            registry_client=client, reader_schema=INCOMPATIBLE_READER_SCHEMA
         )
         data = make_confluent_bytes(
             CONTENT_ID, {"userId": "u1"}, schema=WRITER_SCHEMA_EVOLUTION
