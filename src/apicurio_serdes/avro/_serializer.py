@@ -191,18 +191,6 @@ class AvroSerializer:
         self._parsed_schema = fastavro.parse_schema(cached.schema)
         return cached
 
-    def _validate_strict(self, data: Any, schema: CachedSchema) -> None:
-        """Raise ValueError if data contains fields not declared in the schema."""
-        fields = schema.schema.get("fields")
-        if fields is None:
-            raise ValueError("strict mode requires a record schema with 'fields'")
-        schema_fields = {f["name"] for f in fields}
-        extra = set(data.keys()) - schema_fields
-        if extra:
-            raise ValueError(
-                f"Extra fields not in schema: {', '.join(sorted(extra))}"
-            )
-
     def serialize(self, data: Any, ctx: SerializationContext) -> SerializedMessage:
         """Serialize data and return payload bytes plus any Kafka headers.
 
@@ -241,7 +229,15 @@ class AvroSerializer:
 
         # Strict mode validation
         if self.strict:
-            self._validate_strict(data, schema)
+            fields = schema.schema.get("fields")
+            if fields is None:
+                raise ValueError("strict mode requires a record schema with 'fields'")
+            schema_fields = {f["name"] for f in fields}
+            extra = set(data.keys()) - schema_fields
+            if extra:
+                raise ValueError(
+                    f"Extra fields not in schema: {', '.join(sorted(extra))}"
+                )
 
         # Select schema ID based on use_id
         if self.use_id == "contentId":
