@@ -3,6 +3,7 @@ name: Publish
 on:
   release:
     types: [published]
+  workflow_dispatch: {}
 
 permissions: {}
 
@@ -10,6 +11,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      hashes: ${{ steps.hashes.outputs.hashes }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
         with:
@@ -19,13 +22,29 @@ jobs:
           python-version: "3.13"
       - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78  # v7.6.0
       - run: uv build
+      - name: Compute artifact hashes
+        id: hashes
+        run: echo "hashes=$(sha256sum dist/* | base64 -w0)" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f  # v7.0.0
         with:
           name: dist
           path: dist/
 
+  provenance:
+    needs: build
+    if: github.event_name == 'release'
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
+    with:
+      base64-subjects: "${{ needs.build.outputs.hashes }}"
+      upload-assets: true
+
   sign-release:
     needs: build
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -67,7 +86,8 @@ jobs:
           skip-existing: true
 
   validate-testpypi:
-    needs: [build, publish-testpypi]
+    needs: publish-testpypi
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -102,7 +122,8 @@ jobs:
           python -c "import apicurio_serdes; print(apicurio_serdes.__name__)"
 
   publish-pypi:
-    needs: validate-testpypi
+    needs: [validate-testpypi, provenance]
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: pypi
