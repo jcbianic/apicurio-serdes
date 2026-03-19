@@ -984,9 +984,11 @@ def test_get_schema_exhausts_retries_raises_connection_error(
     )
     route = mock_registry.get(url).mock(side_effect=_flaky_schema_handler(99))
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID, max_retries=2)
-    with patch("apicurio_serdes._client.time.sleep"):
-        with pytest.raises(RegistryConnectionError):
-            client.get_schema("UserEvent")
+    with (
+        patch("apicurio_serdes._client.time.sleep"),
+        pytest.raises(RegistryConnectionError),
+    ):
+        client.get_schema("UserEvent")
     assert route.call_count == 3  # 1 initial + 2 retries
 
 
@@ -1102,9 +1104,11 @@ def test_get_schema_exhausts_retries_on_503_raises_connection_error(
     )
     mock_registry.get(url).mock(return_value=httpx.Response(503))
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID, max_retries=1)
-    with patch("apicurio_serdes._client.time.sleep"):
-        with pytest.raises(RegistryConnectionError):
-            client.get_schema("UserEvent")
+    with (
+        patch("apicurio_serdes._client.time.sleep"),
+        pytest.raises(RegistryConnectionError),
+    ):
+        client.get_schema("UserEvent")
 
 
 # Backoff

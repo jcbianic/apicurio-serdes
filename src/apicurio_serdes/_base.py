@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import json
 import random
-from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 import httpx
 
@@ -84,7 +86,8 @@ class _RegistryClientBase:
     def _compute_delay(self, attempt: int) -> float:
         """Full-jitter exponential backoff in seconds.
 
-        delay = random(0, min(retry_backoff_ms * 2^attempt, retry_max_backoff_ms)) / 1000
+        delay = random(0, min(retry_backoff_ms * 2^attempt, retry_max_backoff_ms))
+                / 1000
         """
         cap = min(self.retry_backoff_ms * (2**attempt), self.retry_max_backoff_ms)
         return random.uniform(0, cap) / 1000.0
