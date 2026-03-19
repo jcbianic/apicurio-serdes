@@ -149,6 +149,60 @@ class AvroSerializer:
         self._schema: CachedSchema | None = None
         self._parsed_schema: str | list[Any] | dict[Any, Any] | None = None
 
+    def _ensure_schema(self, ctx: SerializationContext) -> CachedSchema:
+        """Lazily fetch and cache the schema from the registry."""
+        if self._schema is not None:
+            return self._schema
+        if (
+            self._artifact_resolver is not None
+            and self._resolved_artifact_id is None
+        ):
+            try:
+                resolved = self._artifact_resolver(ctx)
+            except Exception as exc:
+                raise ResolverError(
+                    f"artifact_resolver raised: {exc}", cause=exc
+                ) from exc
+            if not isinstance(resolved, str) or not resolved:
+                raise ResolverError(
+                    f"artifact_resolver must return a non-empty str,"
+                    f" got {resolved!r}"
+                )
+            self._resolved_artifact_id = resolved
+        effective_id = (
+            self.artifact_id
+            if self.artifact_id is not None
+            else self._resolved_artifact_id
+        )
+        if effective_id is None:  # pragma: no cover
+            raise RuntimeError(
+                "artifact_id is None and no resolver has produced an ID yet; "
+                "this is an internal invariant violation."
+            )
+        try:
+            cached = self.registry_client.get_schema(effective_id)
+        except SchemaNotFoundError:
+            if not self.auto_register or self._local_schema is None:
+                raise
+            cached = self.registry_client.register_schema(
+                effective_id, self._local_schema, self.if_exists
+            )
+        self._schema = cached
+        self._parsed_schema = fastavro.parse_schema(cached.schema)
+        return cached
+
+    def _validate_strict(self, data: Any, schema: CachedSchema) -> None:
+        """Raise ValueError if data contains fields not declared in the schema."""
+        fields = schema.schema.get("fields")
+        if fields is None:
+            raise ValueError("strict mode requires a record schema with 'fields'")
+        schema_fields = {f["name"] for f in fields}
+        extra = set(data.keys()) - schema_fields
+        if extra:
+            raise ValueError(
+                f"Extra fields not in schema: {', '.join(sorted(extra))}"
+            )
+
     def serialize(self, data: Any, ctx: SerializationContext) -> SerializedMessage:
         """Serialize data and return payload bytes plus any Kafka headers.
 
@@ -176,44 +230,7 @@ class AvroSerializer:
             SerializationError: If the to_dict callable raises an exception.
             ValueError: If data does not conform to the Avro schema.
         """
-        # Lazy schema fetch (cached by client)
-        if self._schema is None:
-            if (
-                self._artifact_resolver is not None
-                and self._resolved_artifact_id is None
-            ):
-                try:
-                    resolved = self._artifact_resolver(ctx)
-                except Exception as exc:
-                    raise ResolverError(
-                        f"artifact_resolver raised: {exc}", cause=exc
-                    ) from exc
-                if not isinstance(resolved, str) or not resolved:
-                    raise ResolverError(
-                        f"artifact_resolver must return a non-empty str,"
-                        f" got {resolved!r}"
-                    )
-                self._resolved_artifact_id = resolved
-            effective_id = (
-                self.artifact_id
-                if self.artifact_id is not None
-                else self._resolved_artifact_id
-            )
-            if effective_id is None:  # pragma: no cover
-                raise RuntimeError(
-                    "artifact_id is None and no resolver has produced an ID yet; "
-                    "this is an internal invariant violation."
-                )
-            try:
-                cached = self.registry_client.get_schema(effective_id)
-            except SchemaNotFoundError:
-                if not self.auto_register or self._local_schema is None:
-                    raise
-                cached = self.registry_client.register_schema(
-                    effective_id, self._local_schema, self.if_exists
-                )
-            self._schema = cached
-            self._parsed_schema = fastavro.parse_schema(cached.schema)
+        schema = self._ensure_schema(ctx)
 
         # Apply to_dict hook if provided
         if self.to_dict is not None:
@@ -224,21 +241,13 @@ class AvroSerializer:
 
         # Strict mode validation
         if self.strict:
-            fields = self._schema.schema.get("fields")
-            if fields is None:
-                raise ValueError("strict mode requires a record schema with 'fields'")
-            schema_fields = {f["name"] for f in fields}
-            extra = set(data.keys()) - schema_fields
-            if extra:
-                raise ValueError(
-                    f"Extra fields not in schema: {', '.join(sorted(extra))}"
-                )
+            self._validate_strict(data, schema)
 
         # Select schema ID based on use_id
         if self.use_id == "contentId":
-            schema_id = self._schema.content_id
+            schema_id = schema.content_id
         else:
-            schema_id = self._schema.global_id
+            schema_id = schema.global_id
 
         # Encode to Avro binary
         buffer = io.BytesIO()
