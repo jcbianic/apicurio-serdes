@@ -47,24 +47,24 @@ class _CacheCore:
             raise ValueError(f"cache_ttl_seconds must be > 0, got {ttl}")
         self._max_size = max_size
         self._ttl = ttl
-        self._store: OrderedDict = OrderedDict()
+        self._store: OrderedDict[Any, tuple[Any, float | None]] = OrderedDict()
 
     def peek(self, key: object) -> object:
         """TTL check without LRU update — safe to call outside a lock (no mutation)."""
-        entry = self._store.get(key, self._MISSING)
-        if entry is self._MISSING:
+        raw = self._store.get(key)  # type: tuple[Any, float | None] | None
+        if raw is None:
             return self._MISSING
-        value, expiry = entry
+        value, expiry = raw
         if expiry is not None and time.monotonic() >= expiry:
             return self._MISSING  # expired; do NOT delete — deletion requires lock
         return value
 
     def get(self, key: object) -> object:
         """Full LRU update + TTL eviction. Must be called inside caller's lock."""
-        entry = self._store.get(key, self._MISSING)
-        if entry is self._MISSING:
+        raw = self._store.get(key)  # type: tuple[Any, float | None] | None
+        if raw is None:
             return self._MISSING
-        value, expiry = entry
+        value, expiry = raw
         if expiry is not None and time.monotonic() >= expiry:
             del self._store[key]
             return self._MISSING

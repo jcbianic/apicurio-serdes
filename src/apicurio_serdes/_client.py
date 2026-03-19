@@ -163,7 +163,7 @@ class ApicurioRegistryClient(_RegistryClientBase):
             response = self._http_request("GET", self._schema_endpoint(artifact_id))
             cached = self._process_schema_response(response, artifact_id)
             self._schema_cache.set(cache_key, cached)
-            return cached  # type: ignore[return-value]
+            return cached
 
     def get_schema_by_global_id(self, global_id: int) -> dict[str, Any]:
         """Retrieve an Avro schema by its globalId.
@@ -251,7 +251,7 @@ class ApicurioRegistryClient(_RegistryClientBase):
             )
             cached = self._process_registration_response(response, artifact_id, schema)
             self._schema_cache.set(cache_key, cached)
-            return cached  # type: ignore[return-value]
+            return cached
 
     def _get_schema_by_id(self, id_type: str, id_value: int) -> dict[str, Any]:
         """Shared implementation for ID-based schema lookups (D12)."""

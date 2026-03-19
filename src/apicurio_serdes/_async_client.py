@@ -153,7 +153,7 @@ class AsyncApicurioRegistryClient(_RegistryClientBase):
             )
             cached = self._process_schema_response(response, artifact_id)
             self._schema_cache.set(cache_key, cached)
-            return cached  # type: ignore[return-value]
+            return cached
 
     async def get_schema_by_global_id(self, global_id: int) -> dict[str, Any]:
         """Retrieve an Avro schema by its globalId (async).
@@ -239,7 +239,7 @@ class AsyncApicurioRegistryClient(_RegistryClientBase):
             )
             cached = self._process_registration_response(response, artifact_id, schema)
             self._schema_cache.set(cache_key, cached)
-            return cached  # type: ignore[return-value]
+            return cached
 
     async def _get_schema_by_id(self, id_type: str, id_value: int) -> dict[str, Any]:
         """Shared implementation for async ID-based schema lookups."""
