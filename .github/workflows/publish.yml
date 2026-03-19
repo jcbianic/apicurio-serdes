@@ -3,6 +3,16 @@ name: Publish
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Publish target (testpypi only, or full)"
+        required: false
+        default: testpypi
+        type: choice
+        options:
+          - testpypi
+          - full
 
 permissions: {}
 
@@ -38,10 +48,11 @@ jobs:
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2
     with:
       base64-subjects: "${{ needs.build.outputs.hashes }}"
-      upload-assets: true
+      upload-assets: ${{ github.event_name == 'release' }}
 
   sign-release:
     needs: build
+    if: github.event_name == 'release'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -118,7 +129,8 @@ jobs:
           python -c "import apicurio_serdes; print(apicurio_serdes.__name__)"
 
   publish-pypi:
-    needs: validate-testpypi
+    needs: [validate-testpypi, provenance]
+    if: github.event_name == 'release' || inputs.target == 'full'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: pypi
