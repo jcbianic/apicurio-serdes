@@ -1,6 +1,7 @@
 # Error Handling
 
-`apicurio-serdes` raises specific exception types for each failure mode, plus standard Python exceptions for validation errors.
+`apicurio-serdes` raises specific exception types for each failure mode, plus standard
+Python exceptions for validation errors.
 
 ## Exception Overview
 
@@ -60,24 +61,31 @@ except RegistryConnectionError as e:
 - The URL is wrong (missing `/apis/registry/v3` path)
 - A firewall or network issue is blocking the connection
 
-**Recovery pattern — retry with backoff:**
+**Built-in retry:** Both clients retry automatically on transient failures — no
+manual retry loop is needed. Configure the retry behaviour at construction time:
 
 ```python
-import time
-from apicurio_serdes._errors import RegistryConnectionError
+from apicurio_serdes import ApicurioRegistryClient
 
-max_retries = 3
-for attempt in range(max_retries):
-    try:
-        payload = serializer(data, ctx)
-        break
-    except RegistryConnectionError:
-        if attempt == max_retries - 1:
-            raise
-        time.sleep(2 ** attempt)
+client = ApicurioRegistryClient(
+    url="http://registry:8080/apis/registry/v3",
+    group_id="my-group",
+    max_retries=3,               # default — set to 0 to disable
+    retry_backoff_ms=1000,       # base delay for the first retry (ms)
+    retry_max_backoff_ms=20000,  # maximum backoff cap (ms)
+)
 ```
 
-Note: this exception is only raised on the **first** serialization call (when the schema is fetched). Once the schema is cached, no further HTTP requests are made, so network errors cannot occur during serialization.
+Retry covers `httpx.TransportError` (network-level failure) and HTTP responses
+with status 429, 502, 503, and 504 (transient server errors). After all retries
+are exhausted, `RegistryConnectionError` is raised.
+
+**Do not** wrap calls in an additional retry loop — that would multiply the
+effective retry count and interfere with the built-in backoff.
+
+Note: this exception is only raised on the **first** serialization call (when the schema
+is fetched). Once the schema is cached, no further HTTP requests are made, so network
+errors cannot occur during serialization.
 
 ## Handling `SerializationError`
 
@@ -104,7 +112,8 @@ except SerializationError as e:
 
 ## Handling `ValueError`
 
-Raised by the underlying Avro encoder (fastavro) when the data does not match the schema. This is **not** an `apicurio-serdes` exception — it comes from fastavro directly.
+Raised by the underlying Avro encoder (fastavro) when the data does not match the schema.
+This is **not** an `apicurio-serdes` exception — it comes from fastavro directly.
 
 ```python
 try:
@@ -113,7 +122,8 @@ except ValueError as e:
     print(f"Data does not match schema: {e}")
 ```
 
-If `strict=True` is enabled on the serializer, `ValueError` is also raised when the data contains extra fields not defined in the schema.
+If `strict=True` is enabled on the serializer, `ValueError` is also raised when the data
+contains extra fields not defined in the schema.
 
 **Recovery:** Ensure the data dictionary has all required fields with the correct types.
 
@@ -140,8 +150,11 @@ except RuntimeError as e:
 
 In addition to Avro schema validation errors from fastavro, `ValueError` is raised in two new situations:
 
-- **32-bit schema ID overflow**: When using `CONFLUENT_PAYLOAD` wire format, the schema ID must fit in an unsigned 32-bit integer. If the registry-assigned ID exceeds this limit, use `WireFormat.KAFKA_HEADERS` instead.
-- **int64 range validation**: When registry response headers contain a `globalId` or `contentId` outside the signed 64-bit integer range.
+- **32-bit schema ID overflow**: When using `CONFLUENT_PAYLOAD` wire format, the schema
+  ID must fit in an unsigned 32-bit integer. If the registry-assigned ID exceeds this
+  limit, use `WireFormat.KAFKA_HEADERS` instead.
+- **int64 range validation**: When registry response headers contain a `globalId` or
+  `contentId` outside the signed 64-bit integer range.
 
 ```python
 try:
@@ -153,9 +166,11 @@ except ValueError as e:
         print(f"Data does not match schema: {e}")
 ```
 
-If `strict=True` is enabled on the serializer, `ValueError` is also raised when the data contains extra fields not defined in the schema.
+If `strict=True` is enabled on the serializer, `ValueError` is also raised when the data
+contains extra fields not defined in the schema.
 
-**Recovery:** Ensure the data dictionary has all required fields with the correct types, or switch wire format for large schema IDs.
+**Recovery:** Ensure the data dictionary has all required fields with the correct types,
+or switch wire format for large schema IDs.
 
 ## Putting It All Together
 

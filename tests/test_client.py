@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
+from unittest.mock import MagicMock, patch
 
 import httpx
 import pytest
@@ -829,10 +831,6 @@ def test_client_accepts_bearer_auth(mock_registry: respx.MockRouter) -> None:
 
 
 # ── Retry and escape hatch tests (#37) ──
-
-
-import json
-from unittest.mock import MagicMock, patch
 
 
 def _flaky_schema_handler(n_failures: int) -> Any:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from typing import Any
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
@@ -793,9 +794,6 @@ async def test_async_client_accepts_bearer_auth(
 
 
 # ── Retry and escape hatch tests (#37) ──
-
-
-from unittest.mock import AsyncMock, MagicMock, patch
 
 
 def _async_flaky_schema_handler(n_failures: int) -> Any:

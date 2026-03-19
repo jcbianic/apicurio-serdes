@@ -85,7 +85,7 @@ async def produce(request):
 | Récupération de schema | `client.get_schema(id)` | `await client.get_schema(id)` |
 | Enregistrement de schema | `client.register_schema(id, schema)` | `await client.register_schema(id, schema)` |
 | Type de retour | `CachedSchema` | `CachedSchema` (même classe) |
-| Paramètres du constructeur | `url`, `group_id` | `url`, `group_id` (identiques) |
+| Paramètres du constructeur | `url`, `group_id`, `max_retries`, `retry_backoff_ms`, `retry_max_backoff_ms`, `http_client`, `auth` | identiques |
 | Sécurité du cache | `threading.RLock` | `asyncio.Lock` |
 | Nettoyage | (GC automatique) | `async with` ou `await client.aclose()` |
 | Erreurs | `SchemaNotFoundError`, `RegistryConnectionError` | Mêmes types d'erreurs |

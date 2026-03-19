@@ -1,6 +1,7 @@
 # Gestion des erreurs
 
-`apicurio-serdes` lève des types d'exceptions spécifiques pour chaque mode de défaillance, ainsi que des exceptions Python standard pour les erreurs de validation.
+`apicurio-serdes` lève des types d'exceptions spécifiques pour chaque mode de défaillance,
+ainsi que des exceptions Python standard pour les erreurs de validation.
 
 ## Vue d'ensemble des exceptions
 
@@ -60,24 +61,34 @@ except RegistryConnectionError as e:
 - L'URL est incorrecte (chemin `/apis/registry/v3` manquant)
 - Un pare-feu ou un problème réseau bloque la connexion
 
-**Stratégie de récupération — nouvelle tentative avec délai exponentiel :**
+**Nouvelle tentative intégrée :** Les deux clients effectuent automatiquement des
+nouvelles tentatives sur les défaillances transitoires — aucune boucle de nouvelle
+tentative manuelle n'est nécessaire. Configurez ce comportement à la construction :
 
 ```python
-import time
-from apicurio_serdes._errors import RegistryConnectionError
+from apicurio_serdes import ApicurioRegistryClient
 
-max_retries = 3
-for attempt in range(max_retries):
-    try:
-        payload = serializer(data, ctx)
-        break
-    except RegistryConnectionError:
-        if attempt == max_retries - 1:
-            raise
-        time.sleep(2 ** attempt)
+client = ApicurioRegistryClient(
+    url="http://registry:8080/apis/registry/v3",
+    group_id="my-group",
+    max_retries=3,               # défaut — mettre à 0 pour désactiver
+    retry_backoff_ms=1000,       # délai de base pour la première tentative (ms)
+    retry_max_backoff_ms=20000,  # délai maximum (ms)
+)
 ```
 
-Remarque : cette exception n'est levée que lors du **premier** appel de sérialisation (lorsque le schema est récupéré). Une fois le schema mis en cache, aucune requête HTTP supplémentaire n'est effectuée, les erreurs réseau ne peuvent donc pas survenir pendant la sérialisation.
+Les nouvelles tentatives couvrent les `httpx.TransportError` (échec au niveau réseau)
+et les réponses HTTP avec les codes 429, 502, 503 et 504 (erreurs serveur transitoires).
+Une fois toutes les tentatives épuisées, `RegistryConnectionError` est levée.
+
+**N'encapsulez pas** les appels dans une boucle de nouvelle tentative supplémentaire —
+cela multiplierait le nombre effectif de tentatives et interférerait avec le délai
+exponentiel intégré.
+
+Remarque : cette exception n'est levée que lors du **premier** appel de sérialisation
+(lorsque le schema est récupéré). Une fois le schema mis en cache, aucune requête HTTP
+supplémentaire n'est effectuée, les erreurs réseau ne peuvent donc pas survenir pendant
+la sérialisation.
 
 ## Gérer `SerializationError`
 
@@ -100,11 +111,14 @@ except SerializationError as e:
 - Le callable a tenté d'accéder à un attribut inexistant sur l'objet en entrée
 - Une erreur de validation Pydantic s'est produite dans `model_dump()`
 
-**Récupération :** Corrigez l'implémentation de `to_dict` ou validez les données en entrée avant la sérialisation.
+**Récupération :** Corrigez l'implémentation de `to_dict` ou validez les données en
+entrée avant la sérialisation.
 
 ## Gérer `ValueError`
 
-Levée par l'encodeur Avro sous-jacent (fastavro) lorsque les données ne correspondent pas au schema. Ce n'est **pas** une exception `apicurio-serdes` — elle provient directement de fastavro.
+Levée par l'encodeur Avro sous-jacent (fastavro) lorsque les données ne correspondent
+pas au schema. Ce n'est **pas** une exception `apicurio-serdes` — elle provient
+directement de fastavro.
 
 ```python
 try:
@@ -113,9 +127,11 @@ except ValueError as e:
     print(f"Data does not match schema: {e}")
 ```
 
-Si `strict=True` est activé sur le serializer, `ValueError` est également levée lorsque les données contiennent des champs supplémentaires non définis dans le schema.
+Si `strict=True` est activé sur le serializer, `ValueError` est également levée lorsque
+les données contiennent des champs supplémentaires non définis dans le schema.
 
-**Récupération :** Assurez-vous que le dictionnaire de données possède tous les champs requis avec les types corrects.
+**Récupération :** Assurez-vous que le dictionnaire de données possède tous les champs
+requis avec les types corrects.
 
 ## Gérer `RuntimeError` (client fermé)
 
@@ -131,17 +147,25 @@ except RuntimeError as e:
 
 **Causes fréquentes :**
 
-- Appeler `close()` ou sortir d'un gestionnaire de contexte, puis réutiliser le même client
+- Appeler `close()` ou sortir d'un gestionnaire de contexte, puis réutiliser le même
+  client
 - Partager un client entre threads/coroutines où un chemin le ferme prématurément
 
-**Récupération :** Créez une nouvelle instance d'`ApicurioRegistryClient` ou d'`AsyncApicurioRegistryClient`.
+**Récupération :** Créez une nouvelle instance d'`ApicurioRegistryClient` ou
+d'`AsyncApicurioRegistryClient`.
 
 ## Gérer `ValueError` (validation)
 
-En plus des erreurs de validation de schema Avro provenant de fastavro, `ValueError` est levée dans deux nouvelles situations :
+En plus des erreurs de validation de schema Avro provenant de fastavro, `ValueError` est
+levée dans deux nouvelles situations :
 
-- **Dépassement de l'identifiant de schema 32 bits** : avec le wire format `CONFLUENT_PAYLOAD`, l'identifiant de schema doit tenir dans un entier non signé de 32 bits. Si l'identifiant attribué par le registry dépasse cette limite, utilisez `WireFormat.KAFKA_HEADERS` à la place.
-- **Validation de la plage int64** : lorsque les en-têtes de réponse du registry contiennent un `globalId` ou `contentId` en dehors de la plage d'entiers signés de 64 bits.
+- **Dépassement de l'identifiant de schema 32 bits** : avec le wire format
+  `CONFLUENT_PAYLOAD`, l'identifiant de schema doit tenir dans un entier non signé de
+  32 bits. Si l'identifiant attribué par le registry dépasse cette limite, utilisez
+  `WireFormat.KAFKA_HEADERS` à la place.
+- **Validation de la plage int64** : lorsque les en-têtes de réponse du registry
+  contiennent un `globalId` ou `contentId` en dehors de la plage d'entiers signés de
+  64 bits.
 
 ```python
 try:
@@ -153,9 +177,12 @@ except ValueError as e:
         print(f"Les données ne correspondent pas au schema : {e}")
 ```
 
-Si `strict=True` est activé sur le serializer, `ValueError` est également levée lorsque les données contiennent des champs supplémentaires non définis dans le schema.
+Si `strict=True` est activé sur le serializer, `ValueError` est également levée lorsque
+les données contiennent des champs supplémentaires non définis dans le schema.
 
-**Récupération :** Assurez-vous que le dictionnaire de données possède tous les champs requis avec les types corrects, ou changez de wire format pour les grands identifiants de schema.
+**Récupération :** Assurez-vous que le dictionnaire de données possède tous les champs
+requis avec les types corrects, ou changez de wire format pour les grands identifiants
+de schema.
 
 ## Tout assembler
 
