@@ -1235,7 +1235,9 @@ class TestAsyncClientLRUEviction:
         route_b = _async_schema_route(
             mock_registry, "B", schema=schema_b, global_id=2, content_id=2
         )
-        _async_schema_route(mock_registry, "C", schema=schema_c, global_id=3, content_id=3)
+        _async_schema_route(
+            mock_registry, "C", schema=schema_c, global_id=3, content_id=3
+        )
 
         client = AsyncApicurioRegistryClient(
             url=REGISTRY_URL, group_id=GROUP_ID, cache_max_size=2

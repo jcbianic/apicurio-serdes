@@ -748,7 +748,9 @@ def test_register_schema_double_check_locking(mock_registry: respx.MockRouter) -
     """
     from apicurio_serdes._base import CachedSchema, _CacheCore
 
-    pre_cached = CachedSchema(schema=USER_EVENT_SCHEMA_JSON, global_id=99, content_id=88)
+    pre_cached = CachedSchema(
+        schema=USER_EVENT_SCHEMA_JSON, global_id=99, content_id=88
+    )
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
     cache_key = (GROUP_ID, "UserEvent")
@@ -1233,7 +1235,9 @@ class TestCacheConstructorValidation:
 class TestSyncClientLRUEviction:
     """cache_max_size causes LRU eviction in the schema cache."""
 
-    def test_lru_eviction_in_schema_cache(self, mock_registry: respx.MockRouter) -> None:
+    def test_lru_eviction_in_schema_cache(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
         """With cache_max_size=2, fetching 3 schemas evicts the LRU (first) entry.
 
         Access sequence: fetch A → fetch B → fetch C (evicts A) → fetch A again
@@ -1242,8 +1246,12 @@ class TestSyncClientLRUEviction:
         schema_a = {"type": "record", "name": "A", "fields": []}
         schema_b = {"type": "record", "name": "B", "fields": []}
         schema_c = {"type": "record", "name": "C", "fields": []}
-        route_a = _schema_route(mock_registry, "A", schema=schema_a, global_id=1, content_id=1)
-        route_b = _schema_route(mock_registry, "B", schema=schema_b, global_id=2, content_id=2)
+        route_a = _schema_route(
+            mock_registry, "A", schema=schema_a, global_id=1, content_id=1
+        )
+        route_b = _schema_route(
+            mock_registry, "B", schema=schema_b, global_id=2, content_id=2
+        )
         _schema_route(mock_registry, "C", schema=schema_c, global_id=3, content_id=3)
 
         client = ApicurioRegistryClient(
@@ -1298,7 +1306,9 @@ class TestSyncClientTTLExpiry:
             client.get_schema("UserEvent")
         assert route.call_count == 2
 
-    def test_id_cache_not_expired_after_ttl(self, mock_registry: respx.MockRouter) -> None:
+    def test_id_cache_not_expired_after_ttl(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
         """ID-based lookups are never expired even when cache_ttl_seconds is set."""
         route = _id_schema_route(mock_registry, "globalId", GLOBAL_ID)
         client = ApicurioRegistryClient(
