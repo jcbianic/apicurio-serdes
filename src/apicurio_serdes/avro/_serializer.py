@@ -153,10 +153,7 @@ class AvroSerializer:
         """Lazily fetch and cache the schema from the registry."""
         if self._schema is not None:
             return self._schema
-        if (
-            self._artifact_resolver is not None
-            and self._resolved_artifact_id is None
-        ):
+        if self._artifact_resolver is not None and self._resolved_artifact_id is None:
             try:
                 resolved = self._artifact_resolver(ctx)
             except Exception as exc:
@@ -165,8 +162,7 @@ class AvroSerializer:
                 ) from exc
             if not isinstance(resolved, str) or not resolved:
                 raise ResolverError(
-                    f"artifact_resolver must return a non-empty str,"
-                    f" got {resolved!r}"
+                    f"artifact_resolver must return a non-empty str, got {resolved!r}"
                 )
             self._resolved_artifact_id = resolved
         effective_id = (
