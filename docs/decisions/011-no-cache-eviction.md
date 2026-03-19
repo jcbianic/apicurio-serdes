@@ -1,6 +1,11 @@
 # ADR-011: No cache eviction — unbounded cache growth accepted
 
-**Status:** Accepted
+> **This decision has been superseded by [ADR-021](021-lru-ttl-cache-eviction.md).**
+> ADR-021 introduces `_CacheCore` with LRU eviction and optional TTL, activated
+> by issue #39 (v0.4.0 milestone). The analysis below is preserved for historical
+> context.
+
+**Status:** Superseded by [ADR-021](021-lru-ttl-cache-eviction.md)
 **Date:** 2026-03-11
 **Context:** PR #32 review item 11 — "Unbounded cache growth — no eviction"
 

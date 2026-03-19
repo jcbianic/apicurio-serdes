@@ -6,6 +6,10 @@ Toutes les modifications visibles par les utilisateurs sont documentées ici.
 
 ### Ajouts
 
+- Paramètres de constructeur `cache_max_size` (défaut `1000`) et `cache_ttl_seconds` (défaut `None`) sur les deux
+  clients. `cache_max_size` limite les deux caches avec éviction LRU. `cache_ttl_seconds` active un TTL optionnel sur
+  les lookups basés sur l'artifact (`get_schema`, `register_schema`) ; les lookups basés sur l'identifiant
+  (`get_schema_by_global_id`, `get_schema_by_content_id`) sont adressés par contenu et n'expirent jamais.
 - `ApicurioRegistryClient` et `AsyncApicurioRegistryClient` effectuent désormais
   automatiquement des nouvelles tentatives sur les défaillances transitoires. Les
   nouvelles tentatives couvrent les `httpx.TransportError` et les codes HTTP

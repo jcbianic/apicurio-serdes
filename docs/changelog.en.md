@@ -6,6 +6,10 @@ All user-visible changes are documented here.
 
 ### Added
 
+- `cache_max_size` (default `1000`) and `cache_ttl_seconds` (default `None`) constructor parameters on both clients.
+  `cache_max_size` caps both caches with LRU eviction. `cache_ttl_seconds` enables optional TTL expiry on
+  artifact-based lookups (`get_schema`, `register_schema`); ID-based lookups (`get_schema_by_global_id`,
+  `get_schema_by_content_id`) are content-addressed and never expire.
 - `ApicurioRegistryClient` and `AsyncApicurioRegistryClient` now retry automatically
   on transient failures. Retries on `httpx.TransportError` and HTTP 429/502/503/504
   with exponential backoff and full jitter. Three new constructor parameters control

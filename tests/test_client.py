@@ -399,40 +399,42 @@ def test_get_schema_by_content_id_network_error(
 
 
 def test_double_check_locking_cache_hit(mock_registry: respx.MockRouter) -> None:
-    """Exercise the double-checked locking return path (line 80).
+    """Exercise the double-checked locking return path.
 
     Simulates a race where another thread populates the cache between
-    the fast-path check (line 74) and the lock-guarded check (line 79).
+    the fast-path peek (outside lock) and the lock-guarded get (inside lock).
+    Uses a _CacheCore subclass whose get() populates the entry on the second
+    call to mimic a concurrent cache fill.
     """
+    from apicurio_serdes._base import _CacheCore
     from apicurio_serdes._client import CachedSchema
 
     _schema_route(mock_registry, "Race")
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
-    cached = CachedSchema(
+    pre_cached = CachedSchema(
         schema={"type": "record", "name": "X", "fields": []},
         global_id=99,
         content_id=88,
     )
     cache_key = (GROUP_ID, "Race")
-    check_count: dict[str, int] = {"n": 0}
+    get_count: dict[str, int] = {"n": 0}
 
-    class _RaceDict(dict[tuple[str, str], Any]):
-        """Dict that misses the first __contains__ then simulates a race fill."""
+    class _RaceCache(_CacheCore):
+        """_CacheCore whose get() simulates a concurrent fill on the second call."""
 
-        def __contains__(self, key: object) -> bool:
+        def get(self, key: object) -> object:
             if key == cache_key:
-                check_count["n"] += 1
-                if check_count["n"] == 1:
-                    return False  # fast-path miss
-                # Inside the lock: simulate another thread having filled cache
-                self[cache_key] = cached  # type: ignore[index]
-                return True
-            return super().__contains__(key)
+                get_count["n"] += 1
+                if get_count["n"] == 1:
+                    # Inside the lock, first get: simulate concurrent thread fill
+                    super().set(cache_key, pre_cached)
+                    return pre_cached
+            return super().get(key)
 
-    client._schema_cache = _RaceDict()  # type: ignore[assignment]
+    client._schema_cache = _RaceCache(max_size=1000, ttl=None)  # type: ignore[assignment]
     result = client.get_schema("Race")
-    assert result is cached
+    assert result is pre_cached
 
 
 def test_global_id_outside_int64_raises_value_error(
@@ -733,7 +735,7 @@ def test_register_schema_fast_path_cache_hit(mock_registry: respx.MockRouter) ->
 
     cached = CachedSchema(schema=USER_EVENT_SCHEMA_JSON, global_id=99, content_id=88)
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
-    client._schema_cache[(GROUP_ID, "UserEvent")] = cached
+    client._schema_cache.set((GROUP_ID, "UserEvent"), cached)
     result = client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
     assert result is cached
 
@@ -742,57 +744,59 @@ def test_register_schema_double_check_locking(mock_registry: respx.MockRouter) -
     """Exercise the inner double-check path for register_schema.
 
     Simulates a race where another thread populates the cache between
-    the fast-path check and the lock-guarded check.
+    the fast-path peek and the lock-guarded get.
     """
-    from apicurio_serdes._base import CachedSchema
+    from apicurio_serdes._base import CachedSchema, _CacheCore
 
-    cached = CachedSchema(schema=USER_EVENT_SCHEMA_JSON, global_id=99, content_id=88)
+    pre_cached = CachedSchema(
+        schema=USER_EVENT_SCHEMA_JSON, global_id=99, content_id=88
+    )
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
     cache_key = (GROUP_ID, "UserEvent")
-    check_count: dict[str, int] = {"n": 0}
+    get_count: dict[str, int] = {"n": 0}
 
-    class _RaceDict(dict[tuple[str, str], Any]):
-        def __contains__(self, key: object) -> bool:
+    class _RaceCache(_CacheCore):
+        def get(self, key: object) -> object:
             if key == cache_key:
-                check_count["n"] += 1
-                if check_count["n"] == 1:
-                    return False  # fast-path miss
-                self[cache_key] = cached  # type: ignore[index]
-                return True
-            return super().__contains__(key)
+                get_count["n"] += 1
+                if get_count["n"] == 1:
+                    super().set(cache_key, pre_cached)
+                    return pre_cached
+            return super().get(key)
 
-    client._schema_cache = _RaceDict()  # type: ignore[assignment]
+    client._schema_cache = _RaceCache(max_size=1000, ttl=None)  # type: ignore[assignment]
     result = client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
-    assert result is cached
+    assert result is pre_cached
 
 
 def test_id_cache_double_check_locking(mock_registry: respx.MockRouter) -> None:
-    """Exercise the double-checked locking return path for _id_cache (line 156).
+    """Exercise the double-checked locking return path for _id_cache.
 
     Simulates a race where another thread populates the ID cache between
-    the fast-path check and the lock-guarded check.
+    the fast-path peek and the lock-guarded get.
     """
+    from apicurio_serdes._base import _CacheCore
+
     _id_schema_route(mock_registry, "contentId", 42)
     client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
     cached_schema: dict[str, Any] = {"type": "record", "name": "X", "fields": []}
     cache_key = ("contentId", 42)
-    check_count: dict[str, int] = {"n": 0}
+    get_count: dict[str, int] = {"n": 0}
 
-    class _RaceDict(dict[tuple[str, int], Any]):
-        """Dict that misses the first __contains__ then simulates a race fill."""
+    class _RaceCache(_CacheCore):
+        """_CacheCore whose get() simulates a concurrent fill on the first call."""
 
-        def __contains__(self, key: object) -> bool:
+        def get(self, key: object) -> object:
             if key == cache_key:
-                check_count["n"] += 1
-                if check_count["n"] == 1:
-                    return False  # fast-path miss
-                self[cache_key] = cached_schema  # type: ignore[index]
-                return True
-            return super().__contains__(key)
+                get_count["n"] += 1
+                if get_count["n"] == 1:
+                    super().set(cache_key, cached_schema)
+                    return cached_schema
+            return super().get(key)
 
-    client._id_cache = _RaceDict()  # type: ignore[assignment]
+    client._id_cache = _RaceCache(max_size=1000, ttl=None)  # type: ignore[assignment]
     result = client.get_schema_by_content_id(42)
     assert result is cached_schema
 
@@ -1165,3 +1169,156 @@ def test_custom_http_client_not_closed_on_close() -> None:
     )
     client.close()
     mock_client.close.assert_not_called()
+
+
+# ── Cache constructor validation tests ──
+
+
+class TestCacheConstructorValidation:
+    """cache_max_size and cache_ttl_seconds are validated on construction."""
+
+    def test_cache_max_size_zero_raises(self) -> None:
+        with pytest.raises(ValueError, match="cache_max_size"):
+            ApicurioRegistryClient(
+                url=REGISTRY_URL, group_id=GROUP_ID, cache_max_size=0
+            )
+
+    def test_cache_max_size_negative_raises(self) -> None:
+        with pytest.raises(ValueError, match="cache_max_size"):
+            ApicurioRegistryClient(
+                url=REGISTRY_URL, group_id=GROUP_ID, cache_max_size=-1
+            )
+
+    def test_cache_ttl_seconds_zero_raises(self) -> None:
+        with pytest.raises(ValueError, match="cache_ttl_seconds"):
+            ApicurioRegistryClient(
+                url=REGISTRY_URL, group_id=GROUP_ID, cache_ttl_seconds=0
+            )
+
+    def test_cache_ttl_seconds_negative_raises(self) -> None:
+        with pytest.raises(ValueError, match="cache_ttl_seconds"):
+            ApicurioRegistryClient(
+                url=REGISTRY_URL, group_id=GROUP_ID, cache_ttl_seconds=-1.0
+            )
+
+    def test_valid_cache_params_constructs_without_error(self) -> None:
+        client = ApicurioRegistryClient(
+            url=REGISTRY_URL,
+            group_id=GROUP_ID,
+            cache_max_size=1,
+            cache_ttl_seconds=30.0,
+        )
+        assert client is not None
+
+    def test_default_cache_max_size_is_1000(self) -> None:
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        assert client._schema_cache._max_size == 1000
+        assert client._id_cache._max_size == 1000
+
+    def test_default_cache_ttl_seconds_is_none(self) -> None:
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        assert client._schema_cache._ttl is None
+        assert client._id_cache._ttl is None
+
+    def test_id_cache_always_has_no_ttl(self) -> None:
+        """_id_cache always constructed with ttl=None regardless of cache_ttl_seconds."""
+        client = ApicurioRegistryClient(
+            url=REGISTRY_URL, group_id=GROUP_ID, cache_ttl_seconds=60.0
+        )
+        assert client._id_cache._ttl is None
+        assert client._schema_cache._ttl == 60.0
+
+
+# ── LRU eviction tests for sync client ──
+
+
+class TestSyncClientLRUEviction:
+    """cache_max_size causes LRU eviction in the schema cache."""
+
+    def test_lru_eviction_in_schema_cache(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """With cache_max_size=2, fetching 3 schemas evicts the LRU (first) entry.
+
+        Access sequence: fetch A → fetch B → fetch C (evicts A) → fetch A again
+        (re-fetches, evicts B) → verify B was evicted (needs a new HTTP call).
+        """
+        schema_a = {"type": "record", "name": "A", "fields": []}
+        schema_b = {"type": "record", "name": "B", "fields": []}
+        schema_c = {"type": "record", "name": "C", "fields": []}
+        route_a = _schema_route(
+            mock_registry, "A", schema=schema_a, global_id=1, content_id=1
+        )
+        route_b = _schema_route(
+            mock_registry, "B", schema=schema_b, global_id=2, content_id=2
+        )
+        _schema_route(mock_registry, "C", schema=schema_c, global_id=3, content_id=3)
+
+        client = ApicurioRegistryClient(
+            url=REGISTRY_URL, group_id=GROUP_ID, cache_max_size=2
+        )
+        client.get_schema("A")  # cache: [A]
+        client.get_schema("B")  # cache: [A, B]
+        client.get_schema("C")  # evicts "A" (LRU) → cache: [B, C]
+
+        assert route_a.call_count == 1
+        assert route_b.call_count == 1
+
+        # Re-fetch "A" — must hit HTTP (was evicted); evicts "B" → cache: [C, A]
+        client.get_schema("A")
+        assert route_a.call_count == 2
+
+        # "B" was evicted when "A" was re-inserted — must hit HTTP again
+        client.get_schema("B")
+        assert route_b.call_count == 2
+
+
+# ── TTL expiry tests for sync client ──
+
+
+class TestSyncClientTTLExpiry:
+    """cache_ttl_seconds causes TTL expiry in the schema cache only."""
+
+    def test_schema_cache_hit_before_ttl(self, mock_registry: respx.MockRouter) -> None:
+        """get_schema is a cache hit before TTL elapses."""
+        route = _schema_route(mock_registry, "UserEvent")
+        client = ApicurioRegistryClient(
+            url=REGISTRY_URL, group_id=GROUP_ID, cache_ttl_seconds=60.0
+        )
+        with patch("apicurio_serdes._base.time") as mock_time:
+            mock_time.monotonic.return_value = 100.0
+            client.get_schema("UserEvent")
+            mock_time.monotonic.return_value = 155.0  # within TTL
+            client.get_schema("UserEvent")
+        assert route.call_count == 1
+
+    def test_schema_cache_miss_after_ttl(self, mock_registry: respx.MockRouter) -> None:
+        """get_schema re-fetches from registry after TTL elapses."""
+        route = _schema_route(mock_registry, "UserEvent")
+        client = ApicurioRegistryClient(
+            url=REGISTRY_URL, group_id=GROUP_ID, cache_ttl_seconds=60.0
+        )
+        with patch("apicurio_serdes._base.time") as mock_time:
+            mock_time.monotonic.return_value = 100.0
+            client.get_schema("UserEvent")
+            # Advance past TTL (expiry = 160.0)
+            mock_time.monotonic.return_value = 160.0
+            client.get_schema("UserEvent")
+        assert route.call_count == 2
+
+    def test_id_cache_not_expired_after_ttl(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """ID-based lookups are never expired even when cache_ttl_seconds is set."""
+        route = _id_schema_route(mock_registry, "globalId", GLOBAL_ID)
+        client = ApicurioRegistryClient(
+            url=REGISTRY_URL, group_id=GROUP_ID, cache_ttl_seconds=60.0
+        )
+        with patch("apicurio_serdes._base.time") as mock_time:
+            mock_time.monotonic.return_value = 100.0
+            client.get_schema_by_global_id(GLOBAL_ID)
+            # Advance well past TTL
+            mock_time.monotonic.return_value = 9999.0
+            client.get_schema_by_global_id(GLOBAL_ID)
+        # Still only 1 HTTP call — ID cache never expired
+        assert route.call_count == 1

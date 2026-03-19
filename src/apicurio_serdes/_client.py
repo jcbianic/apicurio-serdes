@@ -8,7 +8,12 @@ from typing import TYPE_CHECKING, Any
 
 import httpx
 
-from apicurio_serdes._base import _RETRYABLE_STATUSES, CachedSchema, _RegistryClientBase
+from apicurio_serdes._base import (
+    _RETRYABLE_STATUSES,
+    CachedSchema,
+    _CacheCore,
+    _RegistryClientBase,
+)
 from apicurio_serdes._errors import RegistryConnectionError
 
 if TYPE_CHECKING:
@@ -46,9 +51,18 @@ class ApicurioRegistryClient(_RegistryClientBase):
                      new ``httpx.Client`` is created and managed internally.
         auth: Optional httpx-compatible authentication handler (e.g.
               ``BearerAuth``). Ignored when ``http_client`` is provided.
+        cache_max_size: Maximum number of entries in each cache (LRU eviction).
+                        Applies to both the schema cache and the ID cache.
+                        Defaults to 1000.
+        cache_ttl_seconds: Optional TTL in seconds for artifact-based schema
+                           cache entries (``get_schema``, ``register_schema``).
+                           ID-based lookups (``get_schema_by_global_id``,
+                           ``get_schema_by_content_id``) are content-addressed
+                           and never expire. Defaults to ``None`` (no expiry).
 
     Raises:
-        ValueError: If *url* or *group_id* is empty, or *max_retries* < 0.
+        ValueError: If *url* or *group_id* is empty, *max_retries* < 0,
+                    *cache_max_size* < 1, or *cache_ttl_seconds* <= 0.
 
     Example:
         ```python
@@ -72,6 +86,8 @@ class ApicurioRegistryClient(_RegistryClientBase):
         retry_max_backoff_ms: int = 20000,
         http_client: httpx.Client | None = None,
         auth: Any = None,
+        cache_max_size: int = 1000,
+        cache_ttl_seconds: float | None = None,
     ) -> None:
         super().__init__(
             url,
@@ -79,6 +95,8 @@ class ApicurioRegistryClient(_RegistryClientBase):
             max_retries=max_retries,
             retry_backoff_ms=retry_backoff_ms,
             retry_max_backoff_ms=retry_max_backoff_ms,
+            cache_max_size=cache_max_size,
+            cache_ttl_seconds=cache_ttl_seconds,
         )
         self._owns_http_client = http_client is None
         self._http_client = (
@@ -132,17 +150,19 @@ class ApicurioRegistryClient(_RegistryClientBase):
         """
         self._check_closed()
         cache_key = (self.group_id, artifact_id)
-        if cache_key in self._schema_cache:
-            return self._schema_cache[cache_key]
+        cached = self._schema_cache.peek(cache_key)
+        if cached is not _CacheCore._MISSING:
+            return cached  # type: ignore[return-value]
 
         with self._lock:
             # Double-check after acquiring the lock (NFR-001)
-            if cache_key in self._schema_cache:
-                return self._schema_cache[cache_key]
+            cached = self._schema_cache.get(cache_key)
+            if cached is not _CacheCore._MISSING:
+                return cached  # type: ignore[return-value]
 
             response = self._http_request("GET", self._schema_endpoint(artifact_id))
             cached = self._process_schema_response(response, artifact_id)
-            self._schema_cache[cache_key] = cached
+            self._schema_cache.set(cache_key, cached)
             return cached
 
     def get_schema_by_global_id(self, global_id: int) -> dict[str, Any]:
@@ -216,11 +236,13 @@ class ApicurioRegistryClient(_RegistryClientBase):
         """
         self._check_closed()
         cache_key = (self.group_id, artifact_id)
-        if cache_key in self._schema_cache:
-            return self._schema_cache[cache_key]
+        cached = self._schema_cache.peek(cache_key)
+        if cached is not _CacheCore._MISSING:
+            return cached  # type: ignore[return-value]
         with self._lock:
-            if cache_key in self._schema_cache:
-                return self._schema_cache[cache_key]
+            cached = self._schema_cache.get(cache_key)
+            if cached is not _CacheCore._MISSING:
+                return cached  # type: ignore[return-value]
             response = self._http_request(
                 "POST",
                 self._register_endpoint(),
@@ -228,23 +250,25 @@ class ApicurioRegistryClient(_RegistryClientBase):
                 params={"ifExists": if_exists},
             )
             cached = self._process_registration_response(response, artifact_id, schema)
-            self._schema_cache[cache_key] = cached
+            self._schema_cache.set(cache_key, cached)
             return cached
 
     def _get_schema_by_id(self, id_type: str, id_value: int) -> dict[str, Any]:
         """Shared implementation for ID-based schema lookups (D12)."""
         self._check_closed()
         cache_key = (id_type, id_value)
-        if cache_key in self._id_cache:
-            return self._id_cache[cache_key]
+        cached = self._id_cache.peek(cache_key)
+        if cached is not _CacheCore._MISSING:
+            return cached  # type: ignore[return-value]
 
         with self._lock:
-            if cache_key in self._id_cache:
-                return self._id_cache[cache_key]
+            cached = self._id_cache.get(cache_key)
+            if cached is not _CacheCore._MISSING:
+                return cached  # type: ignore[return-value]
 
             response = self._http_request("GET", self._id_endpoint(id_type, id_value))
             schema = self._process_id_response(response, id_type, id_value)
-            self._id_cache[cache_key] = schema
+            self._id_cache.set(cache_key, schema)
             return schema
 
     def close(self) -> None:

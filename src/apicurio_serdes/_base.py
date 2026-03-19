@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import random
+import time
+from collections import OrderedDict
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -21,6 +23,67 @@ from apicurio_serdes._errors import (
 # HTTP status codes that indicate a transient server-side condition safe to retry.
 # 500 is excluded: ambiguous for mutations (server may have processed the request).
 _RETRYABLE_STATUSES: frozenset[int] = frozenset({429, 502, 503, 504})
+
+
+class _CacheCore:
+    """Lock-free LRU+TTL cache core. Callers must serialise all mutating calls.
+
+    ``OrderedDict`` keeps insertion order: oldest (LRU) at the front, most-recently
+    used (MRU) at the back.  Values are stored as ``(value, expiry)`` tuples where
+    ``expiry`` is a monotonic timestamp (``time.monotonic() + ttl``) or ``None``
+    when no TTL is configured.
+
+    ``peek()`` is safe to call outside a lock — it checks TTL but never mutates
+    ``_store``.  ``get()`` and ``set()`` **must** be called inside the caller's
+    lock because they mutate ``_store`` (LRU update and eviction).
+    """
+
+    _MISSING: object = object()
+
+    def __init__(self, max_size: int, ttl: float | None) -> None:
+        if max_size < 1:
+            raise ValueError(f"cache_max_size must be >= 1, got {max_size}")
+        if ttl is not None and ttl <= 0:
+            raise ValueError(f"cache_ttl_seconds must be > 0, got {ttl}")
+        self._max_size = max_size
+        self._ttl = ttl
+        self._store: OrderedDict[Any, tuple[Any, float | None]] = OrderedDict()
+
+    def peek(self, key: object) -> object:
+        """TTL check without LRU update — safe to call outside a lock (no mutation)."""
+        raw: tuple[Any, float | None] | None = self._store.get(key)
+        if raw is None:
+            return self._MISSING
+        value, expiry = raw
+        if expiry is not None and time.monotonic() >= expiry:
+            return self._MISSING  # expired; do NOT delete — deletion requires lock
+        return value
+
+    def get(self, key: object) -> object:
+        """Full LRU update + TTL eviction. Must be called inside caller's lock."""
+        raw: tuple[Any, float | None] | None = self._store.get(key)
+        if raw is None:
+            return self._MISSING
+        value, expiry = raw
+        if expiry is not None and time.monotonic() >= expiry:
+            del self._store[key]
+            return self._MISSING
+        self._store.move_to_end(key)  # bump to MRU position
+        return value
+
+    def set(self, key: object, value: object) -> None:
+        """Insert/update with LRU eviction if over cap.
+
+        Must be called inside caller's lock.
+        """
+        expiry = time.monotonic() + self._ttl if self._ttl is not None else None
+        if key in self._store:
+            self._store[key] = (value, expiry)
+            self._store.move_to_end(key)
+        else:
+            self._store[key] = (value, expiry)
+            while len(self._store) > self._max_size:
+                self._store.popitem(last=False)  # evict LRU (front)
 
 
 @dataclass(frozen=True)
@@ -54,6 +117,8 @@ class _RegistryClientBase:
         max_retries: int = 3,
         retry_backoff_ms: int = 1000,
         retry_max_backoff_ms: int = 20000,
+        cache_max_size: int = 1000,
+        cache_ttl_seconds: float | None = None,
     ) -> None:
         if not url:
             raise ValueError("url must not be empty")
@@ -66,8 +131,14 @@ class _RegistryClientBase:
         self.max_retries = max_retries
         self.retry_backoff_ms = retry_backoff_ms
         self.retry_max_backoff_ms = retry_max_backoff_ms
-        self._schema_cache: dict[tuple[str, str], CachedSchema] = {}
-        self._id_cache: dict[tuple[str, int], dict[str, Any]] = {}
+        # Validation is delegated to _CacheCore constructor.
+        self._schema_cache: _CacheCore = _CacheCore(
+            max_size=cache_max_size, ttl=cache_ttl_seconds
+        )
+        self._id_cache: _CacheCore = _CacheCore(
+            max_size=cache_max_size,
+            ttl=None,  # ID entries never expire (immutable)
+        )
         self._closed = False
 
     def _check_closed(self) -> None:
