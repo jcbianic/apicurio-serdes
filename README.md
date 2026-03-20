@@ -9,6 +9,8 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/apicurio-serdes)](https://pypi.org/project/apicurio-serdes/)
 [![PyPI Downloads](https://img.shields.io/pypi/dm/apicurio-serdes)](https://pypi.org/project/apicurio-serdes/)
 [![License](https://img.shields.io/pypi/l/apicurio-serdes)](https://pypi.org/project/apicurio-serdes/)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://github.com/PyCQA/bandit)
 
 Python serialization library for [Apicurio Registry](https://www.apicur.io/registry/).
 

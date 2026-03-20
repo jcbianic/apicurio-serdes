@@ -15,8 +15,11 @@ from apicurio_serdes.avro import AvroDeserializer
 from apicurio_serdes.serialization import MessageField, SerializationContext
 from tests.conftest import (
     GROUP_ID,
+    INCOMPATIBLE_READER_SCHEMA,
+    READER_SCHEMA_EVOLUTION,
     REGISTRY_URL,
     VALID_USER_EVENT,
+    WRITER_SCHEMA_EVOLUTION,
     _id_not_found_route,
     _id_schema_route,
     make_confluent_bytes,
@@ -223,3 +226,60 @@ def test_from_dict_error_wrapped(mock_registry: respx.MockRouter) -> None:
     with pytest.raises(DeserializationError, match="from_dict") as exc_info:
         deser(data, _ctx())
     assert isinstance(exc_info.value.__cause__, RuntimeError)
+
+
+# ── Reader schema (schema evolution) ──
+
+
+class TestReaderSchema:
+    """Reader schema support — Avro schema evolution."""
+
+    def test_no_reader_schema_returns_writer_fields_only(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """Default (reader_schema=None) decodes using writer schema — no evolution."""
+        _id_schema_route(
+            mock_registry, "globalId", CONTENT_ID, schema=WRITER_SCHEMA_EVOLUTION
+        )
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        deser = AvroDeserializer(registry_client=client)
+        data = make_confluent_bytes(
+            CONTENT_ID, {"userId": "u1"}, schema=WRITER_SCHEMA_EVOLUTION
+        )
+        result = deser(data, _ctx())
+        assert result == {"userId": "u1"}
+        assert "version" not in result
+
+    def test_reader_schema_fills_default_for_added_field(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """reader_schema causes fastavro to fill added field with its default."""
+        _id_schema_route(
+            mock_registry, "globalId", CONTENT_ID, schema=WRITER_SCHEMA_EVOLUTION
+        )
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        deser = AvroDeserializer(
+            registry_client=client, reader_schema=READER_SCHEMA_EVOLUTION
+        )
+        data = make_confluent_bytes(
+            CONTENT_ID, {"userId": "u1"}, schema=WRITER_SCHEMA_EVOLUTION
+        )
+        result = deser(data, _ctx())
+        assert result == {"userId": "u1", "version": "v1"}
+
+    def test_incompatible_reader_schema_raises_deserialization_error(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """Incompatible reader/writer schemas wrap fastavro error as DeserializationError."""
+        _id_schema_route(
+            mock_registry, "globalId", CONTENT_ID, schema=WRITER_SCHEMA_EVOLUTION
+        )
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        deser = AvroDeserializer(
+            registry_client=client, reader_schema=INCOMPATIBLE_READER_SCHEMA
+        )
+        data = make_confluent_bytes(
+            CONTENT_ID, {"userId": "u1"}, schema=WRITER_SCHEMA_EVOLUTION
+        )
+        with pytest.raises(DeserializationError, match="Avro decode failure"):
+            deser(data, _ctx())

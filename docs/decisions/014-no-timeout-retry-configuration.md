@@ -1,6 +1,6 @@
 # ADR-014: No timeout or retry configuration on HTTP clients
 
-**Status:** Accepted
+**Status:** Superseded by ADR-020
 **Date:** 2026-03-11
 **Context:** PR #32 review item 15 — "No timeout/retry configuration on HTTP clients"
 

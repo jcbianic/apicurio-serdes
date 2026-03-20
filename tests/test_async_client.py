@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from typing import Any
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
@@ -17,6 +18,7 @@ from tests.conftest import (
     GROUP_ID,
     REGISTRY_URL,
     USER_EVENT_SCHEMA_JSON,
+    _id_schema_route,
     _register_error_route,
     _register_route,
 )
@@ -530,60 +532,60 @@ class TestIdCacheDoubleCheckLocking:
     """Coverage: inner cache-check return path for _id_cache."""
 
     async def test_inner_id_cache_check_returns_cached_value(self) -> None:
+        from apicurio_serdes._base import _CacheCore
 
         client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
         cached_schema: dict[str, Any] = {"type": "record", "name": "X", "fields": []}
         cache_key = ("contentId", 42)
-        check_count: dict[str, int] = {"n": 0}
+        get_count: dict[str, int] = {"n": 0}
 
-        class _RaceDict(dict[tuple[str, int], Any]):
-            def __contains__(self, key: object) -> bool:
+        class _RaceCache(_CacheCore):
+            def get(self, key: object) -> object:
                 if key == cache_key:
-                    check_count["n"] += 1
-                    if check_count["n"] == 1:
-                        return False
-                    self[cache_key] = cached_schema  # type: ignore[index]
-                    return True
-                return super().__contains__(key)
+                    get_count["n"] += 1
+                    if get_count["n"] == 1:
+                        super().set(cache_key, cached_schema)
+                        return cached_schema
+                return super().get(key)
 
-        client._id_cache = _RaceDict()  # type: ignore[assignment]
+        client._id_cache = _RaceCache(max_size=1000, ttl=None)  # type: ignore[assignment]
         result = await client.get_schema_by_content_id(42)
         assert result is cached_schema
 
 
 class TestDoubleCheckLocking:
-    """Coverage: exercise the inner cache-check return path (line 70)."""
+    """Coverage: exercise the inner cache-check return path."""
 
     async def test_inner_cache_check_returns_cached_value(self) -> None:
         from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+        from apicurio_serdes._base import _CacheCore
         from apicurio_serdes._client import CachedSchema
 
         client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
-        cached = CachedSchema(
+        pre_cached = CachedSchema(
             schema={"type": "record", "name": "X", "fields": []},
             global_id=99,
             content_id=88,
         )
         cache_key = (GROUP_ID, "Race")
-        check_count: dict[str, int] = {"n": 0}
+        get_count: dict[str, int] = {"n": 0}
 
-        class _RaceDict(dict[tuple[str, str], Any]):
-            """Dict that misses the first __contains__ then simulates a race fill."""
+        class _RaceCache(_CacheCore):
+            """_CacheCore whose get() simulates a concurrent fill on the first call."""
 
-            def __contains__(self, key: object) -> bool:
+            def get(self, key: object) -> object:
                 if key == cache_key:
-                    check_count["n"] += 1
-                    if check_count["n"] == 1:
-                        return False  # fast-path miss
-                    self[cache_key] = cached  # type: ignore[index]
-                    return True
-                return super().__contains__(key)
+                    get_count["n"] += 1
+                    if get_count["n"] == 1:
+                        super().set(cache_key, pre_cached)
+                        return pre_cached
+                return super().get(key)
 
-        client._schema_cache = _RaceDict()  # type: ignore[assignment]
+        client._schema_cache = _RaceCache(max_size=1000, ttl=None)  # type: ignore[assignment]
         result = await client.get_schema("Race")
-        assert result is cached
+        assert result is pre_cached
 
 
 # ── register_schema async tests ──
@@ -709,35 +711,34 @@ class TestRegisterSchemaAsync:
             schema=USER_EVENT_SCHEMA_JSON, global_id=99, content_id=88
         )
         client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
-        client._schema_cache[(GROUP_ID, "UserEvent")] = cached
+        client._schema_cache.set((GROUP_ID, "UserEvent"), cached)
         result = await client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
         assert result is cached
 
     async def test_double_check_locking(self) -> None:
         """Exercise the inner double-check path for async register_schema."""
-        from apicurio_serdes._base import CachedSchema
+        from apicurio_serdes._base import CachedSchema, _CacheCore
 
-        cached = CachedSchema(
+        pre_cached = CachedSchema(
             schema=USER_EVENT_SCHEMA_JSON, global_id=99, content_id=88
         )
         client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
 
         cache_key = (GROUP_ID, "UserEvent")
-        check_count: dict[str, int] = {"n": 0}
+        get_count: dict[str, int] = {"n": 0}
 
-        class _RaceDict(dict[tuple[str, str], Any]):
-            def __contains__(self, key: object) -> bool:
+        class _RaceCache(_CacheCore):
+            def get(self, key: object) -> object:
                 if key == cache_key:
-                    check_count["n"] += 1
-                    if check_count["n"] == 1:
-                        return False  # fast-path miss
-                    self[cache_key] = cached  # type: ignore[index]
-                    return True
-                return super().__contains__(key)
+                    get_count["n"] += 1
+                    if get_count["n"] == 1:
+                        super().set(cache_key, pre_cached)
+                        return pre_cached
+                return super().get(key)
 
-        client._schema_cache = _RaceDict()  # type: ignore[assignment]
+        client._schema_cache = _RaceCache(max_size=1000, ttl=None)  # type: ignore[assignment]
         result = await client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
-        assert result is cached
+        assert result is pre_cached
 
     def test_interface_parity_with_sync_client(self) -> None:
         """register_schema signature matches the sync client."""
@@ -754,3 +755,559 @@ class TestRegisterSchemaAsync:
             assert (
                 sync_sig.parameters[name].default == async_sig.parameters[name].default
             ), f"Default mismatch for param '{name}'"
+
+
+# ── Auth wiring tests ──
+
+
+def test_async_client_auth_defaults_to_none() -> None:
+    """auth parameter defaults to None; existing tests unaffected."""
+    import inspect
+
+    params = inspect.signature(AsyncApicurioRegistryClient.__init__).parameters
+    assert "auth" in params
+    assert params["auth"].default is None
+
+
+@pytest.mark.asyncio
+async def test_async_client_accepts_bearer_auth(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """AsyncApicurioRegistryClient accepts auth=BearerAuth and passes it to httpx."""
+    from httpx import Response
+
+    from apicurio_serdes._auth import BearerAuth
+
+    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/Auth/versions/latest/content"
+    route = mock_registry.get(url).mock(
+        return_value=Response(
+            200,
+            content=b'{"type":"record","name":"X","fields":[]}',
+            headers={"X-Registry-GlobalId": "1", "X-Registry-ContentId": "2"},
+        )
+    )
+    client = AsyncApicurioRegistryClient(
+        url=REGISTRY_URL, group_id=GROUP_ID, auth=BearerAuth(token="async-wire")
+    )
+    await client.get_schema("Auth")
+    assert route.calls[0].request.headers["authorization"] == "Bearer async-wire"
+
+
+# ── Retry and escape hatch tests (#37) ──
+
+
+def _async_flaky_schema_handler(n_failures: int) -> Any:
+    """Side-effect: raises ConnectError n_failures times, then returns 200."""
+    count = 0
+
+    def _handler(request: httpx.Request) -> httpx.Response:
+        nonlocal count
+        count += 1
+        if count <= n_failures:
+            raise httpx.ConnectError("transient failure")
+        return httpx.Response(
+            200,
+            content=json.dumps(USER_EVENT_SCHEMA_JSON).encode(),
+            headers={
+                "X-Registry-GlobalId": str(GLOBAL_ID),
+                "X-Registry-ContentId": str(CONTENT_ID),
+            },
+        )
+
+    return _handler
+
+
+def _async_flaky_status_schema_handler(fail_status: int, n_failures: int) -> Any:
+    """Side-effect: returns fail_status n_failures times, then returns 200."""
+    count = 0
+
+    def _handler(request: httpx.Request) -> httpx.Response:
+        nonlocal count
+        count += 1
+        if count <= n_failures:
+            return httpx.Response(fail_status)
+        return httpx.Response(
+            200,
+            content=json.dumps(USER_EVENT_SCHEMA_JSON).encode(),
+            headers={
+                "X-Registry-GlobalId": str(GLOBAL_ID),
+                "X-Registry-ContentId": str(CONTENT_ID),
+            },
+        )
+
+    return _handler
+
+
+def _async_flaky_id_handler(n_failures: int) -> Any:
+    """Side-effect: ConnectError n times then valid schema response (ID endpoint)."""
+    count = 0
+
+    def _handler(request: httpx.Request) -> httpx.Response:
+        nonlocal count
+        count += 1
+        if count <= n_failures:
+            raise httpx.ConnectError("transient failure")
+        return httpx.Response(200, content=json.dumps(USER_EVENT_SCHEMA_JSON).encode())
+
+    return _handler
+
+
+def _async_flaky_register_handler(n_failures: int) -> Any:
+    """Side-effect: ConnectError n times then valid register response."""
+    count = 0
+
+    def _handler(request: httpx.Request) -> httpx.Response:
+        nonlocal count
+        count += 1
+        if count <= n_failures:
+            raise httpx.ConnectError("transient failure")
+        return httpx.Response(
+            200,
+            json={
+                "artifact": {
+                    "groupId": GROUP_ID,
+                    "artifactId": "UserEvent",
+                    "artifactType": "AVRO",
+                },
+                "version": {
+                    "globalId": GLOBAL_ID,
+                    "contentId": CONTENT_ID,
+                    "artifactType": "AVRO",
+                },
+            },
+        )
+
+    return _handler
+
+
+# Constructor parameter tests
+
+
+def test_async_init_default_max_retries() -> None:
+    """Default max_retries is 3."""
+    client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    assert client.max_retries == 3
+
+
+def test_async_init_default_retry_backoff_ms() -> None:
+    """Default retry_backoff_ms is 1000."""
+    client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    assert client.retry_backoff_ms == 1000
+
+
+def test_async_init_default_retry_max_backoff_ms() -> None:
+    """Default retry_max_backoff_ms is 20000."""
+    client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    assert client.retry_max_backoff_ms == 20000
+
+
+def test_async_init_max_retries_zero_valid() -> None:
+    """max_retries=0 is valid."""
+    client = AsyncApicurioRegistryClient(
+        url=REGISTRY_URL, group_id=GROUP_ID, max_retries=0
+    )
+    assert client.max_retries == 0
+
+
+def test_async_init_max_retries_negative_raises_value_error() -> None:
+    """max_retries=-1 raises ValueError."""
+    with pytest.raises(ValueError, match="max_retries"):
+        AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID, max_retries=-1)
+
+
+def test_async_init_signature_matches_sync() -> None:
+    """Async and sync client __init__ have the same parameter names."""
+    import inspect
+
+    from apicurio_serdes import ApicurioRegistryClient
+
+    sync_params = set(inspect.signature(ApicurioRegistryClient.__init__).parameters) - {
+        "self"
+    }
+    async_params = set(
+        inspect.signature(AsyncApicurioRegistryClient.__init__).parameters
+    ) - {"self"}
+    assert sync_params == async_params
+
+
+# Retry on transport error
+
+
+async def test_async_get_schema_retries_on_connect_error_then_succeeds(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """ConnectError on first attempt retried; schema returned on second attempt."""
+    url = (
+        f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content"
+    )
+    mock_registry.get(url).mock(side_effect=_async_flaky_schema_handler(1))
+    client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with patch("apicurio_serdes._async_client.asyncio.sleep", new_callable=AsyncMock):
+        result = await client.get_schema("UserEvent")
+    assert result.schema == USER_EVENT_SCHEMA_JSON
+
+
+async def test_async_get_schema_exhausts_retries_raises_connection_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """All attempts fail; RegistryConnectionError raised after max_retries exhausted."""
+    from apicurio_serdes._errors import RegistryConnectionError
+
+    url = (
+        f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content"
+    )
+    route = mock_registry.get(url).mock(side_effect=_async_flaky_schema_handler(99))
+    client = AsyncApicurioRegistryClient(
+        url=REGISTRY_URL, group_id=GROUP_ID, max_retries=2
+    )
+    with (
+        patch("apicurio_serdes._async_client.asyncio.sleep", new_callable=AsyncMock),
+        pytest.raises(RegistryConnectionError),
+    ):
+        await client.get_schema("UserEvent")
+    assert route.call_count == 3
+
+
+async def test_async_get_schema_by_global_id_retries_on_connect_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """ID lookup retried on ConnectError."""
+    mock_registry.get(url__startswith=f"{REGISTRY_URL}/ids/globalIds/").mock(
+        side_effect=_async_flaky_id_handler(1)
+    )
+    client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with patch("apicurio_serdes._async_client.asyncio.sleep", new_callable=AsyncMock):
+        result = await client.get_schema_by_global_id(GLOBAL_ID)
+    assert result == USER_EVENT_SCHEMA_JSON
+
+
+async def test_async_register_schema_retries_on_connect_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """register_schema retried on ConnectError."""
+    mock_registry.post(url__startswith=f"{REGISTRY_URL}/groups/").mock(
+        side_effect=_async_flaky_register_handler(1)
+    )
+    client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with patch("apicurio_serdes._async_client.asyncio.sleep", new_callable=AsyncMock):
+        result = await client.register_schema("UserEvent", USER_EVENT_SCHEMA_JSON)
+    assert result.global_id == GLOBAL_ID
+
+
+# Retry on retryable HTTP status codes
+
+
+@pytest.mark.parametrize("fail_status", [429, 502, 503, 504])
+async def test_async_get_schema_retries_on_retryable_status(
+    mock_registry: respx.MockRouter, fail_status: int
+) -> None:
+    """Schema GET retried on 429/502/503/504."""
+    url = (
+        f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content"
+    )
+    mock_registry.get(url).mock(
+        side_effect=_async_flaky_status_schema_handler(fail_status, 1)
+    )
+    client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with patch("apicurio_serdes._async_client.asyncio.sleep", new_callable=AsyncMock):
+        result = await client.get_schema("UserEvent")
+    assert result.schema == USER_EVENT_SCHEMA_JSON
+
+
+# No retry on non-retryable errors
+
+
+async def test_async_get_schema_no_retry_on_404(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """404 raises SchemaNotFoundError immediately — no retry."""
+    from apicurio_serdes._errors import SchemaNotFoundError
+
+    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/Missing/versions/latest/content"
+    route = mock_registry.get(url).mock(return_value=httpx.Response(404, json={}))
+    client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(SchemaNotFoundError):
+        await client.get_schema("Missing")
+    assert route.call_count == 1
+
+
+async def test_async_get_schema_no_retry_on_400(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """400 raises RegistryConnectionError immediately — no retry."""
+    from apicurio_serdes._errors import RegistryConnectionError
+
+    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/Bad/versions/latest/content"
+    route = mock_registry.get(url).mock(return_value=httpx.Response(400))
+    client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(RegistryConnectionError):
+        await client.get_schema("Bad")
+    assert route.call_count == 1
+
+
+async def test_async_get_schema_no_retry_on_500(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """500 raises RegistryConnectionError immediately — not retried."""
+    from apicurio_serdes._errors import RegistryConnectionError
+
+    url = f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/Broken/versions/latest/content"
+    route = mock_registry.get(url).mock(return_value=httpx.Response(500))
+    client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with pytest.raises(RegistryConnectionError):
+        await client.get_schema("Broken")
+    assert route.call_count == 1
+
+
+async def test_async_get_schema_max_retries_zero_no_retry(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """max_retries=0 disables retry; ConnectError raises after 1 attempt."""
+    from apicurio_serdes._errors import RegistryConnectionError
+
+    url = (
+        f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content"
+    )
+    route = mock_registry.get(url).mock(side_effect=httpx.ConnectError("refused"))
+    client = AsyncApicurioRegistryClient(
+        url=REGISTRY_URL, group_id=GROUP_ID, max_retries=0
+    )
+    with pytest.raises(RegistryConnectionError):
+        await client.get_schema("UserEvent")
+    assert route.call_count == 1
+
+
+async def test_async_get_schema_exhausts_retries_on_503_raises_connection_error(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """When all retries on 503 are exhausted, RegistryConnectionError is raised."""
+    from apicurio_serdes._errors import RegistryConnectionError
+
+    url = (
+        f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content"
+    )
+    mock_registry.get(url).mock(return_value=httpx.Response(503))
+    client = AsyncApicurioRegistryClient(
+        url=REGISTRY_URL, group_id=GROUP_ID, max_retries=1
+    )
+    with (
+        patch("apicurio_serdes._async_client.asyncio.sleep", new_callable=AsyncMock),
+        pytest.raises(RegistryConnectionError),
+    ):
+        await client.get_schema("UserEvent")
+
+
+# Backoff
+
+
+async def test_async_get_schema_sleep_called_between_retries(
+    mock_registry: respx.MockRouter,
+) -> None:
+    """asyncio.sleep is called with a non-negative delay between retry attempts."""
+    url = (
+        f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content"
+    )
+    mock_registry.get(url).mock(side_effect=_async_flaky_schema_handler(1))
+    client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+    with patch(
+        "apicurio_serdes._async_client.asyncio.sleep", new_callable=AsyncMock
+    ) as mock_sleep:
+        await client.get_schema("UserEvent")
+    mock_sleep.assert_called_once()
+    delay = mock_sleep.call_args[0][0]
+    assert delay >= 0
+
+
+# Escape hatch: custom http_client
+
+
+async def test_async_custom_http_client_is_used() -> None:
+    """User-provided AsyncClient is used for HTTP requests."""
+    mock_client = MagicMock(spec=httpx.AsyncClient)
+    _req = httpx.Request(
+        "GET",
+        f"{REGISTRY_URL}/groups/{GROUP_ID}/artifacts/UserEvent/versions/latest/content",
+    )
+    mock_client.request = AsyncMock(
+        return_value=httpx.Response(
+            200,
+            content=json.dumps(USER_EVENT_SCHEMA_JSON).encode(),
+            headers={
+                "X-Registry-GlobalId": str(GLOBAL_ID),
+                "X-Registry-ContentId": str(CONTENT_ID),
+            },
+            request=_req,
+        )
+    )
+    client = AsyncApicurioRegistryClient(
+        url=REGISTRY_URL, group_id=GROUP_ID, http_client=mock_client
+    )
+    result = await client.get_schema("UserEvent")
+    assert result.schema == USER_EVENT_SCHEMA_JSON
+    assert mock_client.request.called
+
+
+async def test_async_custom_http_client_not_closed_on_aclose() -> None:
+    """User-provided AsyncClient is not closed when aclose() is called."""
+    mock_client = MagicMock(spec=httpx.AsyncClient)
+    mock_client.aclose = AsyncMock()
+    client = AsyncApicurioRegistryClient(
+        url=REGISTRY_URL, group_id=GROUP_ID, http_client=mock_client
+    )
+    await client.aclose()
+    mock_client.aclose.assert_not_called()
+
+
+# ── Async cache constructor validation tests ──
+
+
+class TestAsyncCacheConstructorValidation:
+    """cache_max_size and cache_ttl_seconds are validated on construction (async client)."""
+
+    def test_cache_max_size_zero_raises(self) -> None:
+        with pytest.raises(ValueError, match="cache_max_size"):
+            AsyncApicurioRegistryClient(
+                url=REGISTRY_URL, group_id=GROUP_ID, cache_max_size=0
+            )
+
+    def test_cache_max_size_negative_raises(self) -> None:
+        with pytest.raises(ValueError, match="cache_max_size"):
+            AsyncApicurioRegistryClient(
+                url=REGISTRY_URL, group_id=GROUP_ID, cache_max_size=-1
+            )
+
+    def test_cache_ttl_seconds_zero_raises(self) -> None:
+        with pytest.raises(ValueError, match="cache_ttl_seconds"):
+            AsyncApicurioRegistryClient(
+                url=REGISTRY_URL, group_id=GROUP_ID, cache_ttl_seconds=0
+            )
+
+    def test_cache_ttl_seconds_negative_raises(self) -> None:
+        with pytest.raises(ValueError, match="cache_ttl_seconds"):
+            AsyncApicurioRegistryClient(
+                url=REGISTRY_URL, group_id=GROUP_ID, cache_ttl_seconds=-1.0
+            )
+
+    def test_valid_cache_params_constructs_without_error(self) -> None:
+        client = AsyncApicurioRegistryClient(
+            url=REGISTRY_URL,
+            group_id=GROUP_ID,
+            cache_max_size=1,
+            cache_ttl_seconds=30.0,
+        )
+        assert client is not None
+
+    def test_default_cache_max_size_is_1000(self) -> None:
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        assert client._schema_cache._max_size == 1000
+        assert client._id_cache._max_size == 1000
+
+    def test_default_cache_ttl_seconds_is_none(self) -> None:
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        assert client._schema_cache._ttl is None
+        assert client._id_cache._ttl is None
+
+    def test_id_cache_always_has_no_ttl(self) -> None:
+        """_id_cache always constructed with ttl=None regardless of cache_ttl_seconds."""
+        client = AsyncApicurioRegistryClient(
+            url=REGISTRY_URL, group_id=GROUP_ID, cache_ttl_seconds=60.0
+        )
+        assert client._id_cache._ttl is None
+        assert client._schema_cache._ttl == 60.0
+
+
+# ── Async LRU eviction tests ──
+
+
+class TestAsyncClientLRUEviction:
+    """cache_max_size causes LRU eviction in the async schema cache."""
+
+    async def test_lru_eviction_in_schema_cache(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """With cache_max_size=2, fetching 3 schemas evicts the LRU (first) entry."""
+        schema_a: dict[str, Any] = {"type": "record", "name": "A", "fields": []}
+        schema_b: dict[str, Any] = {"type": "record", "name": "B", "fields": []}
+        schema_c: dict[str, Any] = {"type": "record", "name": "C", "fields": []}
+        route_a = _async_schema_route(
+            mock_registry, "A", schema=schema_a, global_id=1, content_id=1
+        )
+        route_b = _async_schema_route(
+            mock_registry, "B", schema=schema_b, global_id=2, content_id=2
+        )
+        _async_schema_route(
+            mock_registry, "C", schema=schema_c, global_id=3, content_id=3
+        )
+
+        client = AsyncApicurioRegistryClient(
+            url=REGISTRY_URL, group_id=GROUP_ID, cache_max_size=2
+        )
+        await client.get_schema("A")  # cache: [A]
+        await client.get_schema("B")  # cache: [A, B]
+        await client.get_schema("C")  # evicts A → cache: [B, C]
+
+        assert route_a.call_count == 1
+        assert route_b.call_count == 1
+
+        # Re-fetch A — was evicted; evicts B → cache: [C, A]
+        await client.get_schema("A")
+        assert route_a.call_count == 2
+
+        # B was evicted when A was re-inserted — must re-fetch
+        await client.get_schema("B")
+        assert route_b.call_count == 2
+
+
+# ── Async TTL expiry tests ──
+
+
+class TestAsyncClientTTLExpiry:
+    """cache_ttl_seconds causes TTL expiry in the async schema cache only."""
+
+    async def test_schema_cache_hit_before_ttl(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """get_schema is a cache hit before TTL elapses."""
+        route = _async_schema_route(mock_registry, "UserEvent")
+        client = AsyncApicurioRegistryClient(
+            url=REGISTRY_URL, group_id=GROUP_ID, cache_ttl_seconds=60.0
+        )
+        with patch("apicurio_serdes._base.time") as mock_time:
+            mock_time.monotonic.return_value = 100.0
+            await client.get_schema("UserEvent")
+            mock_time.monotonic.return_value = 155.0  # within TTL
+            await client.get_schema("UserEvent")
+        assert route.call_count == 1
+
+    async def test_schema_cache_miss_after_ttl(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """get_schema re-fetches from registry after TTL elapses."""
+        route = _async_schema_route(mock_registry, "UserEvent")
+        client = AsyncApicurioRegistryClient(
+            url=REGISTRY_URL, group_id=GROUP_ID, cache_ttl_seconds=60.0
+        )
+        with patch("apicurio_serdes._base.time") as mock_time:
+            mock_time.monotonic.return_value = 100.0
+            await client.get_schema("UserEvent")
+            # Advance past TTL (expiry = 160.0)
+            mock_time.monotonic.return_value = 160.0
+            await client.get_schema("UserEvent")
+        assert route.call_count == 2
+
+    async def test_id_cache_not_expired_after_ttl(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """ID-based lookups are never expired even when cache_ttl_seconds is set."""
+        route = _id_schema_route(mock_registry, "globalId", GLOBAL_ID)
+        client = AsyncApicurioRegistryClient(
+            url=REGISTRY_URL, group_id=GROUP_ID, cache_ttl_seconds=60.0
+        )
+        with patch("apicurio_serdes._base.time") as mock_time:
+            mock_time.monotonic.return_value = 100.0
+            await client.get_schema_by_global_id(GLOBAL_ID)
+            # Advance well past TTL
+            mock_time.monotonic.return_value = 9999.0
+            await client.get_schema_by_global_id(GLOBAL_ID)
+        # Still only 1 HTTP call — ID cache never expired
+        assert route.call_count == 1

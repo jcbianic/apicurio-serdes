@@ -86,6 +86,7 @@ nav:
   - How-to Guides:
       - Custom Serialization: how-to/custom-serialization.md
       - Identifier Selection: how-to/identifier-selection.md
+      - Authentication: how-to/authentication.md
       - Error Handling: how-to/error-handling.md
   - Migration:
       - From confluent-kafka: migration/from-confluent-kafka.md
