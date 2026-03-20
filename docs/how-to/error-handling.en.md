@@ -9,8 +9,11 @@ Python exceptions for validation errors.
 |-----------|-------------------|----------------|
 | `SchemaNotFoundError` | The artifact or schema ID does not exist in the registry (HTTP 404) | `group_id`, `artifact_id` or `id_type`, `id_value` |
 | `RegistryConnectionError` | The registry is unreachable (network error) | `url` |
+| `SchemaRegistrationError` | The registry rejected a schema registration request (4xx/5xx or bad response body) | `artifact_id`, `cause` |
 | `SerializationError` | The `to_dict` callable raised an exception | `cause` |
+| `ResolverError` | The `artifact_resolver` callable raised an exception or returned a non-string | `cause` |
 | `DeserializationError` | Wire format invalid, Avro decode failure, or `from_dict` hook failure | `cause` |
+| `AuthenticationError` | The token endpoint is unreachable, returned a non-200 response, or the response body is malformed | — |
 | `RuntimeError` | The registry client has been closed | — |
 | `ValueError` | Schema ID exceeds 32-bit limit (CONFLUENT_PAYLOAD), or registry response IDs outside int64 range | — |
 
@@ -171,6 +174,76 @@ contains extra fields not defined in the schema.
 
 **Recovery:** Ensure the data dictionary has all required fields with the correct types,
 or switch wire format for large schema IDs.
+
+## Handling `SchemaRegistrationError`
+
+Raised when `auto_register=True` and the registry rejects the registration request
+(4xx or 5xx response, or the response body is missing the expected IDs).
+
+```python
+from apicurio_serdes._errors import SchemaRegistrationError
+
+try:
+    payload = serializer(data, ctx)
+except SchemaRegistrationError as e:
+    print(f"Registration failed for '{e.artifact_id}': {e.cause}")
+    # e.__cause__ is also set for traceback chaining
+```
+
+**Common causes:**
+
+- `if_exists="FAIL"` and the artifact already exists in the registry
+- The registry rejected the schema content (schema validation error)
+- The registry returned an unexpected response body
+
+**Recovery:** Check `e.cause` for the registry error message. If the artifact already
+exists and `FAIL` is too strict, switch to `if_exists="FIND_OR_CREATE_VERSION"`.
+
+## Handling `ResolverError`
+
+Raised when `artifact_resolver` raises an exception or returns something other than
+a non-empty string.
+
+```python
+from apicurio_serdes._errors import ResolverError
+
+try:
+    payload = serializer(data, ctx)
+except ResolverError as e:
+    print(f"Resolver failed: {e}")
+    if e.cause:
+        print(f"Caused by: {e.cause}")
+```
+
+**Common causes:**
+
+- The resolver raised an unhandled exception
+- The resolver returned `None` or `""` instead of an artifact ID
+
+**Recovery:** Fix the resolver implementation to always return a non-empty string.
+
+## Handling `AuthenticationError`
+
+Raised by `KeycloakAuth` when the token endpoint is unreachable, returns a non-200
+response, or returns a body missing `access_token` or `expires_in`.
+
+```python
+from apicurio_serdes._errors import AuthenticationError
+
+try:
+    payload = serializer(data, ctx)
+except AuthenticationError as e:
+    print(f"Authentication failed: {e}")
+```
+
+**Common causes:**
+
+- The `token_url` is incorrect or the Keycloak realm does not exist
+- The `client_id` or `client_secret` are wrong (non-200 response from the token endpoint)
+- The token endpoint returned JSON without `access_token` or `expires_in`
+
+**Recovery:** Double-check the `token_url`, `client_id`, and `client_secret` in
+`KeycloakAuth`. See [Authentication](../how-to/authentication.md) for examples.
 
 ## Putting It All Together
 

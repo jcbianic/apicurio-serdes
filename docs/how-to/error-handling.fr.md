@@ -9,8 +9,11 @@ ainsi que des exceptions Python standard pour les erreurs de validation.
 |-----------|---------------------|----------------|
 | `SchemaNotFoundError` | L'artefact ou l'identifiant de schema n'existe pas dans le registry (HTTP 404) | `group_id`, `artifact_id` ou `id_type`, `id_value` |
 | `RegistryConnectionError` | Le registry est injoignable (erreur réseau) | `url` |
+| `SchemaRegistrationError` | Le registry a rejeté une demande d'enregistrement de schema (4xx/5xx ou corps de réponse invalide) | `artifact_id`, `cause` |
 | `SerializationError` | Le callable `to_dict` a levé une exception | `cause` |
+| `ResolverError` | Le callable `artifact_resolver` a levé une exception ou retourné une valeur non-string | `cause` |
 | `DeserializationError` | Wire format invalide, échec de décodage Avro, ou échec du hook `from_dict` | `cause` |
+| `AuthenticationError` | L'endpoint de token est injoignable, a retourné une réponse non-200, ou le corps de réponse est malformé | — |
 | `RuntimeError` | Le client registry a été fermé | — |
 | `ValueError` | L'identifiant de schema dépasse la limite 32 bits (CONFLUENT_PAYLOAD), ou les identifiants de la réponse registry sont hors de la plage int64 | — |
 
@@ -183,6 +186,77 @@ les données contiennent des champs supplémentaires non définis dans le schema
 **Récupération :** Assurez-vous que le dictionnaire de données possède tous les champs
 requis avec les types corrects, ou changez de wire format pour les grands identifiants
 de schema.
+
+## Gérer `SchemaRegistrationError`
+
+Levée lorsque `auto_register=True` et que le registry rejette la demande d'enregistrement
+(réponse 4xx ou 5xx, ou corps de réponse sans les identifiants attendus).
+
+```python
+from apicurio_serdes._errors import SchemaRegistrationError
+
+try:
+    payload = serializer(data, ctx)
+except SchemaRegistrationError as e:
+    print(f"Enregistrement échoué pour '{e.artifact_id}' : {e.cause}")
+    # e.__cause__ est également défini pour le chaînage de la trace
+```
+
+**Causes fréquentes :**
+
+- `if_exists="FAIL"` et l'artefact existe déjà dans le registry
+- Le registry a rejeté le contenu du schema (erreur de validation)
+- Le registry a retourné un corps de réponse inattendu
+
+**Récupération :** Consultez `e.cause` pour le message d'erreur du registry. Si l'artefact
+existe déjà et que `FAIL` est trop strict, passez à `if_exists="FIND_OR_CREATE_VERSION"`.
+
+## Gérer `ResolverError`
+
+Levée lorsque `artifact_resolver` lève une exception ou retourne autre chose qu'une
+chaîne non vide.
+
+```python
+from apicurio_serdes._errors import ResolverError
+
+try:
+    payload = serializer(data, ctx)
+except ResolverError as e:
+    print(f"Résolveur en échec : {e}")
+    if e.cause:
+        print(f"Causé par : {e.cause}")
+```
+
+**Causes fréquentes :**
+
+- Le résolveur a levé une exception non gérée
+- Le résolveur a retourné `None` ou `""` au lieu d'un identifiant d'artefact
+
+**Récupération :** Corrigez l'implémentation du résolveur pour qu'il retourne toujours
+une chaîne non vide.
+
+## Gérer `AuthenticationError`
+
+Levée par `KeycloakAuth` lorsque l'endpoint de token est injoignable, retourne une réponse
+non-200, ou retourne un corps sans `access_token` ni `expires_in`.
+
+```python
+from apicurio_serdes._errors import AuthenticationError
+
+try:
+    payload = serializer(data, ctx)
+except AuthenticationError as e:
+    print(f"Authentification échouée : {e}")
+```
+
+**Causes fréquentes :**
+
+- L'URL `token_url` est incorrecte ou le realm Keycloak n'existe pas
+- Le `client_id` ou le `client_secret` sont erronés (réponse non-200 de l'endpoint de token)
+- L'endpoint de token a retourné du JSON sans `access_token` ni `expires_in`
+
+**Récupération :** Vérifiez le `token_url`, le `client_id` et le `client_secret` dans
+`KeycloakAuth`. Voir [Authentification](../how-to/authentication.md) pour des exemples.
 
 ## Tout assembler
 
