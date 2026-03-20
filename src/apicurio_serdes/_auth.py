@@ -222,6 +222,8 @@ class KeycloakAuth(httpx.Auth):
     # ── Async path ──
 
     def _get_async_lock(self) -> asyncio.Lock:
+        # note: this lock is bound to the event loop active on first async use;
+        # do not share a KeycloakAuth instance across multiple event loops.
         if self._async_lock is None:
             self._async_lock = asyncio.Lock()
         return self._async_lock
