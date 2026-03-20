@@ -89,7 +89,7 @@ show_missing = true
 
 [tool.bandit]
 targets = ["src"]
-severity = "medium"
+skips = ["B311"]  # random.uniform for retry jitter does not require cryptographic quality
 
 [tool.hatch.version]
 source = "vcs"
