@@ -7,6 +7,8 @@ on:
         description: "Release tag to sign (e.g. v0.3.0)"
         required: true
 
+permissions: {}  # deny all at workflow level; job declares only what it needs
+
 jobs:
   sign:
     runs-on: ubuntu-latest
