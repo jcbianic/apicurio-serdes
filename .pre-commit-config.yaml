@@ -12,3 +12,4 @@ repos:
     hooks:
       - id: bandit
         args: ["-c", "pyproject.toml", "-ll"]
+        stages: [pre-commit, pre-push]
