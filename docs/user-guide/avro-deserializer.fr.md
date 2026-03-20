@@ -87,6 +87,8 @@ passez `reader_schema` et fastavro gère la résolution :
 
 ```python
 writer_schema = {
+    # C'est ce que le producteur a utilisé — il est intégré dans le message,
+    # pas passé au désérialiseur.
     "type": "record",
     "name": "UserEvent",
     "namespace": "com.example",

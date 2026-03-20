@@ -32,7 +32,11 @@ like GCP OIDC identity tokens or Vault leases:
 ```python
 from apicurio_serdes import BearerAuth
 
-auth = BearerAuth(token_provider=lambda: fetch_oidc_token())
+def get_token() -> str:
+    # replace with your actual token-fetching logic
+    return fetch_oidc_token()
+
+auth = BearerAuth(token_provider=get_token)
 ```
 
 `token` and `token_provider` are mutually exclusive; exactly one must be supplied.
@@ -87,7 +91,8 @@ async with AsyncApicurioRegistryClient(
 ## Using a custom `httpx` client (escape hatch)
 
 Neither handler fits? Supply a pre-configured `httpx.Client` via `http_client` instead.
-The client is used as-is and `close()` won't touch it:
+The client is used as-is — `close()` **won't** close it. You are responsible for
+closing it yourself.
 
 ```python
 import httpx

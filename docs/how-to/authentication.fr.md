@@ -33,7 +33,11 @@ de courte durée comme les tokens OIDC GCP ou les baux Vault :
 ```python
 from apicurio_serdes import BearerAuth
 
-auth = BearerAuth(token_provider=lambda: fetch_oidc_token())
+def get_token() -> str:
+    # remplacez par votre logique réelle de récupération de token
+    return fetch_oidc_token()
+
+auth = BearerAuth(token_provider=get_token)
 ```
 
 `token` et `token_provider` sont mutuellement exclusifs ; exactement l'un des deux doit
@@ -91,8 +95,8 @@ async with AsyncApicurioRegistryClient(
 ## Utilisation d'un client `httpx` personnalisé (trappe de sortie)
 
 Aucun des gestionnaires ne convient ? Fournissez directement un `httpx.Client`
-préconfiguré via `http_client`. Le client est utilisé tel quel et `close()` ne le
-touchera pas :
+préconfiguré via `http_client`. Le client est utilisé tel quel — `close()` **ne le
+fermera pas**. C'est à vous de le fermer.
 
 ```python
 import httpx

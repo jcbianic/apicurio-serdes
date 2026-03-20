@@ -87,6 +87,8 @@ schema embedded in the message. If your consumer is on a different schema versio
 
 ```python
 writer_schema = {
+    # This is what the producer used — it is embedded in the message,
+    # not passed to the deserializer.
     "type": "record",
     "name": "UserEvent",
     "namespace": "com.example",
