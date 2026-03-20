@@ -28,6 +28,16 @@ Complete reference for all public classes, methods, and exceptions in `apicurio-
 
 ::: apicurio_serdes.serialization.WireFormat
 
+## Authentication
+
+### BearerAuth
+
+::: apicurio_serdes._auth.BearerAuth
+
+### KeycloakAuth
+
+::: apicurio_serdes._auth.KeycloakAuth
+
 ## Avro
 
 ### AvroSerializer
@@ -42,6 +52,22 @@ Complete reference for all public classes, methods, and exceptions in `apicurio-
 
 ::: apicurio_serdes.avro._async_deserializer.AsyncAvroDeserializer
 
+### TopicIdStrategy
+
+::: apicurio_serdes.avro._strategies.TopicIdStrategy
+
+### SimpleTopicIdStrategy
+
+::: apicurio_serdes.avro._strategies.SimpleTopicIdStrategy
+
+### QualifiedRecordIdStrategy
+
+::: apicurio_serdes.avro._strategies.QualifiedRecordIdStrategy
+
+### TopicRecordIdStrategy
+
+::: apicurio_serdes.avro._strategies.TopicRecordIdStrategy
+
 ## Exceptions
 
 ### SchemaNotFoundError
@@ -52,10 +78,22 @@ Complete reference for all public classes, methods, and exceptions in `apicurio-
 
 ::: apicurio_serdes._errors.RegistryConnectionError
 
+### SchemaRegistrationError
+
+::: apicurio_serdes._errors.SchemaRegistrationError
+
 ### SerializationError
 
 ::: apicurio_serdes._errors.SerializationError
 
+### ResolverError
+
+::: apicurio_serdes._errors.ResolverError
+
 ### DeserializationError
 
 ::: apicurio_serdes._errors.DeserializationError
+
+### AuthenticationError
+
+::: apicurio_serdes._errors.AuthenticationError

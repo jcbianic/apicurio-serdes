@@ -28,6 +28,7 @@ record = deserializer(kafka_message.value(), ctx)
 | `registry_client` | `ApicurioRegistryClient` | required | The registry client used to resolve schema identifiers. |
 | `from_dict` | callable | `None` | Optional `(dict, ctx) -> Any` transformation applied after decoding. |
 | `use_id` | `"contentId"` or `"globalId"` | `"globalId"` | How to interpret the 4-byte schema identifier in the wire format header. |
+| `reader_schema` | `dict` | `None` | Optional Avro schema dict used as the reader schema. When provided, fastavro performs schema resolution between the writer schema (from the message) and this schema, enabling field additions with defaults, type promotions, and alias-based renames. Parsed once at construction time. |
 
 ### Schema identifier mode (`use_id`)
 
@@ -77,6 +78,51 @@ event = deserializer(payload, ctx)
 ```
 
 When `from_dict` is `None` (the default), the decoded dict is returned directly.
+
+## Schema evolution (`reader_schema`)
+
+By default the deserializer uses the writer schema for both reading and decoding — the
+schema embedded in the message. If your consumer is on a different schema version, pass
+`reader_schema` and fastavro handles the resolution:
+
+```python
+writer_schema = {
+    "type": "record",
+    "name": "UserEvent",
+    "namespace": "com.example",
+    "fields": [
+        {"name": "userId", "type": "string"},
+        {"name": "country", "type": "string"},
+    ],
+}
+
+reader_schema = {
+    "type": "record",
+    "name": "UserEvent",
+    "namespace": "com.example",
+    "fields": [
+        {"name": "userId", "type": "string"},
+        {"name": "country", "type": "string"},
+        # New field added in the consumer — default fills the gap
+        {"name": "region", "type": ["null", "string"], "default": None},
+    ],
+}
+
+deserializer = AvroDeserializer(client, reader_schema=reader_schema)
+# Messages written with the old writer_schema decode successfully;
+# "region" comes back as None.
+```
+
+A few things to keep in mind during resolution:
+
+- Fields the reader expects but the writer omitted are filled with their default value;
+  without a default, the decode fails.
+- Fields in the writer that the reader ignores are dropped silently.
+- Type promotions follow Avro rules: `int → long → float → double`, `string → bytes`, etc.
+- Reader field aliases resolve writer field names.
+
+If the schemas are incompatible — say, a new required field has no default — fastavro
+raises a `ValueError` wrapped in `DeserializationError`.
 
 ## Schema caching
 

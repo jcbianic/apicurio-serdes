@@ -28,6 +28,7 @@ record = deserializer(kafka_message.value(), ctx)
 | `registry_client` | `ApicurioRegistryClient` | obligatoire | Le client registry utilisé pour résoudre les identifiants de schema. |
 | `from_dict` | callable | `None` | Transformation optionnelle `(dict, ctx) -> Any` appliquée après le décodage. |
 | `use_id` | `"contentId"` ou `"globalId"` | `"globalId"` | Comment interpréter l'identifiant de schema de 4 octets dans l'en-tête du wire format. |
+| `reader_schema` | `dict` | `None` | Schema Avro optionnel utilisé comme schema lecteur. Quand il est fourni, fastavro effectue une résolution de schema entre le schema d'écriture (issu du message) et ce schema, permettant les ajouts de champs avec valeurs par défaut, les promotions de type et les renommages par alias. Parsé une seule fois à la construction. |
 
 ### Mode d'identifiant de schema (`use_id`)
 
@@ -77,6 +78,51 @@ event = deserializer(payload, ctx)
 ```
 
 Quand `from_dict` est `None` (valeur par défaut), le dict décodé est retourné directement.
+
+## Évolution de schema (`reader_schema`)
+
+Par défaut, le désérialiseur utilise le schema d'écriture pour les deux rôles — le schema
+intégré dans le message. Si votre consommateur est sur une version de schema différente,
+passez `reader_schema` et fastavro gère la résolution :
+
+```python
+writer_schema = {
+    "type": "record",
+    "name": "UserEvent",
+    "namespace": "com.example",
+    "fields": [
+        {"name": "userId", "type": "string"},
+        {"name": "country", "type": "string"},
+    ],
+}
+
+reader_schema = {
+    "type": "record",
+    "name": "UserEvent",
+    "namespace": "com.example",
+    "fields": [
+        {"name": "userId", "type": "string"},
+        {"name": "country", "type": "string"},
+        # Nouveau champ ajouté côté consommateur — la valeur par défaut comble l'écart
+        {"name": "region", "type": ["null", "string"], "default": None},
+    ],
+}
+
+deserializer = AvroDeserializer(client, reader_schema=reader_schema)
+# Les messages écrits avec l'ancien writer_schema décodent correctement ;
+# "region" revient à None.
+```
+
+Quelques points à garder en tête lors de la résolution :
+
+- Les champs attendus par le lecteur mais omis par l'écrivain sont remplis avec leur valeur
+  par défaut ; sans valeur par défaut, le décodage échoue.
+- Les champs de l'écrivain ignorés par le lecteur sont abandonnés silencieusement.
+- Les promotions de type suivent les règles Avro : `int → long → float → double`, `string → bytes`, etc.
+- Les alias de champs du schema lecteur résolvent les noms de champs de l'écrivain.
+
+Si les schemas sont incompatibles — par exemple, un nouveau champ obligatoire sans valeur par
+défaut — fastavro lève une `ValueError` encapsulée dans `DeserializationError`.
 
 ## Mise en cache du schema
 
