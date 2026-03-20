@@ -102,12 +102,13 @@ class TestCIAllJobsPresent:
             "test",
             "docs-build",
             "codeql",
+            "quality",
             "publish-testpypi",
         ):
             assert job_name in jobs, f"Missing job: {job_name}"
 
-    def test_workflow_has_exactly_six_jobs(self, ci_workflow: dict[str, Any]) -> None:
-        assert len(ci_workflow["jobs"]) == 6
+    def test_workflow_has_exactly_seven_jobs(self, ci_workflow: dict[str, Any]) -> None:
+        assert len(ci_workflow["jobs"]) == 7
 
 
 class TestCIStatusBlocking:
