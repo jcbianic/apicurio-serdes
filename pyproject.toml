@@ -53,6 +53,8 @@ dev = [
     "pip-audit>=2.7.0",
     "pyyaml>=6.0",
     "bandit>=1.7.0",
+    "xenon>=0.9.0",
+    "wily>=1.25.0",
 ]
 
 [tool.pytest.ini_options]
