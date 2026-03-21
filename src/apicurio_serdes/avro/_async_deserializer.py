@@ -67,7 +67,9 @@ class AsyncAvroDeserializer(_BaseAvroDeserializer):
         *,
         reader_schema: dict[str, Any] | None = None,
     ) -> None:
-        super().__init__(from_dict=from_dict, use_id=use_id, reader_schema=reader_schema)
+        super().__init__(
+            from_dict=from_dict, use_id=use_id, reader_schema=reader_schema
+        )
         self.registry_client = registry_client
 
     async def __call__(self, data: bytes, ctx: SerializationContext) -> Any:
