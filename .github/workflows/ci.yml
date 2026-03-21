@@ -92,6 +92,8 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+        with:
+          fetch-depth: 0  # wily needs full history to build its index
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405  # v6.2.0
         with:
           python-version: "3.13"
@@ -103,6 +105,12 @@ jobs:
         #   --max-modules  B  (avro/_serializer.py module rank)
         #   --max-average  A  (mean across all blocks)
         run: uv run xenon --max-absolute C --max-modules B --max-average A src/
+      - name: Wily complexity trend (informational)
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          uv run wily build src/
+          uv run wily diff src/ -r ${{ github.base_ref }}
 
   publish-testpypi:
     needs: [lint, typecheck, test, docs-build, quality]
