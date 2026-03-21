@@ -14,7 +14,8 @@ class TestCITriggers:
     def test_triggers_on_push_to_main(self, ci_workflow: dict[str, Any]) -> None:
         triggers = ci_workflow[True]
         assert "push" in triggers
-        assert triggers["push"]["branches"] == ["main"]
+        assert "main" in triggers["push"]["branches"]
+        assert any(b.startswith("release/") for b in triggers["push"]["branches"])
 
     def test_triggers_on_pull_request(self, ci_workflow: dict[str, Any]) -> None:
         triggers = ci_workflow[True]
