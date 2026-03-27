@@ -234,6 +234,9 @@ class AvroDeserializer(_BaseAvroDeserializer):
                 to any schema in the registry (FR-010).
             RegistryConnectionError: If the registry is unreachable during
                 schema resolution (FR-012).
+            ResolverError: If ``use_latest_version=True`` with an
+                ``artifact_resolver`` and the resolver raises or returns
+                a non-string value.
         """
         # FR-004: validate minimum length
         if len(data) < 5:

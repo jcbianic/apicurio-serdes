@@ -130,6 +130,9 @@ class AsyncAvroDeserializer(_BaseAvroDeserializer):
                 correspond to any schema in the registry.
             RegistryConnectionError: If the registry is unreachable
                 during schema resolution.
+            ResolverError: If ``use_latest_version=True`` with an
+                ``artifact_resolver`` and the resolver raises or returns
+                a non-string value.
         """
         if len(data) < 5:
             raise DeserializationError(
