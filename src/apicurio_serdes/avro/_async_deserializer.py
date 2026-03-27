@@ -35,6 +35,20 @@ class AsyncAvroDeserializer(_BaseAvroDeserializer):
         use_id: Which registry identifier type the 4-byte wire format
                 field represents. Must match the serializer's use_id
                 setting. Defaults to "globalId".
+        artifact_id: Artifact identifier used to fetch the latest registry
+                     schema as the reader schema. Requires
+                     ``use_latest_version=True``. Mutually exclusive with
+                     ``artifact_resolver``.
+        artifact_resolver: Callable ``(ctx) -> str`` that returns the
+                           artifact identifier at call time. Requires
+                           ``use_latest_version=True``. Mutually exclusive
+                           with ``artifact_id``. The resolved value is cached
+                           after the first successful call.
+        use_latest_version: When ``True``, fetches the latest registry schema
+                            for the resolved artifact on the first call and
+                            uses it as the reader schema (cached per instance).
+                            Requires ``artifact_id`` or ``artifact_resolver``.
+                            Mutually exclusive with ``reader_schema``.
         reader_schema: Optional Avro schema dict used as the reader schema
                        during deserialization. When provided, fastavro
                        performs schema resolution between the writer schema
@@ -43,6 +57,16 @@ class AsyncAvroDeserializer(_BaseAvroDeserializer):
                        type promotions, and other Avro evolution rules. When
                        None (default), the writer schema is used for both
                        roles (no evolution). Parsed once at construction time.
+                       Mutually exclusive with ``use_latest_version``.
+
+    Raises:
+        ValueError: If ``artifact_id`` and ``artifact_resolver`` are both
+                    provided, if ``use_latest_version=True`` is used without
+                    ``artifact_id`` or ``artifact_resolver``, if
+                    ``use_latest_version=True`` is combined with
+                    ``reader_schema``, or if ``artifact_id`` /
+                    ``artifact_resolver`` is provided without
+                    ``use_latest_version=True``.
 
     Example:
         ```python
