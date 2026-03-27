@@ -6,6 +6,13 @@ All user-visible changes are documented here.
 
 ### Added
 
+- `AvroSerializer`, `AvroDeserializer`, and `AsyncAvroDeserializer` now accept
+  `use_latest_version=True`. For the serializer, the flag validates that it is not
+  combined with `auto_register` (they are mutually exclusive). For the deserializers,
+  it enables dynamic reader schema resolution: the latest registry schema for the
+  given `artifact_id` (or `artifact_resolver`) is fetched on the first call and
+  cached per instance. Mutually exclusive with the static `reader_schema` parameter.
+
 - `cache_max_size` (default `1000`) and `cache_ttl_seconds` (default `None`) constructor parameters on both clients.
   `cache_max_size` caps both caches with LRU eviction. `cache_ttl_seconds` enables optional TTL expiry on
   artifact-based lookups (`get_schema`, `register_schema`); ID-based lookups (`get_schema_by_global_id`,

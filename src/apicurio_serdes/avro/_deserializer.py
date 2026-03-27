@@ -8,13 +8,14 @@ from typing import TYPE_CHECKING, Any
 
 import fastavro
 
-from apicurio_serdes._errors import DeserializationError
+from apicurio_serdes._errors import DeserializationError, ResolverError
 
 if TYPE_CHECKING:
     from collections.abc import Callable
     from typing import Literal
 
     from apicurio_serdes._client import ApicurioRegistryClient
+    from apicurio_serdes.avro._strategies import ArtifactResolver
     from apicurio_serdes.serialization import SerializationContext
 
 
@@ -26,13 +27,63 @@ class _BaseAvroDeserializer:
         from_dict: Callable[[dict[str, Any], SerializationContext], Any] | None,
         use_id: Literal["globalId", "contentId"],
         reader_schema: dict[str, Any] | None,
+        artifact_id: str | None = None,
+        artifact_resolver: ArtifactResolver | None = None,
+        use_latest_version: bool = False,
     ) -> None:
+        if artifact_id is not None and artifact_resolver is not None:
+            raise ValueError(
+                "artifact_id and artifact_resolver are mutually exclusive."
+            )
+        has_artifact_source = artifact_id is not None or artifact_resolver is not None
+        if use_latest_version and not has_artifact_source:
+            raise ValueError(
+                "use_latest_version=True requires artifact_id or artifact_resolver."
+            )
+        if use_latest_version and reader_schema is not None:
+            raise ValueError(
+                "use_latest_version and reader_schema are mutually exclusive."
+            )
+        if has_artifact_source and not use_latest_version:
+            raise ValueError(
+                "artifact_id and artifact_resolver require use_latest_version=True."
+            )
         self.from_dict = from_dict
         self.use_id = use_id
+        self._artifact_id = artifact_id
+        self._artifact_resolver: ArtifactResolver | None = artifact_resolver
+        self._resolved_artifact_id: str | None = None
+        self._use_latest_version = use_latest_version
         self._parsed_cache: dict[int, Any] = {}
         self._parsed_reader_schema = (
             fastavro.parse_schema(reader_schema) if reader_schema is not None else None
         )
+
+    def _resolve_artifact_id(self, ctx: SerializationContext) -> str:
+        """Resolve artifact_id from static value or resolver, with caching."""
+        if self._artifact_resolver is not None and self._resolved_artifact_id is None:
+            try:
+                resolved = self._artifact_resolver(ctx)
+            except Exception as exc:
+                raise ResolverError(
+                    f"artifact_resolver raised: {exc}", cause=exc
+                ) from exc
+            if not isinstance(resolved, str) or not resolved:
+                raise ResolverError(
+                    f"artifact_resolver must return a non-empty str, got {resolved!r}"
+                )
+            self._resolved_artifact_id = resolved
+        effective_id = (
+            self._artifact_id
+            if self._artifact_id is not None
+            else self._resolved_artifact_id
+        )
+        if effective_id is None:  # pragma: no cover
+            raise RuntimeError(
+                "artifact_id is None and no resolver produced an ID; "
+                "this is an internal invariant violation."
+            )
+        return effective_id
 
     def _decode(
         self,
@@ -84,6 +135,20 @@ class AvroDeserializer(_BaseAvroDeserializer):
         use_id: Which registry identifier type the 4-byte wire format
                 field represents. Must match the serializer's use_id
                 setting. Defaults to "globalId".
+        artifact_id: Artifact identifier used to fetch the latest registry
+                     schema as the reader schema. Requires
+                     ``use_latest_version=True``. Mutually exclusive with
+                     ``artifact_resolver``.
+        artifact_resolver: Callable ``(ctx) -> str`` that returns the
+                           artifact identifier at call time. Requires
+                           ``use_latest_version=True``. Mutually exclusive
+                           with ``artifact_id``. The resolved value is cached
+                           after the first successful call.
+        use_latest_version: When ``True``, fetches the latest registry schema
+                            for the resolved artifact on the first call and
+                            uses it as the reader schema (cached per instance).
+                            Requires ``artifact_id`` or ``artifact_resolver``.
+                            Mutually exclusive with ``reader_schema``.
         reader_schema: Optional Avro schema dict used as the reader schema
                        during deserialization. When provided, fastavro
                        performs schema resolution between the writer schema
@@ -92,6 +157,36 @@ class AvroDeserializer(_BaseAvroDeserializer):
                        type promotions, and other Avro evolution rules. When
                        None (default), the writer schema is used for both
                        roles (no evolution). Parsed once at construction time.
+                       Mutually exclusive with ``use_latest_version``.
+
+    Raises:
+        ValueError: If ``artifact_id`` and ``artifact_resolver`` are both
+                    provided, if ``use_latest_version=True`` is used without
+                    ``artifact_id`` or ``artifact_resolver``, if
+                    ``use_latest_version=True`` is combined with
+                    ``reader_schema``, or if ``artifact_id`` /
+                    ``artifact_resolver`` is provided without
+                    ``use_latest_version=True``.
+
+    Example:
+        ```python
+        from apicurio_serdes import ApicurioRegistryClient
+        from apicurio_serdes.avro import AvroDeserializer
+        from apicurio_serdes.serialization import SerializationContext, MessageField
+
+        client = ApicurioRegistryClient(
+            url="http://localhost:8080/apis/registry/v3",
+            group_id="com.example.schemas",
+        )
+        # Dynamically use the latest registry schema as the reader schema:
+        deserializer = AvroDeserializer(
+            registry_client=client,
+            artifact_id="UserEvent",
+            use_latest_version=True,
+        )
+        ctx = SerializationContext(topic="user-events", field=MessageField.VALUE)
+        result = deserializer(raw_bytes, ctx)
+        ```
     """
 
     def __init__(
@@ -100,10 +195,18 @@ class AvroDeserializer(_BaseAvroDeserializer):
         from_dict: Callable[[dict[str, Any], SerializationContext], Any] | None = None,
         use_id: Literal["globalId", "contentId"] = "globalId",
         *,
+        artifact_id: str | None = None,
+        artifact_resolver: ArtifactResolver | None = None,
+        use_latest_version: bool = False,
         reader_schema: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
-            from_dict=from_dict, use_id=use_id, reader_schema=reader_schema
+            from_dict=from_dict,
+            use_id=use_id,
+            reader_schema=reader_schema,
+            artifact_id=artifact_id,
+            artifact_resolver=artifact_resolver,
+            use_latest_version=use_latest_version,
         )
         self.registry_client = registry_client
 
@@ -131,6 +234,9 @@ class AvroDeserializer(_BaseAvroDeserializer):
                 to any schema in the registry (FR-010).
             RegistryConnectionError: If the registry is unreachable during
                 schema resolution (FR-012).
+            ResolverError: If ``use_latest_version=True`` with an
+                ``artifact_resolver`` and the resolver raises or returns
+                a non-string value.
         """
         # FR-004: validate minimum length
         if len(data) < 5:
@@ -152,5 +258,10 @@ class AvroDeserializer(_BaseAvroDeserializer):
             schema_dict = self.registry_client.get_schema_by_global_id(schema_id)
         else:
             schema_dict = self.registry_client.get_schema_by_content_id(schema_id)
+
+        if self._use_latest_version and self._parsed_reader_schema is None:
+            effective_id = self._resolve_artifact_id(ctx)
+            cached = self.registry_client.get_schema(effective_id)
+            self._parsed_reader_schema = fastavro.parse_schema(cached.schema)
 
         return self._decode(schema_id, schema_dict, data[5:], ctx)

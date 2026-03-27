@@ -6,6 +6,14 @@ Toutes les modifications visibles par les utilisateurs sont documentées ici.
 
 ### Ajouts
 
+- `AvroSerializer`, `AvroDeserializer` et `AsyncAvroDeserializer` acceptent
+  désormais `use_latest_version=True`. Pour le sérialiseur, le paramètre valide
+  qu'il n'est pas combiné avec `auto_register` (ils sont mutuellement exclusifs).
+  Pour les désérialiseurs, il active la résolution dynamique du schema lecteur :
+  le schema le plus récent du registre pour l'`artifact_id` (ou `artifact_resolver`)
+  fourni est récupéré au premier appel et mis en cache par instance. Mutuellement
+  exclusif avec le paramètre statique `reader_schema`.
+
 - Paramètres de constructeur `cache_max_size` (défaut `1000`) et `cache_ttl_seconds` (défaut `None`) sur les deux
   clients. `cache_max_size` limite les deux caches avec éviction LRU. `cache_ttl_seconds` active un TTL optionnel sur
   les lookups basés sur l'artifact (`get_schema`, `register_schema`) ; les lookups basés sur l'identifiant
