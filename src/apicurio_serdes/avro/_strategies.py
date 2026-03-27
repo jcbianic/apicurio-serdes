@@ -33,14 +33,7 @@ class TopicIdStrategy:
     """
 
     def __call__(self, ctx: SerializationContext) -> str:
-        """Return ``"{topic}-{field}"`` for the given context.
-
-        Args:
-            ctx: The serialization context containing the topic and field.
-
-        Returns:
-            Artifact ID string in the form ``"{topic}-{field}"``.
-        """
+        """Return ``"{topic}-{field}"`` for the given context."""
         return f"{ctx.topic}-{ctx.field.value}"
 
 
@@ -62,14 +55,7 @@ class SimpleTopicIdStrategy:
     """
 
     def __call__(self, ctx: SerializationContext) -> str:
-        """Return the topic name for the given context.
-
-        Args:
-            ctx: The serialization context containing the topic.
-
-        Returns:
-            The topic name as the artifact ID.
-        """
+        """Return the topic name for the given context."""
         return ctx.topic
 
 
@@ -115,15 +101,7 @@ class QualifiedRecordIdStrategy:
         self._artifact_id = f"{namespace}.{name}" if namespace else name
 
     def __call__(self, ctx: SerializationContext) -> str:
-        """Return the qualified record name, ignoring context.
-
-        Args:
-            ctx: The serialization context (unused).
-
-        Returns:
-            Artifact ID string in the form ``"{namespace}.{name}"`` or
-            ``"{name}"``.
-        """
+        """Return the qualified record name, ignoring context."""
         return self._artifact_id
 
 
@@ -171,13 +149,5 @@ class TopicRecordIdStrategy:
         self._record_part = f"{namespace}.{name}" if namespace else name
 
     def __call__(self, ctx: SerializationContext) -> str:
-        """Return ``"{topic}-{record}"`` for the given context.
-
-        Args:
-            ctx: The serialization context containing the topic.
-
-        Returns:
-            Artifact ID string in the form ``"{topic}-{namespace}.{name}"``
-            or ``"{topic}-{name}"``.
-        """
+        """Return ``"{topic}-{record}"`` for the given context."""
         return f"{ctx.topic}-{self._record_part}"
