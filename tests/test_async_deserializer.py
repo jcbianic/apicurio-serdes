@@ -475,3 +475,53 @@ class TestUseLatestVersion:
         data = make_confluent_bytes(CONTENT_ID, VALID_USER_EVENT)
         result = await deser(data, _ctx())
         assert result == VALID_USER_EVENT
+
+    async def test_resolver_raises_wraps_as_resolver_error(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """artifact_resolver that raises is wrapped as ResolverError."""
+        from apicurio_serdes._errors import ResolverError
+
+        _id_schema_route(
+            mock_registry, "globalId", CONTENT_ID, schema=WRITER_SCHEMA_EVOLUTION
+        )
+
+        def bad_resolver(ctx: object) -> str:
+            raise RuntimeError("boom")
+
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        deser = AsyncAvroDeserializer(
+            registry_client=client,
+            artifact_resolver=bad_resolver,
+            use_latest_version=True,
+        )
+        data = make_confluent_bytes(
+            CONTENT_ID, {"userId": "u1"}, schema=WRITER_SCHEMA_EVOLUTION
+        )
+        with pytest.raises(ResolverError, match="artifact_resolver raised"):
+            await deser(data, _ctx())
+
+    async def test_resolver_returns_non_string_raises_resolver_error(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """artifact_resolver returning non-string raises ResolverError."""
+        from apicurio_serdes._errors import ResolverError
+
+        _id_schema_route(
+            mock_registry, "globalId", CONTENT_ID, schema=WRITER_SCHEMA_EVOLUTION
+        )
+
+        def bad_resolver(ctx: object) -> str:
+            return 42  # type: ignore[return-value]
+
+        client = AsyncApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        deser = AsyncAvroDeserializer(
+            registry_client=client,
+            artifact_resolver=bad_resolver,
+            use_latest_version=True,
+        )
+        data = make_confluent_bytes(
+            CONTENT_ID, {"userId": "u1"}, schema=WRITER_SCHEMA_EVOLUTION
+        )
+        with pytest.raises(ResolverError, match="non-empty str"):
+            await deser(data, _ctx())
