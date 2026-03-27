@@ -5,6 +5,8 @@ from __future__ import annotations
 import struct
 from typing import TYPE_CHECKING, Any
 
+import fastavro
+
 from apicurio_serdes._errors import DeserializationError
 from apicurio_serdes.avro._deserializer import _BaseAvroDeserializer
 
@@ -13,6 +15,7 @@ if TYPE_CHECKING:
     from typing import Literal
 
     from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+    from apicurio_serdes.avro._strategies import ArtifactResolver
     from apicurio_serdes.serialization import SerializationContext
 
 
@@ -65,10 +68,18 @@ class AsyncAvroDeserializer(_BaseAvroDeserializer):
         from_dict: Callable[[dict[str, Any], SerializationContext], Any] | None = None,
         use_id: Literal["globalId", "contentId"] = "globalId",
         *,
+        artifact_id: str | None = None,
+        artifact_resolver: ArtifactResolver | None = None,
+        use_latest_version: bool = False,
         reader_schema: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(
-            from_dict=from_dict, use_id=use_id, reader_schema=reader_schema
+            from_dict=from_dict,
+            use_id=use_id,
+            reader_schema=reader_schema,
+            artifact_id=artifact_id,
+            artifact_resolver=artifact_resolver,
+            use_latest_version=use_latest_version,
         )
         self.registry_client = registry_client
 
@@ -112,5 +123,10 @@ class AsyncAvroDeserializer(_BaseAvroDeserializer):
             schema_dict = await self.registry_client.get_schema_by_global_id(schema_id)
         else:
             schema_dict = await self.registry_client.get_schema_by_content_id(schema_id)
+
+        if self._use_latest_version and self._parsed_reader_schema is None:
+            effective_id = self._resolve_artifact_id(ctx)
+            cached = await self.registry_client.get_schema(effective_id)
+            self._parsed_reader_schema = fastavro.parse_schema(cached.schema)
 
         return self._decode(schema_id, schema_dict, data[5:], ctx)
