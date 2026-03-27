@@ -990,3 +990,82 @@ class TestAutoRegister:
         ctx = SerializationContext(topic="test", field=MessageField.VALUE)
         result = ser.serialize(VALID_USER_EVENT, ctx)
         assert result.payload[0:1] == b"\x00"
+
+
+class TestUseLatestVersion:
+    """Tests for AvroSerializer use_latest_version feature."""
+
+    def test_use_latest_version_and_auto_register_raises_value_error(self) -> None:
+        """use_latest_version=True + auto_register=True raises ValueError at construction."""
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            AvroSerializer(
+                registry_client=client,
+                artifact_id="UserEvent",
+                use_latest_version=True,
+                auto_register=True,
+                schema=USER_EVENT_SCHEMA_JSON,
+            )
+
+    def test_use_latest_version_with_artifact_id_serializes(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """use_latest_version=True with artifact_id fetches latest and serializes."""
+        _schema_route(mock_registry, "UserEvent")
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        ser = AvroSerializer(
+            registry_client=client,
+            artifact_id="UserEvent",
+            use_latest_version=True,
+        )
+        ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+        result = ser.serialize(VALID_USER_EVENT, ctx)
+        assert result.payload[0:1] == b"\x00"
+        assert len(result.payload) > 5
+
+    def test_use_latest_version_with_artifact_resolver_serializes(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """use_latest_version=True with artifact_resolver fetches latest and serializes."""
+        from apicurio_serdes.avro import SimpleTopicIdStrategy
+
+        _schema_route(mock_registry, "test")
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        ser = AvroSerializer(
+            registry_client=client,
+            artifact_resolver=SimpleTopicIdStrategy(),
+            use_latest_version=True,
+        )
+        ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+        result = ser.serialize(VALID_USER_EVENT, ctx)
+        assert result.payload[0:1] == b"\x00"
+
+    def test_use_latest_version_second_call_is_cache_hit(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """use_latest_version=True: second serialize call is an instance-cache hit."""
+        schema_route = _schema_route(mock_registry, "UserEvent")
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        ser = AvroSerializer(
+            registry_client=client,
+            artifact_id="UserEvent",
+            use_latest_version=True,
+        )
+        ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+        ser.serialize(VALID_USER_EVENT, ctx)
+        ser.serialize(VALID_USER_EVENT, ctx)
+        assert schema_route.call_count == 1
+
+    def test_use_latest_version_false_default_is_backward_compatible(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """use_latest_version=False (default) constructs and serializes without error."""
+        _schema_route(mock_registry, "UserEvent")
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        ser = AvroSerializer(
+            registry_client=client,
+            artifact_id="UserEvent",
+        )
+        ctx = SerializationContext(topic="test", field=MessageField.VALUE)
+        result = ser.serialize(VALID_USER_EVENT, ctx)
+        assert result.payload[0:1] == b"\x00"

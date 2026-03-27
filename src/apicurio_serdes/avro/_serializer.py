@@ -112,6 +112,7 @@ class AvroSerializer:
         use_id: Literal["globalId", "contentId"] = "globalId",
         strict: bool = False,
         wire_format: WireFormat = WireFormat.CONFLUENT_PAYLOAD,
+        use_latest_version: bool = False,
     ) -> None:
         if artifact_id is not None and artifact_resolver is not None:
             raise ValueError(
@@ -135,6 +136,10 @@ class AvroSerializer:
             )
         if auto_register and schema is None:
             raise ValueError("schema must be provided when auto_register=True")
+        if use_latest_version and auto_register:
+            raise ValueError(
+                "use_latest_version and auto_register are mutually exclusive."
+            )
         self.registry_client = registry_client
         self.artifact_id: str | None = artifact_id
         self._artifact_resolver: ArtifactResolver | None = artifact_resolver
@@ -146,6 +151,7 @@ class AvroSerializer:
         self.use_id = use_id
         self.strict = strict
         self.wire_format = wire_format
+        self.use_latest_version = use_latest_version
         self._schema: CachedSchema | None = None
         self._parsed_schema: str | list[Any] | dict[Any, Any] | None = None
 
