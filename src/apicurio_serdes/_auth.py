@@ -32,7 +32,8 @@ class BearerAuth(httpx.Auth):
             GCP OIDC identity tokens retrieved via ``google-auth``).
 
     Raises:
-        ValueError: If neither or both of *token* and *token_provider* are given.
+        ValueError: If neither or both of *token* and *token_provider* are given,
+            or if *token* is an empty string.
 
     Example:
         ```python
