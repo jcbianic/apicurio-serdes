@@ -61,6 +61,17 @@ Toutes les modifications visibles par les utilisateurs sont documentées ici.
   `"{topic}-{name}"` sinon. Correspond à la `TopicRecordNameStrategy` de Confluent.
   Lève une `ValueError` à la construction si le schema ne possède pas de champ
   `"name"`.
+- `BearerAuth` — gestionnaire d'authentification pour les tokens Bearer statiques
+  ou les fournisseurs de tokens dynamiques (ex. GCP OIDC). Accepte un `token`
+  statique ou un `token_provider` callable sans argument. Rejette les tokens
+  vides à la construction.
+- `KeycloakAuth` — authentification OAuth2 client-credentials contre un endpoint
+  de tokens Keycloak. Récupère un token au premier usage et le rafraîchit
+  automatiquement quand il reste moins de 20% de son TTL. Fonctionne avec les
+  clients sync et async.
+- `AuthenticationError` — nouvelle exception typée levée en cas d'échec
+  d'authentification (erreurs de récupération de token, réponses invalides).
+  Exportée depuis la racine du paquet.
 
 ## 0.2.0 (2026-03-11)
 

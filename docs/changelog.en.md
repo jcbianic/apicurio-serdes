@@ -57,6 +57,14 @@ All user-visible changes are documented here.
   `"{topic}-{name}"` otherwise. Matches the Confluent
   `TopicRecordNameStrategy`. Raises `ValueError` at construction if the
   schema has no `"name"` field.
+- `BearerAuth` — authentication handler for static Bearer tokens or dynamic
+  token providers (e.g. GCP OIDC). Pass a `token` string or a zero-argument
+  `token_provider` callable. Rejects empty tokens at construction.
+- `KeycloakAuth` — OAuth2 client-credentials authentication against a Keycloak
+  token endpoint. Fetches a token on first use and automatically refreshes it
+  when less than 20% of its TTL remains. Works with both sync and async clients.
+- `AuthenticationError` — new typed exception raised on authentication failures
+  (token fetch errors, invalid responses). Exported from the package root.
 
 ## 0.2.0 (2026-03-11)
 
