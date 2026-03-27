@@ -28,7 +28,10 @@ record = deserializer(kafka_message.value(), ctx)
 | `registry_client` | `ApicurioRegistryClient` | obligatoire | Le client registry utilisé pour résoudre les identifiants de schema. |
 | `from_dict` | callable | `None` | Transformation optionnelle `(dict, ctx) -> Any` appliquée après le décodage. |
 | `use_id` | `"contentId"` ou `"globalId"` | `"globalId"` | Comment interpréter l'identifiant de schema de 4 octets dans l'en-tête du wire format. |
-| `reader_schema` | `dict` | `None` | Schema Avro optionnel utilisé comme schema lecteur. Quand il est fourni, fastavro effectue une résolution de schema entre le schema d'écriture (issu du message) et ce schema, permettant les ajouts de champs avec valeurs par défaut, les promotions de type et les renommages par alias. Parsé une seule fois à la construction. |
+| `artifact_id` | `str` | `None` | Identifiant d'artifact statique utilisé pour récupérer le schema le plus récent du registry comme schema lecteur. Requiert `use_latest_version=True`. Mutuellement exclusif avec `artifact_resolver`. |
+| `artifact_resolver` | callable | `None` | Callable `(ctx) -> str` qui dérive l'identifiant d'artifact à l'appel. Requiert `use_latest_version=True`. Mutuellement exclusif avec `artifact_id`. |
+| `use_latest_version` | `bool` | `False` | Quand `True`, récupère le schema le plus récent du registry pour l'artifact résolu lors du premier appel et l'utilise comme schema lecteur (mis en cache par instance). Requiert `artifact_id` ou `artifact_resolver`. Mutuellement exclusif avec `reader_schema`. |
+| `reader_schema` | `dict` | `None` | Schema Avro optionnel utilisé comme schema lecteur. Quand il est fourni, fastavro effectue une résolution de schema entre le schema d'écriture (issu du message) et ce schema, permettant les ajouts de champs avec valeurs par défaut, les promotions de type et les renommages par alias. Parsé une seule fois à la construction. Mutuellement exclusif avec `use_latest_version`. |
 
 ### Mode d'identifiant de schema (`use_id`)
 
@@ -125,6 +128,45 @@ Quelques points à garder en tête lors de la résolution :
 
 Si les schemas sont incompatibles — par exemple, un nouveau champ obligatoire sans valeur par
 défaut — fastavro lève une `ValueError` encapsulée dans `DeserializationError`.
+
+## Schema lecteur dynamique (`use_latest_version`)
+
+Lorsque le schema côté consommateur évolue fréquemment, maintenir un `reader_schema`
+statique dans le code peut devenir contraignant. `use_latest_version=True` délègue la
+résolution du schema au registry : le désérialiseur récupère la dernière version de
+l'artifact donné lors du premier appel et l'utilise comme schema lecteur, mis en cache
+pour toute la durée de vie de l'instance.
+
+```python
+deserializer = AvroDeserializer(
+    client,
+    artifact_id="UserEvent",
+    use_latest_version=True,
+)
+ctx = SerializationContext("user-events", MessageField.VALUE)
+# Au premier appel, le désérialiseur récupère le schema "UserEvent" le plus
+# récent depuis le registry et l'utilise comme schema lecteur. Les appels
+# suivants utilisent la version mise en cache — aucune requête HTTP supplémentaire.
+record = deserializer(payload, ctx)
+```
+
+Vous pouvez également utiliser `artifact_resolver` à la place d'un `artifact_id` statique :
+
+```python
+from apicurio_serdes.avro import SimpleTopicIdStrategy
+
+deserializer = AvroDeserializer(
+    client,
+    artifact_resolver=SimpleTopicIdStrategy(),
+    use_latest_version=True,
+)
+```
+
+**Contraintes** :
+
+- Requiert exactement l'un de `artifact_id` ou `artifact_resolver`.
+- Mutuellement exclusif avec le paramètre statique `reader_schema`.
+- Fournir `artifact_id` ou `artifact_resolver` sans `use_latest_version=True` lève une `ValueError`.
 
 ## Mise en cache du schema
 

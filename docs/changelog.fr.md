@@ -6,6 +6,14 @@ Toutes les modifications visibles par les utilisateurs sont documentées ici.
 
 ### Ajouts
 
+- `AvroSerializer`, `AvroDeserializer` et `AsyncAvroDeserializer` acceptent
+  désormais `use_latest_version=True`. Pour le sérialiseur, le paramètre valide
+  qu'il n'est pas combiné avec `auto_register` (ils sont mutuellement exclusifs).
+  Pour les désérialiseurs, il active la résolution dynamique du schema lecteur :
+  le schema le plus récent du registre pour l'`artifact_id` (ou `artifact_resolver`)
+  fourni est récupéré au premier appel et mis en cache par instance. Mutuellement
+  exclusif avec le paramètre statique `reader_schema`.
+
 - Paramètres de constructeur `cache_max_size` (défaut `1000`) et `cache_ttl_seconds` (défaut `None`) sur les deux
   clients. `cache_max_size` limite les deux caches avec éviction LRU. `cache_ttl_seconds` active un TTL optionnel sur
   les lookups basés sur l'artifact (`get_schema`, `register_schema`) ; les lookups basés sur l'identifiant
@@ -53,6 +61,17 @@ Toutes les modifications visibles par les utilisateurs sont documentées ici.
   `"{topic}-{name}"` sinon. Correspond à la `TopicRecordNameStrategy` de Confluent.
   Lève une `ValueError` à la construction si le schema ne possède pas de champ
   `"name"`.
+- `BearerAuth` — gestionnaire d'authentification pour les tokens Bearer statiques
+  ou les fournisseurs de tokens dynamiques (ex. GCP OIDC). Accepte un `token`
+  statique ou un `token_provider` callable sans argument. Rejette les tokens
+  vides à la construction.
+- `KeycloakAuth` — authentification OAuth2 client-credentials contre un endpoint
+  de tokens Keycloak. Récupère un token au premier usage et le rafraîchit
+  automatiquement quand il reste moins de 20% de son TTL. Fonctionne avec les
+  clients sync et async.
+- `AuthenticationError` — nouvelle exception typée levée en cas d'échec
+  d'authentification (erreurs de récupération de token, réponses invalides).
+  Exportée depuis la racine du paquet.
 
 ## 0.2.0 (2026-03-11)
 

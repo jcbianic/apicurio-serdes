@@ -22,6 +22,7 @@ from tests.conftest import (
     WRITER_SCHEMA_EVOLUTION,
     _id_not_found_route,
     _id_schema_route,
+    _schema_route,
     make_confluent_bytes,
 )
 
@@ -282,4 +283,170 @@ class TestReaderSchema:
             CONTENT_ID, {"userId": "u1"}, schema=WRITER_SCHEMA_EVOLUTION
         )
         with pytest.raises(DeserializationError, match="Avro decode failure"):
+            deser(data, _ctx())
+
+
+class TestUseLatestVersion:
+    """AvroDeserializer use_latest_version feature."""
+
+    def test_use_latest_version_without_artifact_raises(self) -> None:
+        """use_latest_version=True without artifact_id or artifact_resolver raises ValueError."""
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        with pytest.raises(ValueError, match="artifact_id or artifact_resolver"):
+            AvroDeserializer(registry_client=client, use_latest_version=True)
+
+    def test_use_latest_version_with_reader_schema_raises(self) -> None:
+        """use_latest_version=True + reader_schema raises ValueError (mutually exclusive)."""
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            AvroDeserializer(
+                registry_client=client,
+                artifact_id="UserEvent",
+                use_latest_version=True,
+                reader_schema=READER_SCHEMA_EVOLUTION,
+            )
+
+    def test_artifact_id_and_resolver_raises(self) -> None:
+        """artifact_id + artifact_resolver raises ValueError (mutually exclusive)."""
+        from apicurio_serdes.avro import SimpleTopicIdStrategy
+
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        with pytest.raises(ValueError, match="mutually exclusive"):
+            AvroDeserializer(
+                registry_client=client,
+                artifact_id="UserEvent",
+                artifact_resolver=SimpleTopicIdStrategy(),
+                use_latest_version=True,
+            )
+
+    def test_artifact_id_without_use_latest_version_raises(self) -> None:
+        """artifact_id without use_latest_version=True raises ValueError."""
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        with pytest.raises(ValueError, match="use_latest_version"):
+            AvroDeserializer(registry_client=client, artifact_id="UserEvent")
+
+    def test_use_latest_version_with_artifact_id_fills_default(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """use_latest_version=True + artifact_id uses latest schema as reader schema."""
+        _schema_route(mock_registry, "UserEvent", schema=READER_SCHEMA_EVOLUTION)
+        _id_schema_route(
+            mock_registry, "globalId", CONTENT_ID, schema=WRITER_SCHEMA_EVOLUTION
+        )
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        deser = AvroDeserializer(
+            registry_client=client,
+            artifact_id="UserEvent",
+            use_latest_version=True,
+        )
+        data = make_confluent_bytes(
+            CONTENT_ID, {"userId": "u1"}, schema=WRITER_SCHEMA_EVOLUTION
+        )
+        result = deser(data, _ctx())
+        assert result == {"userId": "u1", "version": "v1"}
+
+    def test_use_latest_version_with_artifact_resolver_fills_default(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """use_latest_version=True + artifact_resolver uses latest schema as reader schema."""
+        from apicurio_serdes.avro import SimpleTopicIdStrategy
+
+        _schema_route(mock_registry, "test", schema=READER_SCHEMA_EVOLUTION)
+        _id_schema_route(
+            mock_registry, "globalId", CONTENT_ID, schema=WRITER_SCHEMA_EVOLUTION
+        )
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        deser = AvroDeserializer(
+            registry_client=client,
+            artifact_resolver=SimpleTopicIdStrategy(),
+            use_latest_version=True,
+        )
+        data = make_confluent_bytes(
+            CONTENT_ID, {"userId": "u1"}, schema=WRITER_SCHEMA_EVOLUTION
+        )
+        result = deser(data, _ctx())
+        assert result == {"userId": "u1", "version": "v1"}
+
+    def test_use_latest_version_reader_schema_cached(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """use_latest_version=True: second call does not re-fetch the latest schema."""
+        schema_route = _schema_route(
+            mock_registry, "UserEvent", schema=READER_SCHEMA_EVOLUTION
+        )
+        _id_schema_route(
+            mock_registry, "globalId", CONTENT_ID, schema=WRITER_SCHEMA_EVOLUTION
+        )
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        deser = AvroDeserializer(
+            registry_client=client,
+            artifact_id="UserEvent",
+            use_latest_version=True,
+        )
+        data = make_confluent_bytes(
+            CONTENT_ID, {"userId": "u1"}, schema=WRITER_SCHEMA_EVOLUTION
+        )
+        deser(data, _ctx())
+        deser(data, _ctx())
+        assert schema_route.call_count == 1
+
+    def test_use_latest_version_false_is_backward_compatible(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """use_latest_version=False (default) with no artifact params works as before."""
+        _id_schema_route(mock_registry, "globalId", CONTENT_ID)
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        deser = AvroDeserializer(registry_client=client)
+        data = make_confluent_bytes(CONTENT_ID, VALID_USER_EVENT)
+        result = deser(data, _ctx())
+        assert result == VALID_USER_EVENT
+
+    def test_resolver_raises_wraps_as_resolver_error(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """artifact_resolver that raises is wrapped as ResolverError."""
+        from apicurio_serdes._errors import ResolverError
+
+        _id_schema_route(
+            mock_registry, "globalId", CONTENT_ID, schema=WRITER_SCHEMA_EVOLUTION
+        )
+
+        def bad_resolver(ctx: object) -> str:
+            raise RuntimeError("boom")
+
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        deser = AvroDeserializer(
+            registry_client=client,
+            artifact_resolver=bad_resolver,
+            use_latest_version=True,
+        )
+        data = make_confluent_bytes(
+            CONTENT_ID, {"userId": "u1"}, schema=WRITER_SCHEMA_EVOLUTION
+        )
+        with pytest.raises(ResolverError, match="artifact_resolver raised"):
+            deser(data, _ctx())
+
+    def test_resolver_returns_non_string_raises_resolver_error(
+        self, mock_registry: respx.MockRouter
+    ) -> None:
+        """artifact_resolver returning non-string raises ResolverError."""
+        from apicurio_serdes._errors import ResolverError
+
+        _id_schema_route(
+            mock_registry, "globalId", CONTENT_ID, schema=WRITER_SCHEMA_EVOLUTION
+        )
+
+        def bad_resolver(ctx: object) -> str:
+            return 42  # type: ignore[return-value]
+
+        client = ApicurioRegistryClient(url=REGISTRY_URL, group_id=GROUP_ID)
+        deser = AvroDeserializer(
+            registry_client=client,
+            artifact_resolver=bad_resolver,
+            use_latest_version=True,
+        )
+        data = make_confluent_bytes(
+            CONTENT_ID, {"userId": "u1"}, schema=WRITER_SCHEMA_EVOLUTION
+        )
+        with pytest.raises(ResolverError, match="non-empty str"):
             deser(data, _ctx())

@@ -50,7 +50,11 @@ class _CacheCore:
         self._store: OrderedDict[Any, tuple[Any, float | None]] = OrderedDict()
 
     def peek(self, key: object) -> object:
-        """TTL check without LRU update — safe to call outside a lock (no mutation)."""
+        """TTL check without LRU update — safe to call outside a lock (no mutation).
+
+        "Safe" here means the calling thread holds no lock *but the owning thread is
+        the only writer* — ``OrderedDict.get()`` is not atomic under concurrent resize.
+        """
         raw: tuple[Any, float | None] | None = self._store.get(key)
         if raw is None:
             return self._MISSING
@@ -165,6 +169,7 @@ class _RegistryClientBase:
 
     def _retry_delays(self) -> Iterator[float]:
         """Yield one delay (seconds) per retry attempt, up to max_retries values."""
+        # yields one delay per *retry*; the first attempt happens before any delay
         for attempt in range(self.max_retries):
             yield self._compute_delay(attempt)
 

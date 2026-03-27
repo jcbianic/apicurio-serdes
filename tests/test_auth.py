@@ -71,6 +71,10 @@ class TestBearerAuth:
                 client.get(ARTIFACT_URL)
         assert call_count == 2
 
+    def test_empty_token_raises_value_error(self) -> None:
+        with pytest.raises(ValueError, match="non-empty"):
+            BearerAuth(token="")
+
     def test_no_args_raises_value_error(self) -> None:
         with pytest.raises(ValueError, match="exactly one"):
             BearerAuth()

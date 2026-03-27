@@ -32,7 +32,8 @@ class BearerAuth(httpx.Auth):
             GCP OIDC identity tokens retrieved via ``google-auth``).
 
     Raises:
-        ValueError: If neither or both of *token* and *token_provider* are given.
+        ValueError: If neither or both of *token* and *token_provider* are given,
+            or if *token* is an empty string.
 
     Example:
         ```python
@@ -55,13 +56,16 @@ class BearerAuth(httpx.Auth):
             raise ValueError(
                 "BearerAuth requires exactly one of 'token' or 'token_provider'."
             )
+        if token is not None and not token:
+            raise ValueError("BearerAuth 'token' must be a non-empty string.")
         self._token = token
         self._token_provider = token_provider
 
     def _get_token(self) -> str:
         if self._token_provider is not None:
             return self._token_provider()
-        return self._token  # type: ignore[return-value]
+        assert self._token is not None
+        return self._token
 
     def auth_flow(
         self, request: httpx.Request
@@ -222,6 +226,10 @@ class KeycloakAuth(httpx.Auth):
     # ── Async path ──
 
     def _get_async_lock(self) -> asyncio.Lock:
+        # Note: the Lock is bound to the event loop on which it is first
+        # *awaited*. Do not share a KeycloakAuth instance across multiple
+        # event loops (e.g. separate asyncio.run() calls in tests or
+        # per-request loops in some ASGI frameworks).
         if self._async_lock is None:
             self._async_lock = asyncio.Lock()
         return self._async_lock

@@ -6,6 +6,13 @@ All user-visible changes are documented here.
 
 ### Added
 
+- `AvroSerializer`, `AvroDeserializer`, and `AsyncAvroDeserializer` now accept
+  `use_latest_version=True`. For the serializer, the flag validates that it is not
+  combined with `auto_register` (they are mutually exclusive). For the deserializers,
+  it enables dynamic reader schema resolution: the latest registry schema for the
+  given `artifact_id` (or `artifact_resolver`) is fetched on the first call and
+  cached per instance. Mutually exclusive with the static `reader_schema` parameter.
+
 - `cache_max_size` (default `1000`) and `cache_ttl_seconds` (default `None`) constructor parameters on both clients.
   `cache_max_size` caps both caches with LRU eviction. `cache_ttl_seconds` enables optional TTL expiry on
   artifact-based lookups (`get_schema`, `register_schema`); ID-based lookups (`get_schema_by_global_id`,
@@ -50,6 +57,14 @@ All user-visible changes are documented here.
   `"{topic}-{name}"` otherwise. Matches the Confluent
   `TopicRecordNameStrategy`. Raises `ValueError` at construction if the
   schema has no `"name"` field.
+- `BearerAuth` — authentication handler for static Bearer tokens or dynamic
+  token providers (e.g. GCP OIDC). Pass a `token` string or a zero-argument
+  `token_provider` callable. Rejects empty tokens at construction.
+- `KeycloakAuth` — OAuth2 client-credentials authentication against a Keycloak
+  token endpoint. Fetches a token on first use and automatically refreshes it
+  when less than 20% of its TTL remains. Works with both sync and async clients.
+- `AuthenticationError` — new typed exception raised on authentication failures
+  (token fetch errors, invalid responses). Exported from the package root.
 
 ## 0.2.0 (2026-03-11)
 
