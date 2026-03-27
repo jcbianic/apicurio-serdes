@@ -32,6 +32,7 @@ payload = serializer({"userId": "abc-123", "country": "FR"}, ctx)
 | `to_dict` | callable | `None` | Converts non-dict input to a dict before encoding. See [Custom Serialization](../how-to/custom-serialization.md). |
 | `use_id` | `"globalId"` or `"contentId"` | `"globalId"` | Which schema identifier to embed in the wire format header. See [Choosing Between globalId and contentId](../how-to/identifier-selection.md). |
 | `strict` | `bool` | `False` | Reject input fields not present in the schema with `ValueError`. |
+| `use_latest_version` | `bool` | `False` | Reserved for API consistency with `AvroDeserializer`. Must not be combined with `auto_register=True` (they are mutually exclusive). Has no effect on serialization behaviour. |
 
 ## Artifact resolver strategies
 
