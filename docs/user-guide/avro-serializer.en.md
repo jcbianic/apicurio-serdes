@@ -59,7 +59,9 @@ Matches the Apicurio Java `SimpleTopicIdStrategy`.
 ```python
 from apicurio_serdes.avro import SimpleTopicIdStrategy
 
-serializer = AvroSerializer(registry_client=client, artifact_resolver=SimpleTopicIdStrategy())
+serializer = AvroSerializer(
+    registry_client=client, artifact_resolver=SimpleTopicIdStrategy()
+)
 ```
 
 ### `QualifiedRecordIdStrategy`
