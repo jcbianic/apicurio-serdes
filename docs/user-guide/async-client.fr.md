@@ -15,8 +15,8 @@ client = AsyncApicurioRegistryClient(
 )
 
 cached = await client.get_schema("UserEvent")
-print(cached.schema)      # Dict de schema Avro parsé
-print(cached.global_id)   # globalId du registry
+print(cached.schema)  # Dict de schema Avro parsé
+print(cached.global_id)  # globalId du registry
 print(cached.content_id)  # contentId du registry
 ```
 
@@ -110,7 +110,7 @@ cached = await client.register_schema(
     },
     if_exists="FIND_OR_CREATE_VERSION",  # défaut — retourne la version existante ou en crée une nouvelle
 )
-print(cached.global_id)   # globalId assigné par le registry
+print(cached.global_id)  # globalId assigné par le registry
 print(cached.content_id)  # contentId assigné par le registry
 ```
 
@@ -131,10 +131,10 @@ from apicurio_serdes._errors import (
 try:
     cached = await client.get_schema("NonExistent")
 except SchemaNotFoundError as e:
-    print(e.group_id)     # "my-group"
+    print(e.group_id)  # "my-group"
     print(e.artifact_id)  # "NonExistent"
 except RegistryConnectionError as e:
-    print(e.url)          # URL du registry injoignable
+    print(e.url)  # URL du registry injoignable
 ```
 
 ## Mise en cache
