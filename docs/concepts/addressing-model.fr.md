@@ -85,8 +85,8 @@ Lorsque vous créez un serializer :
 
 ```python
 serializer = AvroSerializer(
-    registry_client=client,       # client knows group_id
-    artifact_id="UserEvent",      # artifact within that group
+    registry_client=client,  # client knows group_id
+    artifact_id="UserEvent",  # artifact within that group
 )
 ```
 

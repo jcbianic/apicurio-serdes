@@ -208,7 +208,7 @@ Decoding:
 ```python
 import struct
 
-magic = data[0]         # must be 0x00
+magic = data[0]  # must be 0x00
 schema_id = struct.unpack(">I", data[1:5])[0]
 avro_payload = data[5:]  # remaining bytes
 ```

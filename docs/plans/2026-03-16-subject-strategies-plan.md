@@ -113,13 +113,9 @@ intentionally omitted.
       def __init__(self, schema: dict[str, Any]) -> None:
           name = schema.get("name")
           if not name:
-              raise ValueError(
-                  "schema must have a non-empty 'name' field"
-              )
+              raise ValueError("schema must have a non-empty 'name' field")
           namespace = schema.get("namespace")
-          self._artifact_id = (
-              f"{namespace}.{name}" if namespace else name
-          )
+          self._artifact_id = f"{namespace}.{name}" if namespace else name
 
       def __call__(self, ctx: SerializationContext) -> str:
           return self._artifact_id
@@ -141,13 +137,9 @@ intentionally omitted.
       def __init__(self, schema: dict[str, Any]) -> None:
           name = schema.get("name")
           if not name:
-              raise ValueError(
-                  "schema must have a non-empty 'name' field"
-              )
+              raise ValueError("schema must have a non-empty 'name' field")
           namespace = schema.get("namespace")
-          self._record_part = (
-              f"{namespace}.{name}" if namespace else name
-          )
+          self._record_part = f"{namespace}.{name}" if namespace else name
 
       def __call__(self, ctx: SerializationContext) -> str:
           return f"{ctx.topic}-{self._record_part}"
