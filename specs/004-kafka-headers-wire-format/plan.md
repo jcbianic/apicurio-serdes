@@ -108,9 +108,12 @@ class SerializedMessage:
     payload: bytes
     headers: dict[str, bytes]
 
+
 class AvroSerializer:
     def serialize(self, data: Any, ctx: SerializationContext) -> SerializedMessage: ...
-    def __call__(self, data: Any, ctx: SerializationContext) -> bytes: ...  # unchanged contract
+    def __call__(
+        self, data: Any, ctx: SerializationContext
+    ) -> bytes: ...  # unchanged contract
 ```
 
 **Rationale for Option C over A and B:**

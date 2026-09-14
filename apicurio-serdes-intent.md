@@ -85,13 +85,13 @@ client = ApicurioRegistryClient(
 serializer = AvroSerializer(
     registry_client=client,
     artifact_id="UserEvent",
-    to_dict=lambda obj, ctx: obj.model_dump(),   # optional, identity by default
+    to_dict=lambda obj, ctx: obj.model_dump(),  # optional, identity by default
 )
 
 # Deserializer — resolves artifact from wire format at runtime
 deserializer = AvroDeserializer(
     registry_client=client,
-    from_dict=lambda d, ctx: d,                  # optional, identity by default
+    from_dict=lambda d, ctx: d,  # optional, identity by default
 )
 
 # Usage in a producer

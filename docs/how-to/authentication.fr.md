@@ -33,9 +33,11 @@ de courte durée comme les tokens OIDC GCP ou les baux Vault :
 ```python
 from apicurio_serdes import BearerAuth
 
+
 def get_token() -> str:
     # remplacez par votre logique réelle de récupération de token
     return fetch_oidc_token()
+
 
 auth = BearerAuth(token_provider=get_token)
 ```
@@ -56,7 +58,7 @@ auth = KeycloakAuth(
     token_url="https://keycloak.example.com/realms/myrealm/protocol/openid-connect/token",
     client_id="my-client",
     client_secret="secret",
-    scope="openid",          # optionnel
+    scope="openid",  # optionnel
 )
 
 client = ApicurioRegistryClient(
