@@ -167,6 +167,7 @@ reason to ever expire them. Apply `cache_ttl_seconds` **only to
 from collections import OrderedDict
 import time
 
+
 class _CacheCore:
     """Lock-free core — callers must serialise access."""
 
@@ -301,11 +302,11 @@ if cached is not _MISSING:
 
 ```python
 # Before:
-if cache_key in self._schema_cache:   # double-check
+if cache_key in self._schema_cache:  # double-check
     return self._schema_cache[cache_key]
 
 # After:
-cached = self._schema_cache.get(cache_key)   # TTL-aware double-check
+cached = self._schema_cache.get(cache_key)  # TTL-aware double-check
 if cached is not _MISSING:
     return cached
 ```
