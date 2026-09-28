@@ -56,13 +56,16 @@ assert result == data  # Round-trip fidelity (SC-002)
 ```python
 from dataclasses import dataclass
 
+
 @dataclass
 class UserEvent:
     user_id: str
     country: str
 
+
 def from_dict(d: dict, ctx: SerializationContext) -> UserEvent:
     return UserEvent(user_id=d["userId"], country=d["country"])
+
 
 deserializer = AvroDeserializer(client, from_dict=from_dict)
 event = deserializer(payload, ctx)
@@ -119,6 +122,7 @@ result2 = deserializer(message2_bytes, ctx)
 
 ```python
 import pytest
+
 bad_bytes = b"\x01" + b"\x00\x00\x00\x2a" + b"..."
 with pytest.raises(DeserializationError, match="magic byte"):
     deserializer(bad_bytes, ctx)
