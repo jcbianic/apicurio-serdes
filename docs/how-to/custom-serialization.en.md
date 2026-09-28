@@ -5,8 +5,7 @@ By default, `AvroSerializer` expects a plain Python `dict` as input. If your app
 ## The `to_dict` Signature
 
 ```python
-def to_dict(data: Any, ctx: SerializationContext) -> dict[str, Any]:
-    ...
+def to_dict(data: Any, ctx: SerializationContext) -> dict[str, Any]: ...
 ```
 
 The callable receives two arguments:
@@ -21,10 +20,12 @@ It must return a plain `dict` whose keys and values match the Avro schema.
 ```python
 from dataclasses import dataclass, asdict
 
+
 @dataclass
 class UserEvent:
     userId: str
     country: str
+
 
 serializer = AvroSerializer(
     registry_client=client,
@@ -41,9 +42,11 @@ payload = serializer(event, ctx)
 ```python
 from pydantic import BaseModel
 
+
 class UserEvent(BaseModel):
     userId: str
     country: str
+
 
 serializer = AvroSerializer(
     registry_client=client,
@@ -62,12 +65,14 @@ The `ctx` parameter carries the topic name and field type (`KEY` or `VALUE`). Us
 ```python
 from apicurio_serdes.serialization import MessageField
 
+
 def to_dict(obj, ctx):
     d = obj.model_dump()
     if ctx.field == MessageField.KEY:
         # For message keys, only include the identifier
         return {"userId": d["userId"]}
     return d
+
 
 serializer = AvroSerializer(
     registry_client=client,

@@ -21,9 +21,11 @@ This guide maps every difference between `confluent-kafka`'s schema registry ser
     from confluent_kafka.schema_registry import SchemaRegistryClient
     from confluent_kafka.schema_registry.avro import AvroSerializer
 
-    registry = SchemaRegistryClient({
-        "url": "http://registry:8080/apis/ccompat/v7",
-    })
+    registry = SchemaRegistryClient(
+        {
+            "url": "http://registry:8080/apis/ccompat/v7",
+        }
+    )
     serializer = AvroSerializer(
         schema_registry_client=registry,
         schema_str='{"type":"record","name":"UserEvent",...}',
@@ -122,7 +124,9 @@ serializer = AvroSerializer(registry, schema_str)
 producer = Producer({"bootstrap.servers": "kafka:9092"})
 ctx = SerializationContext("user-events", MessageField.VALUE)
 
-producer.produce("user-events", value=serializer({"userId": "abc", "country": "FR"}, ctx))
+producer.produce(
+    "user-events", value=serializer({"userId": "abc", "country": "FR"}, ctx)
+)
 producer.flush()
 ```
 
@@ -143,7 +147,9 @@ serializer = AvroSerializer(registry_client=client, artifact_id="UserEvent")
 producer = Producer({"bootstrap.servers": "kafka:9092"})
 ctx = SerializationContext("user-events", MessageField.VALUE)
 
-producer.produce("user-events", value=serializer({"userId": "abc", "country": "FR"}, ctx))
+producer.produce(
+    "user-events", value=serializer({"userId": "abc", "country": "FR"}, ctx)
+)
 producer.flush()
 ```
 
