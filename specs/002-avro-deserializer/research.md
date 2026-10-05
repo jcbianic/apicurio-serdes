@@ -93,8 +93,7 @@ class DeserializationError(Exception):
 **SchemaNotFoundError.from_id design**:
 ```python
 @classmethod
-def from_id(cls, id_type: str, id_value: int) -> SchemaNotFoundError:
-    ...
+def from_id(cls, id_type: str, id_value: int) -> SchemaNotFoundError: ...
 ```
 
 - Preserves backward compatibility — existing `SchemaNotFoundError(group_id, artifact_id)` calls unchanged

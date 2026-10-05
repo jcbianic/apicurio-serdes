@@ -48,7 +48,7 @@ built-in strategies are callable classes that implement `__call__`.
 @dataclass(frozen=True)
 class SerializationContext:
     topic: str
-    field: MessageField   # MessageField.KEY or MessageField.VALUE
+    field: MessageField  # MessageField.KEY or MessageField.VALUE
 ```
 
 The context carries **no schema information**. Topic-based strategies are
