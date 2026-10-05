@@ -8,6 +8,7 @@
 import asyncio
 from apicurio_serdes import AsyncApicurioRegistryClient
 
+
 async def main():
     client = AsyncApicurioRegistryClient(
         url="http://registry:8080/apis/registry/v3",
@@ -15,11 +16,12 @@ async def main():
     )
     try:
         cached = await client.get_schema("UserEvent")
-        print(cached.schema)      # {"type": "record", "name": "UserEvent", ...}
-        print(cached.global_id)   # 42
+        print(cached.schema)  # {"type": "record", "name": "UserEvent", ...}
+        print(cached.global_id)  # 42
         print(cached.content_id)  # 7
     finally:
         await client.aclose()
+
 
 asyncio.run(main())
 ```
@@ -30,6 +32,7 @@ asyncio.run(main())
 import asyncio
 from apicurio_serdes import AsyncApicurioRegistryClient
 
+
 async def main():
     async with AsyncApicurioRegistryClient(
         url="http://registry:8080/apis/registry/v3",
@@ -37,6 +40,7 @@ async def main():
     ) as client:
         cached = await client.get_schema("UserEvent")
         print(cached.schema)
+
 
 asyncio.run(main())
 ```
@@ -52,6 +56,7 @@ from apicurio_serdes import AsyncApicurioRegistryClient
 
 registry_client: AsyncApicurioRegistryClient | None = None
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global registry_client
@@ -62,7 +67,9 @@ async def lifespan(app: FastAPI):
     yield
     await registry_client.aclose()
 
+
 app = FastAPI(lifespan=lifespan)
+
 
 @app.post("/produce")
 async def produce(data: dict):
@@ -107,7 +114,12 @@ import httpx
 import pytest
 from apicurio_serdes import AsyncApicurioRegistryClient
 
-SCHEMA = {"type": "record", "name": "UserEvent", "fields": [{"name": "id", "type": "string"}]}
+SCHEMA = {
+    "type": "record",
+    "name": "UserEvent",
+    "fields": [{"name": "id", "type": "string"}],
+}
+
 
 @pytest.fixture
 def mock_registry():
@@ -122,6 +134,7 @@ def mock_registry():
             )
         )
         yield mock
+
 
 async def test_get_schema_returns_cached_schema(mock_registry):
     async with AsyncApicurioRegistryClient(
@@ -146,14 +159,15 @@ async def test_get_schema_caches_result(mock_registry):
         first = await client.get_schema("UserEvent")
         second = await client.get_schema("UserEvent")
 
-    assert first is second                          # same object
-    assert mock_registry.calls.call_count == 1     # exactly one HTTP call (SC-003)
+    assert first is second  # same object
+    assert mock_registry.calls.call_count == 1  # exactly one HTTP call (SC-003)
 ```
 
 ### Scenario: Not found → SchemaNotFoundError
 
 ```python
 from apicurio_serdes._errors import SchemaNotFoundError
+
 
 async def test_get_schema_raises_on_404():
     with respx.mock(base_url="http://registry:8080") as mock:
