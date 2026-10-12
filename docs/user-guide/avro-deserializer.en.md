@@ -67,13 +67,16 @@ Pass a `from_dict` callable to convert the decoded dict into a domain object:
 ```python
 from dataclasses import dataclass
 
+
 @dataclass
 class UserEvent:
     userId: str
     country: str
 
+
 def from_dict(d: dict, ctx: SerializationContext) -> UserEvent:
     return UserEvent(userId=d["userId"], country=d["country"])
+
 
 deserializer = AvroDeserializer(client, from_dict=from_dict)
 event = deserializer(payload, ctx)
