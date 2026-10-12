@@ -136,7 +136,14 @@ payload = buffer.getvalue()
 ### Function Signature
 
 ```python
-fastavro.schemaless_writer(fo, schema, record, strict=False, strict_allow_default=False, disable_tuple_notation=False)
+fastavro.schemaless_writer(
+    fo,
+    schema,
+    record,
+    strict=False,
+    strict_allow_default=False,
+    disable_tuple_notation=False,
+)
 ```
 
 - `fo`: File-like object (use `io.BytesIO()` for in-memory encoding)
