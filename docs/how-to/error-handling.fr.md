@@ -74,8 +74,8 @@ from apicurio_serdes import ApicurioRegistryClient
 client = ApicurioRegistryClient(
     url="http://registry:8080/apis/registry/v3",
     group_id="my-group",
-    max_retries=3,               # défaut — mettre à 0 pour désactiver
-    retry_backoff_ms=1000,       # délai de base pour la première tentative (ms)
+    max_retries=3,  # défaut — mettre à 0 pour désactiver
+    retry_backoff_ms=1000,  # délai de base pour la première tentative (ms)
     retry_max_backoff_ms=20000,  # délai maximum (ms)
 )
 ```
@@ -175,7 +175,9 @@ try:
     payload = serializer(data, ctx)
 except ValueError as e:
     if "32-bit" in str(e):
-        print("L'identifiant de schema est trop grand pour CONFLUENT_PAYLOAD — passez à KAFKA_HEADERS")
+        print(
+            "L'identifiant de schema est trop grand pour CONFLUENT_PAYLOAD — passez à KAFKA_HEADERS"
+        )
     else:
         print(f"Les données ne correspondent pas au schema : {e}")
 ```
