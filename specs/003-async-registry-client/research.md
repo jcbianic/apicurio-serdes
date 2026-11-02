@@ -150,8 +150,12 @@ This makes all `async def test_*` functions run automatically under asyncio with
 ```python
 import httpx
 
-async with httpx.AsyncClient(base_url="http://registry:8080/apis/registry/v3") as client:
-    response = await client.get("/groups/my-group/artifacts/MySchema/versions/latest/content")
+async with httpx.AsyncClient(
+    base_url="http://registry:8080/apis/registry/v3"
+) as client:
+    response = await client.get(
+        "/groups/my-group/artifacts/MySchema/versions/latest/content"
+    )
     response.raise_for_status()
     schema = response.json()
     global_id = int(response.headers["X-Registry-GlobalId"])
@@ -181,10 +185,13 @@ import respx
 import httpx
 import pytest
 
+
 @pytest.fixture
 def mock_registry():
     with respx.mock(base_url="http://registry:8080") as mock:
-        mock.get("/apis/registry/v3/groups/my-group/artifacts/MySchema/versions/latest/content").mock(
+        mock.get(
+            "/apis/registry/v3/groups/my-group/artifacts/MySchema/versions/latest/content"
+        ).mock(
             return_value=httpx.Response(
                 200,
                 json={"type": "record", "name": "MySchema", "fields": []},

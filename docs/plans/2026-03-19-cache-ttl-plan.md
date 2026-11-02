@@ -216,7 +216,8 @@ silently degrades reliability under concurrent load.
       max_size=cache_max_size, ttl=cache_ttl_seconds
   )
   self._id_cache: _CacheCore = _CacheCore(
-      max_size=cache_max_size, ttl=None  # ID entries never expire
+      max_size=cache_max_size,
+      ttl=None,  # ID entries never expire
   )
   ```
 

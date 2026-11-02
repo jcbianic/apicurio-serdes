@@ -117,10 +117,11 @@ def _is_expired(self) -> bool:
         return True
     return self._expires_at < time.monotonic() + (self._expires_in * 0.2)
 
+
 def _ensure_token(self) -> None:
     if self._is_expired():
         with self._lock:
-            if self._is_expired():   # second check inside lock
+            if self._is_expired():  # second check inside lock
                 self._fetch_token()
 ```
 

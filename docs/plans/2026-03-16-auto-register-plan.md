@@ -231,9 +231,9 @@ mypy strict are required throughout.
 - **Action**:
   1. Add three constructor params after the existing params:
      ```python
-     schema: dict[str, Any] | None = None,
-     auto_register: bool = False,
-     if_exists: Literal["FAIL", "RETURN", "RETURN_OR_UPDATE", "UPDATE"] = "RETURN",
+     schema: dict[str, Any] | None = (None,)
+     auto_register: bool = (False,)
+     if_exists: Literal["FAIL", "RETURN", "RETURN_OR_UPDATE", "UPDATE"] = ("RETURN",)
      ```
   2. Add constructor validation after the `use_id` guard:
      ```python
