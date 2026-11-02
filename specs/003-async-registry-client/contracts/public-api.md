@@ -96,9 +96,9 @@ Unchanged. Returned by both `ApicurioRegistryClient.get_schema` and `AsyncApicur
 ```python
 @dataclass
 class CachedSchema:
-    schema: dict[str, Any]   # Parsed Avro schema (fastavro-ready)
-    global_id: int            # From X-Registry-GlobalId response header
-    content_id: int           # From X-Registry-ContentId response header
+    schema: dict[str, Any]  # Parsed Avro schema (fastavro-ready)
+    global_id: int  # From X-Registry-GlobalId response header
+    content_id: int  # From X-Registry-ContentId response header
 ```
 
 ---
@@ -115,14 +115,14 @@ class CachedSchema:
 try:
     cached = await client.get_schema("NonExistentArtifact")
 except SchemaNotFoundError as e:
-    print(e.group_id)    # "my-group"
-    print(e.artifact_id) # "NonExistentArtifact"
+    print(e.group_id)  # "my-group"
+    print(e.artifact_id)  # "NonExistentArtifact"
 
 # RegistryConnectionError raised by get_schema
 try:
     cached = await client.get_schema("UserEvent")
 except RegistryConnectionError as e:
-    print(e.url)         # "http://registry:8080/apis/registry/v3"
+    print(e.url)  # "http://registry:8080/apis/registry/v3"
 ```
 
 ---
@@ -132,11 +132,13 @@ except RegistryConnectionError as e:
 ```python
 # Before (001-avro-serializer):
 from apicurio_serdes._client import ApicurioRegistryClient
+
 __all__ = ["ApicurioRegistryClient"]
 
 # After (003-async-registry-client):
 from apicurio_serdes._client import ApicurioRegistryClient
 from apicurio_serdes._async_client import AsyncApicurioRegistryClient
+
 __all__ = ["ApicurioRegistryClient", "AsyncApicurioRegistryClient"]
 ```
 
