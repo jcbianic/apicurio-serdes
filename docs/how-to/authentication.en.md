@@ -32,9 +32,11 @@ like GCP OIDC identity tokens or Vault leases:
 ```python
 from apicurio_serdes import BearerAuth
 
+
 def get_token() -> str:
     # replace with your actual token-fetching logic
     return fetch_oidc_token()
+
 
 auth = BearerAuth(token_provider=get_token)
 ```
@@ -53,7 +55,7 @@ auth = KeycloakAuth(
     token_url="https://keycloak.example.com/realms/myrealm/protocol/openid-connect/token",
     client_id="my-client",
     client_secret="secret",
-    scope="openid",          # optional
+    scope="openid",  # optional
 )
 
 client = ApicurioRegistryClient(
