@@ -73,8 +73,8 @@ from apicurio_serdes import ApicurioRegistryClient
 client = ApicurioRegistryClient(
     url="http://registry:8080/apis/registry/v3",
     group_id="my-group",
-    max_retries=3,               # default — set to 0 to disable
-    retry_backoff_ms=1000,       # base delay for the first retry (ms)
+    max_retries=3,  # default — set to 0 to disable
+    retry_backoff_ms=1000,  # base delay for the first retry (ms)
     retry_max_backoff_ms=20000,  # maximum backoff cap (ms)
 )
 ```
