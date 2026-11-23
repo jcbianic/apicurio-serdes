@@ -236,8 +236,9 @@ The identifier value is selected by `use_id` (default `"globalId"`):
 Encoding:
 ```python
 import struct
+
 schema_id = cached_schema.global_id  # or content_id, based on use_id
-header = b'\x00' + struct.pack('>I', schema_id)
+header = b"\x00" + struct.pack(">I", schema_id)
 # payload = fastavro schemaless_writer output
 result = header + payload
 ```
