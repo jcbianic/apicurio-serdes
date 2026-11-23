@@ -40,10 +40,12 @@ payload: bytes = serializer({"userId": "abc-123", "country": "FR"}, ctx)
 ```python
 from dataclasses import dataclass, asdict
 
+
 @dataclass
 class UserEvent:
     userId: str
     country: str
+
 
 serializer = AvroSerializer(
     registry_client=client,
@@ -58,7 +60,11 @@ payload = serializer(event, ctx)
 ## Error Handling
 
 ```python
-from apicurio_serdes._errors import SchemaNotFoundError, RegistryConnectionError, SerializationError
+from apicurio_serdes._errors import (
+    SchemaNotFoundError,
+    RegistryConnectionError,
+    SerializationError,
+)
 
 try:
     payload = serializer(data, ctx)
@@ -85,9 +91,9 @@ def test_serialize_valid_dict():
 
     result = serializer({"name": "Alice", "age": 30}, ctx)
 
-    assert result[0:1] == b'\x00'           # magic byte
-    assert len(result[1:5]) == 4             # 4-byte content_id
-    assert len(result) > 5                   # has Avro payload
+    assert result[0:1] == b"\x00"  # magic byte
+    assert len(result[1:5]) == 4  # 4-byte content_id
+    assert len(result) > 5  # has Avro payload
 ```
 
 ### Scenario 2: Schema caching (US2-SC1)
@@ -120,9 +126,7 @@ def test_to_dict_hook_applied():
 ```python
 def test_missing_artifact_raises_error():
     """Non-existent artifact_id raises SchemaNotFoundError."""
-    serializer = AvroSerializer(
-        registry_client=client, artifact_id="NonExistent"
-    )
+    serializer = AvroSerializer(registry_client=client, artifact_id="NonExistent")
     with pytest.raises(SchemaNotFoundError) as exc_info:
         serializer(data, ctx)
     assert "NonExistent" in str(exc_info.value)
@@ -133,9 +137,7 @@ def test_missing_artifact_raises_error():
 ```python
 def test_invalid_data_raises_error():
     """Dict missing required field raises ValueError."""
-    serializer = AvroSerializer(
-        registry_client=client, artifact_id="TestRecord"
-    )
+    serializer = AvroSerializer(registry_client=client, artifact_id="TestRecord")
     with pytest.raises(ValueError):
         serializer({"name": "Alice"}, ctx)  # missing "age"
 ```
